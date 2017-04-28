@@ -1,0 +1,11 @@
+package: .
+import:
+- package: github.com/codegangsta/cli
+- package: github.com/labstack/echo
+  subpackages:
+  - middleware
+- package: github.com/olebedev/config
+- package: github.com/elazarl/go-bindata-assetfs
+- package: github.com/itsjamie/go-bindata-templates
+- package: github.com/pkg/errors
+  version: ^0.8.0

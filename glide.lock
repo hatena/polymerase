@@ -1,0 +1,53 @@
+hash: e04442fa072536cce16e53994684b6c547f79cf46656d348dfd7d75d83b628b4
+updated: 2017-04-28T18:12:39.984774814+09:00
+imports:
+- name: github.com/codegangsta/cli
+  version: ab403a54a148f2d857920810291539e1f817ee7b
+- name: github.com/dgrijalva/jwt-go
+  version: 2268707a8f0843315e2004ee4f1d021dc08baedf
+- name: github.com/elazarl/go-bindata-assetfs
+  version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
+- name: github.com/itsjamie/go-bindata-templates
+  version: 78f87e838df0fb89dbcd26e1489f988cd7bc3bb8
+- name: github.com/labstack/echo
+  version: 0dfcb31d9ef356492d6dc33e5c83af53100db3ec
+  subpackages:
+  - middleware
+- name: github.com/labstack/gommon
+  version: 9298d710c664bcd21c454120f63a00fb7d484458
+  subpackages:
+  - bytes
+  - color
+  - log
+  - random
+- name: github.com/mattn/go-colorable
+  version: a392f450ea64cee2b268dfaacdc2502b50a22b18
+- name: github.com/mattn/go-isatty
+  version: 30a891c33c7cde7b02a981314b4228ec99380cca
+- name: github.com/nu7hatch/gouuid
+  version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+- name: github.com/olebedev/config
+  version: afea898d27c7d17376ecc60c7c2e73c76b40060e
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/valyala/bytebufferpool
+  version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
+- name: github.com/valyala/fasttemplate
+  version: dcecefd839c4193db0d35b88ec65b4c12d360ab0
+- name: golang.org/x/crypto
+  version: f6b343c37ca80bfa8ea539da67a0b621f84fab1d
+  subpackages:
+  - acme
+  - acme/autocert
+- name: golang.org/x/net
+  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: golang.org/x/sys
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  subpackages:
+  - unix
+- name: gopkg.in/yaml.v2
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+testImports: []

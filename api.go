@@ -75,10 +75,10 @@ func (api *API) getLastLSNHandler(c echo.Context) error {
 
 func (api *API) incBackupHandler(c echo.Context) error {
 	db := c.Param("db")
-	from := c.Param("from")
+	lastLsn := c.Param("last-lsn")
 	body := c.Request().Body
 
-	key, err := saveIncBackupFromReq(api.storage, body, db, from)
+	key, err := saveIncBackupFromReq(api.storage, body, db, lastLsn)
 	if err != nil {
 		return err
 	}

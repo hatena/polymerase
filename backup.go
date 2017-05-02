@@ -41,11 +41,14 @@ func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, lastLsn str
 	defer os.Remove(tempDir)
 
 	// Search a starting point by last LSN
+	from, err := storage.SearchStaringPointByLSN(db, lastLsn)
+	if err != nil {
+		return "", err
+	}
 
-
-	key, err := kickTransferBackup(db, tempDir, func(now time.Time) string {
+	key, err := kickTransferBackup(db, tempDir, func(ignore time.Time) string {
 		// Make a directory of staring point
-		return lastLsn
+		return from
 	}, storage.TransferTempIncBackup)
 	if err != nil {
 		return "", err

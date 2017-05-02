@@ -1,16 +1,18 @@
-package main
+package api
 
 import (
 	"net/http"
 
 	"github.com/labstack/echo"
+	"github.com/taku-k/xtralab/pkg/storage"
 )
 
 // API is a defined as struct bundle
 // for api. Feel free to organize
 // your app as you wish.
 type API struct {
-	storage BackupStorage
+	storage storage.BackupStorage
+	bm      *BackupManager
 }
 
 type FullBackupRes struct {
@@ -26,10 +28,6 @@ type IncBackupRes struct {
 type GetLastLSNRes struct {
 	LastLSN string `json:"last_lsn"`
 }
-
-const ROOT_DIR = "/Users/taku_k/playground/mysql-backup-test/backups-dir"
-
-const TIME_FORMAT = "2006-01-02-15-04-05"
 
 // Bind attaches api routes
 func (api *API) Bind(group *echo.Group) {
@@ -49,7 +47,7 @@ func (api *API) fullBackupHandler(c echo.Context) error {
 	db := c.Param("db")
 	body := c.Request().Body
 
-	key, err := saveFullBackupFromReq(api.storage, body, db)
+	key, err := api.bm.saveFullBackupFromReq(api.storage, body, db)
 	if err != nil {
 		return err
 	}
@@ -78,7 +76,7 @@ func (api *API) incBackupHandler(c echo.Context) error {
 	lastLsn := c.Param("last-lsn")
 	body := c.Request().Body
 
-	key, err := saveIncBackupFromReq(api.storage, body, db, lastLsn)
+	key, err := api.bm.saveIncBackupFromReq(api.storage, body, db, lastLsn)
 	if err != nil {
 		return err
 	}

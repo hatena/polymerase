@@ -1,4 +1,4 @@
-package main
+package storage
 
 type BackupStorage interface {
 	GetLastLSN(db string) (string, error)

@@ -1,11 +1,4 @@
-package main
-
-var (
-	// Debug var to switch mode from outside
-	debug string
-	// CommitHash exported to assign it from main.go
-	commitHash string
-)
+package api
 
 // Most easiest way to configure
 // an application is define config as
@@ -19,4 +12,6 @@ port: 5000
 title: MySQL Backup API Server Integrated with Xtrabackup
 api:
   prefix: /api
+rootdir: /Users/taku_k/playground/mysql-backup-test/backups-dir
+timeformat: 2006-01-02-15-04-05
 `

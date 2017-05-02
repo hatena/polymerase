@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"os/exec"
@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/nu7hatch/gouuid"
 	"github.com/olebedev/config"
+	"github.com/taku-k/xtralab/pkg/storage"
 )
 
 // App struct.
@@ -37,11 +38,6 @@ func NewApp(opts ...AppOptions) *App {
 		panic(err)
 	}
 
-	// Set config variables delivered from main.go:11
-	// Variables defined as ./conf.go:3
-	conf.Set("debug", debug)
-	conf.Set("commitHash", commitHash)
-
 	// Parse environ variables for defined
 	// in config constants
 	conf.Env()
@@ -65,7 +61,13 @@ func NewApp(opts ...AppOptions) *App {
 		Engine: engine,
 		API: &API{
 			// FIXME: use option to choose a backup storage
-			storage: &LocalBackupStorage{},
+			storage: &storage.LocalBackupStorage{
+				RootDir:    conf.UString("rootdir"),
+				TimeFormat: conf.UString("timeformat"),
+			},
+			bm: &BackupManager{
+				TimeFormat: conf.UString("timeformat"),
+			},
 		},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/taku-k/xtralab/pkg/api"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func Run(args []string) {
 // RunServer creates, configures and runs
 // main server.App
 func RunServer(c *cli.Context) {
-	app := NewApp(AppOptions{
+	app := api.NewApp(api.AppOptions{
 	// see server/app.go:150
 	})
 	app.Run()

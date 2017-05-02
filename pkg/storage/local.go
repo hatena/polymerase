@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"fmt"
@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/taku-k/xtralab/pkg/utils"
 )
 
-type LocalBackupStorage struct{}
+type LocalBackupStorage struct {
+	RootDir    string
+	TimeFormat string
+}
 
 func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", ROOT_DIR, db))
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", storage.RootDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -24,13 +28,13 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 
 	latestBackupDir := ""
 	var latestBackupTime time.Time
-	fileDir := fmt.Sprintf("%s/%s/%s", ROOT_DIR, db, startingPointDirs[len(startingPointDirs)-1].Name())
+	fileDir := fmt.Sprintf("%s/%s/%s", storage.RootDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
 	files, err := ioutil.ReadDir(fileDir)
 	if err != nil {
 		return "", err
 	}
 	for _, f := range files {
-		curBackupTime, err := time.Parse(TIME_FORMAT, f.Name())
+		curBackupTime, err := time.Parse(storage.TimeFormat, f.Name())
 		if err != nil {
 			return "", err
 		}
@@ -46,7 +50,7 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 	}
 
 	// Extract a LSN from a last checkpoint
-	lastLsn, err := ExtractLSNFromFile(fmt.Sprintf("%s/xtrabackup_checkpoints", latestBackupDir))
+	lastLsn, err := utils.ExtractLSNFromFile(fmt.Sprintf("%s/xtrabackup_checkpoints", latestBackupDir))
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +58,7 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 }
 
 func (storage *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", ROOT_DIR, db))
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", storage.RootDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -64,15 +68,16 @@ func (storage *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (stri
 	for i := len(startingPointDirs) - 1; i >= 0; i -= 1 {
 		// Search by descending order
 		sp := startingPointDirs[i].Name()
-		fileDir := path.Join(ROOT_DIR, db, sp)
+		fileDir := path.Join(storage.RootDir, db, sp)
 		files, err := ioutil.ReadDir(fileDir)
 		if err != nil {
 			continue
 		}
+		// FIXME: Sort based on time format, for now, based on filesystem display order
 		for j := len(files) - 1; j >= 0; j -= 1 {
 			f := files[j]
 			bd := filepath.Join(fileDir, f.Name())
-			cur, err := ExtractLSNFromFile(path.Join(bd, "xtrabackup_checkpoints"))
+			cur, err := utils.ExtractLSNFromFile(path.Join(bd, "xtrabackup_checkpoints"))
 			if err != nil {
 				continue
 			}
@@ -93,7 +98,7 @@ func (storage *LocalBackupStorage) TransferTempIncBackup(tempDir string, key str
 }
 
 func (storage *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
-	if err := os.Rename(tempPath, key); err != nil {
+	if err := os.Rename(tempPath, path.Join(storage.RootDir, key)); err != nil {
 		return err
 	}
 	return nil

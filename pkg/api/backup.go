@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -10,18 +10,23 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/taku-k/xtralab/pkg/storage"
 )
 
-func saveFullBackupFromReq(storage BackupStorage, body io.Reader, db string) (string, error) {
+type BackupManager struct {
+	TimeFormat string
+}
+
+func (bm *BackupManager) saveFullBackupFromReq(storage storage.BackupStorage, body io.Reader, db string) (string, error) {
 	// FIXME: Fix hardcoding base.tar.gz
 	extractCmd := "gunzip -c base.tar.gz | tar xf - xtrabackup_checkpoints"
-	tempDir, err := saveToTempDirFromReq(body, "base.tar.gz", extractCmd)
+	tempDir, err := bm.saveToTempDirFromReq(body, "base.tar.gz", extractCmd)
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(tempDir)
 
-	key, err := kickTransferBackup(db, tempDir, func(now time.Time) string {
+	key, err := bm.kickTransferBackup(db, tempDir, func(now time.Time) string {
 		// Make a directory of staring point
 		return now.Format("2006-01-02")
 	}, storage.TransferTempFullBackup)
@@ -31,10 +36,10 @@ func saveFullBackupFromReq(storage BackupStorage, body io.Reader, db string) (st
 	return key, nil
 }
 
-func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, lastLsn string) (string, error) {
+func (bm *BackupManager) saveIncBackupFromReq(storage storage.BackupStorage, body io.Reader, db, lastLsn string) (string, error) {
 	// FIXME: Fix hardcoding inc.gz
 	extractCmd := "gunzip -c inc.gz > inc.xb && mkdir inc && xbstream -x -C inc < inc.xb && cp inc/xtrabackup_checkpoints ./ && rm inc.gz inc.xb"
-	tempDir, err := saveToTempDirFromReq(body, "inc.gz", extractCmd)
+	tempDir, err := bm.saveToTempDirFromReq(body, "inc.gz", extractCmd)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +51,7 @@ func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, lastLsn str
 		return "", err
 	}
 
-	key, err := kickTransferBackup(db, tempDir, func(ignore time.Time) string {
+	key, err := bm.kickTransferBackup(db, tempDir, func(ignore time.Time) string {
 		// Make a directory of staring point
 		return from
 	}, storage.TransferTempIncBackup)
@@ -57,16 +62,16 @@ func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, lastLsn str
 	return key, nil
 }
 
-func kickTransferBackup(db, tempDir string, startingPointFunc func(time.Time) string, backupFunc func(string, string) error) (string, error) {
+func (bm *BackupManager) kickTransferBackup(db, tempDir string, startingPointFunc func(time.Time) string, backupFunc func(string, string) error) (string, error) {
 	now := time.Now()
-	key := fmt.Sprintf("%s/%s/%s/%s", ROOT_DIR, db, startingPointFunc(now), now.Format(TIME_FORMAT))
+	key := fmt.Sprintf("%s/%s/%s", db, startingPointFunc(now), now.Format(bm.TimeFormat))
 	if err := backupFunc(tempDir, key); err != nil {
 		return "", err
 	}
 	return key, nil
 }
 
-func saveToTempDirFromReq(body io.Reader, output, extractCmd string) (string, error) {
+func (bm *BackupManager) saveToTempDirFromReq(body io.Reader, output, extractCmd string) (string, error) {
 	// Write out to temp file
 	tempFile, err := ioutil.TempFile("", "mysql-backup")
 	if err != nil {

@@ -31,7 +31,7 @@ func saveFullBackupFromReq(storage BackupStorage, body io.Reader, db string) (st
 	return key, nil
 }
 
-func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, from string) (string, error) {
+func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, lastLsn string) (string, error) {
 	// FIXME: Fix hardcoding inc.gz
 	extractCmd := "gunzip -c inc.gz > inc.xb && mkdir inc && xbstream -x -C inc < inc.xb && cp inc/xtrabackup_checkpoints ./ && rm inc.gz inc.xb"
 	tempDir, err := saveToTempDirFromReq(body, "inc.gz", extractCmd)
@@ -40,9 +40,12 @@ func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, from string
 	}
 	defer os.Remove(tempDir)
 
+	// Search a starting point by last LSN
+
+
 	key, err := kickTransferBackup(db, tempDir, func(now time.Time) string {
 		// Make a directory of staring point
-		return from
+		return lastLsn
 	}, storage.TransferTempIncBackup)
 	if err != nil {
 		return "", err

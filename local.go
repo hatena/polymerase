@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -47,20 +45,9 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 	}
 
 	// Extract a LSN from a last checkpoint
-	cpFile := fmt.Sprintf("%s/xtrabackup_checkpoints", latestBackupDir)
-	fp, err := os.Open(cpFile)
+	lastLsn, err := ExtractLSNFromFile(fmt.Sprintf("%s/xtrabackup_checkpoints", latestBackupDir))
 	if err != nil {
 		return "", err
-	}
-	defer fp.Close()
-
-	scanner := bufio.NewScanner(fp)
-	var lastLsn string
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "to_lsn") {
-			lastLsn = strings.TrimSpace(strings.Split(line, "=")[1])
-		}
 	}
 	return lastLsn, nil
 }

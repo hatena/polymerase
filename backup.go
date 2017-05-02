@@ -15,7 +15,7 @@ import (
 func saveFullBackupFromReq(storage BackupStorage, body io.Reader, db string) (string, error) {
 	// FIXME: Fix hardcoding base.tar.gz
 	extractCmd := "gunzip -c base.tar.gz | tar xf - xtrabackup_checkpoints"
-	tempDir, err := saveTempDirFromReq(body, "base.tar.gz", extractCmd)
+	tempDir, err := saveToTempDirFromReq(body, "base.tar.gz", extractCmd)
 	if err != nil {
 		return "", err
 	}
@@ -34,15 +34,16 @@ func saveFullBackupFromReq(storage BackupStorage, body io.Reader, db string) (st
 func saveIncBackupFromReq(storage BackupStorage, body io.Reader, db, from string) (string, error) {
 	// FIXME: Fix hardcoding inc.gz
 	extractCmd := "gunzip -c inc.gz > inc.xb && mkdir inc && xbstream -x -C inc < inc.xb && cp inc/xtrabackup_checkpoints ./ && rm inc.gz inc.xb"
-	tempDir, err := saveTempDirFromReq(body, "inc.gz", extractCmd)
+	tempDir, err := saveToTempDirFromReq(body, "inc.gz", extractCmd)
 	if err != nil {
 		return "", err
 	}
+	defer os.Remove(tempDir)
 
 	key, err := kickTransferBackup(db, tempDir, func(now time.Time) string {
 		// Make a directory of staring point
-		return now.Format("2006-01-02")
-	}, storage.TransferTempFullBackup)
+		return from
+	}, storage.TransferTempIncBackup)
 	if err != nil {
 		return "", err
 	}
@@ -59,18 +60,14 @@ func kickTransferBackup(db, tempDir string, startingPointFunc func(time.Time) st
 	return key, nil
 }
 
-func saveTempDirFromReq(body io.Reader, output, extractCmd string) (string, error) {
+func saveToTempDirFromReq(body io.Reader, output, extractCmd string) (string, error) {
 	// Write out to temp file
 	tempFile, err := ioutil.TempFile("", "mysql-backup")
 	if err != nil {
 		return "", err
 	}
-	_, err = io.Copy(tempFile, body)
-	if err != nil {
+	if _, err = io.Copy(tempFile, body); err != nil {
 		return "", errors.Wrap(err, "Can't io.Copy(tmpFile, body)")
-	}
-	if err != nil {
-		return "", err
 	}
 	tempDir, err := ioutil.TempDir("", "mysql-backup-dir")
 	if err != nil {

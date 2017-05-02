@@ -15,8 +15,8 @@ func main() {
 // main cli.App
 func Run(args []string) {
 	app := cli.NewApp()
-	app.Name = "backup-server"
-	app.Usage = "MySQL Backup server"
+	app.Name = "xtralab-api"
+	app.Usage = "MySQL backup management API integreted with Percona Xtrabackup"
 
 	app.Commands = []cli.Command{
 		{

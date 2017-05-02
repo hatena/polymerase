@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os/exec"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
@@ -61,7 +63,10 @@ func NewApp(opts ...AppOptions) *App {
 	app := &App{
 		Conf:   conf,
 		Engine: engine,
-		API:    &API{},
+		API: &API{
+			// FIXME: use option to choose a backup storage
+			storage: &LocalBackupStorage{},
+		},
 	}
 
 	// Map app and uuid for every requests
@@ -86,8 +91,16 @@ func NewApp(opts ...AppOptions) *App {
 	return app
 }
 
+func ensureExistXtrabackup() error {
+	return exec.Command("which", "xtrabackup").Run()
+}
+
 // Run runs the app
 func (app *App) Run() {
+	if err := ensureExistXtrabackup(); err != nil {
+		log.Error("xtrabackup command not found")
+		panic(err)
+	}
 	err := app.Engine.Start(":" + app.Conf.UString("port"))
 	if err != nil {
 		panic(err)

@@ -15,9 +15,8 @@ var (
 //     https://github.com/olebedev/config
 var confString = `
 debug: true
-commit: 0
 port: 5000
-title: Go Starter Kit
+title: MySQL Backup API Server Integrated with Xtrabackup
 api:
   prefix: /api
 `

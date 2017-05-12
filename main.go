@@ -32,8 +32,6 @@ func Run(args []string) {
 // RunServer creates, configures and runs
 // main server.App
 func RunServer(c *cli.Context) {
-	app := api.NewApp(api.AppOptions{
-	// see server/app.go:150
-	})
+	app := api.NewApp(api.AppOptions{})
 	app.Run()
 }

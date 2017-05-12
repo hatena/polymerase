@@ -7,9 +7,6 @@ import (
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
-// API is a defined as struct bundle
-// for api. Feel free to organize
-// your app as you wish.
 type API struct {
 	storage storage.BackupStorage
 	bm      *BackupManager

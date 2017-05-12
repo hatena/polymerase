@@ -81,7 +81,7 @@ func NewApp(opts ...AppOptions) *App {
 		}
 	})
 
-	// Bind api hadling for URL api.prefix
+	// Bind api handling for URL api.prefix
 	app.API.Bind(
 		app.Engine.Group(
 			app.Conf.UString("api.prefix"),

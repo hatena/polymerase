@@ -98,6 +98,13 @@ func (storage *LocalBackupStorage) TransferTempIncBackup(tempDir string, key str
 }
 
 func (storage *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
+	p := path.Join(storage.RootDir, key)
+	if err := os.MkdirAll(p, 0777); err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil {
+		return err
+	}
 	if err := os.Rename(tempPath, path.Join(storage.RootDir, key)); err != nil {
 		return err
 	}

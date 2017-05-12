@@ -8,7 +8,7 @@ cmd = Template("""
 xtrabackup --host ${mysql_host} \
            --port ${mysql_port} \
            --user ${mysql_user} \
-           --password ${mysql_passwd} \
+           --password ${mysql_password} \
            --slave-info \
            --backup \
            --stream=tar \
@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--mysql-host', dest='mysql_host', type=str, default='127.0.0.1')
     parser.add_argument('--mysql-port', dest='mysql_port', type=int, default=3306)
     parser.add_argument('--mysql-user', dest='mysql_user', type=str, required=True)
-    parser.add_argument('--mysql-passwd', dest='mysql_passwd', type=str, required=True)
+    parser.add_argument('--mysql-password', dest='mysql_password', type=str, required=True)
     parser.add_argument('--xtralab-host', dest='xtralab_host', type=str, required=True)
     parser.add_argument('--xtralab-port', dest='xtralab_port', type=int, default=80)
     args = parser.parse_args()

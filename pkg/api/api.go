@@ -29,10 +29,10 @@ type GetLastLSNRes struct {
 
 // Bind attaches api routes
 func (api *API) Bind(group *echo.Group) {
-	group.GET("/v0/conf", api.ConfHandler)
-	group.POST("/v0/:db/full-backup", api.fullBackupHandler)
-	group.GET("/v0/:db/last-lsn", api.getLastLSNHandler)
-	group.POST("/v0/:db/inc-backup/:last-lsn", api.incBackupHandler)
+	group.GET("/conf", api.ConfHandler)
+	group.POST("/:db/full-backup", api.fullBackupHandler)
+	group.GET("/:db/last-lsn", api.getLastLSNHandler)
+	group.POST("/:db/inc-backup/:last-lsn", api.incBackupHandler)
 
 	//group.GET("/v0/:db/restore", api.)
 }

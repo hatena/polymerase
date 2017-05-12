@@ -25,7 +25,7 @@ xtrabackup \
   --incremental-lsn=${last_lsn} \
   --stream=xbstream \
   | gzip -c \
-  | curl -X POST \
+  | curl -X POST -f \
     --data-binary \
     @- 'http://${xtralab_host}:${xtralab_port}/api/${db}/inc-backup/${last_lsn}'
 """.strip())

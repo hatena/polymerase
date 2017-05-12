@@ -14,7 +14,7 @@ xtrabackup \
   --backup \
   --stream=tar \
   | gzip -c \
-  | curl -X POST \
+  | curl -X POST -f \
     --data-binary \
     @- 'http://${xtralab_host}:${xtralab_port}/api/${db}/full-backup'
 """.strip())

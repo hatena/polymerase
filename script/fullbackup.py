@@ -16,7 +16,7 @@ xtrabackup \
   | gzip -c \
   | curl -X POST -f \
     --data-binary \
-    @- 'http://${xtralab_host}:${xtralab_port}/api/${db}/full-backup'
+    @- 'http://${xtralab_host}:${xtralab_port}/api/full-backup/${db}'
 """.strip())
 
 

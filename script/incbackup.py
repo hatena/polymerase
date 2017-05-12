@@ -27,12 +27,12 @@ xtrabackup \
   | gzip -c \
   | curl -X POST -f \
     --data-binary \
-    @- 'http://${xtralab_host}:${xtralab_port}/api/${db}/inc-backup/${last_lsn}'
+    @- 'http://${xtralab_host}:${xtralab_port}/api/inc-backup/${db}/${last_lsn}'
 """.strip())
 
 
 def get_last_lsn(args):
-    url = Template("http://${xtralab_host}:${xtralab_port}/api/${db}/last-lsn").substitute(vars(args))
+    url = Template("http://${xtralab_host}:${xtralab_port}/api/last-lsn/${db}").substitute(vars(args))
     try:
         resp = urlopen(url)
         return json.loads(resp.read().decode('utf8'))['last_lsn']

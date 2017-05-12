@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"time"
+
 	"github.com/labstack/echo"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
@@ -30,11 +32,12 @@ type GetLastLSNRes struct {
 // Bind attaches api routes
 func (api *API) Bind(group *echo.Group) {
 	group.GET("/conf", api.ConfHandler)
-	group.POST("/:db/full-backup", api.fullBackupHandler)
-	group.GET("/:db/last-lsn", api.getLastLSNHandler)
-	group.POST("/:db/inc-backup/:last-lsn", api.incBackupHandler)
+	group.POST("/full-backup/:db", api.fullBackupHandler)
+	group.GET("/last-lsn/:db", api.getLastLSNHandler)
+	group.POST("/inc-backup/:db/:last-lsn", api.incBackupHandler)
 
-	//group.GET("/v0/:db/restore", api.)
+	// Restore
+	group.GET("/restore/:db/:from", api.restoreHandler)
 }
 
 // ConfHandler handle the app config, for example
@@ -85,4 +88,18 @@ func (api *API) incBackupHandler(c echo.Context) error {
 		Message: "success",
 		Key:     key,
 	})
+}
+
+func (api *API) restoreHandler(c echo.Context) error {
+	db := c.Param("db")
+	from := c.Param("from")
+
+	t, err := time.Parse("2006-01-02", from)
+	if err != nil {
+		return err
+	}
+	t = t.AddDate(0, 0, 1)
+	keys, _ := api.storage.SearchConsecutiveIncBackups(db, t)
+	fmt.Println(keys)
+	return c.JSON(http.StatusOK, "aaa")
 }

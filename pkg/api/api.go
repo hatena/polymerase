@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -32,12 +33,14 @@ func (api *API) Bind(group *echo.Group) {
 	group.POST("/v0/:db/full-backup", api.fullBackupHandler)
 	group.GET("/v0/:db/last-lsn", api.getLastLSNHandler)
 	group.POST("/v0/:db/inc-backup/:last-lsn", api.incBackupHandler)
+
+	//group.GET("/v0/:db/restore", api.)
 }
 
 // ConfHandler handle the app config, for example
 func (api *API) ConfHandler(c echo.Context) error {
 	app := c.Get("app").(*App)
-	return c.JSON(200, app.Conf.Root)
+	return c.JSON(200, fmt.Sprintf("%#v", app.Conf))
 }
 
 func (api *API) fullBackupHandler(c echo.Context) error {

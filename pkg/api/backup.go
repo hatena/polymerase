@@ -10,11 +10,18 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
 type BackupManager struct {
 	TimeFormat string
+}
+
+func NewBackupManager(conf *config.Config) *BackupManager {
+	return &BackupManager{
+		TimeFormat: conf.TimeFormat,
+	}
 }
 
 func (bm *BackupManager) saveFullBackupFromReq(storage storage.BackupStorage, body io.Reader, db string) (string, error) {

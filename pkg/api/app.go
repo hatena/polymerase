@@ -3,11 +3,13 @@ package api
 import (
 	"os/exec"
 
+	"strconv"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/nu7hatch/gouuid"
-	"github.com/olebedev/config"
+	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
@@ -23,30 +25,12 @@ type App struct {
 
 // NewApp returns initialized struct
 // of main server application.
-func NewApp(opts ...AppOptions) *App {
-	options := AppOptions{}
-	for _, i := range opts {
-		options = i
-		break
-	}
-
-	options.init()
-
-	// Parse config yaml string from ./conf.go
-	conf, err := config.ParseYaml(confString)
-	if err != nil {
-		panic(err)
-	}
-
-	// Parse environ variables for defined
-	// in config constants
-	conf.Env()
-
+func NewApp(conf *config.Config) (*App, error) {
 	// Make an engine
 	engine := echo.New()
 
 	// Set up echo debug level
-	engine.Debug = conf.UBool("debug")
+	engine.Debug = conf.Debug
 
 	// Regular middlewares
 	engine.Use(middleware.Recover())
@@ -55,19 +39,20 @@ func NewApp(opts ...AppOptions) *App {
 		Format: `${method} | ${status} | ${uri} -> ${latency_human}` + "\n",
 	}))
 
+	// FIXME: use option to choose a backup storage
+	s, err := storage.NewLocalBackupStorage(conf)
+	if err != nil {
+		return nil, err
+	}
+	bm := NewBackupManager(conf)
+
 	// Initialize the application
 	app := &App{
 		Conf:   conf,
 		Engine: engine,
 		API: &API{
-			// FIXME: use option to choose a backup storage
-			storage: &storage.LocalBackupStorage{
-				RootDir:    conf.UString("rootdir"),
-				TimeFormat: conf.UString("timeformat"),
-			},
-			bm: &BackupManager{
-				TimeFormat: conf.UString("timeformat"),
-			},
+			storage: s,
+			bm:      bm,
 		},
 	}
 
@@ -84,13 +69,13 @@ func NewApp(opts ...AppOptions) *App {
 	// Bind api handling for URL api.prefix
 	app.API.Bind(
 		app.Engine.Group(
-			app.Conf.UString("api.prefix"),
+			conf.ApiPrefix,
 		),
 	)
 
 	engine.Logger.SetLevel(log.DEBUG)
 
-	return app
+	return app, nil
 }
 
 func ensureExistXtrabackup() error {
@@ -103,13 +88,8 @@ func (app *App) Run() {
 		log.Error("xtrabackup command not found")
 		panic(err)
 	}
-	err := app.Engine.Start(":" + app.Conf.UString("port"))
+	err := app.Engine.Start(":" + strconv.Itoa(app.Conf.Port))
 	if err != nil {
 		panic(err)
 	}
 }
-
-// AppOptions is options struct
-type AppOptions struct{}
-
-func (ao *AppOptions) init() { /* write your own*/ }

@@ -9,12 +9,24 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/utils"
 )
 
 type LocalBackupStorage struct {
 	RootDir    string
 	TimeFormat string
+}
+
+func NewLocalBackupStorage(conf *config.Config) (*LocalBackupStorage, error) {
+	s := &LocalBackupStorage{
+		RootDir:    conf.RootDir,
+		TimeFormat: conf.TimeFormat,
+	}
+	if s.RootDir == "" {
+		return nil, errors.New("Backup root directory must be specified with (--root-dir option)")
+	}
+	return s, nil
 }
 
 func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
 	"github.com/taku-k/xtralab/pkg/api"
+	"github.com/taku-k/xtralab/pkg/config"
 )
 
 func main() {
@@ -24,6 +26,9 @@ func Run(args []string) {
 			Name:   "run",
 			Usage:  "Runs server",
 			Action: RunServer,
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "root-dir", Usage: ""},
+			},
 		},
 	}
 	app.Run(args)
@@ -32,6 +37,14 @@ func Run(args []string) {
 // RunServer creates, configures and runs
 // main server.App
 func RunServer(c *cli.Context) {
-	app := api.NewApp(api.AppOptions{})
+	cfg := &config.Config{
+		RootDir: c.String("root-dir"),
+	}
+	cfg.SetDefault()
+	app, err := api.NewApp(cfg)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
+	}
 	app.Run()
 }

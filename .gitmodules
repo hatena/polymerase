@@ -1,0 +1,3 @@
+[submodule "percona-xtrabackup"]
+	path = percona-xtrabackup
+	url = https://github.com/percona/percona-xtrabackup

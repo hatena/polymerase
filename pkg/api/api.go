@@ -29,12 +29,7 @@ type GetLastLSNRes struct {
 }
 
 type RestoreSearchRes struct {
-	Keys []BackupFiles `json:"keys"`
-}
-
-type BackupFiles struct {
-	Type string `json:"type"`
-	Key  string `json:"key"`
+	Keys []*storage.BackupFile `json:"keys"`
 }
 
 // Bind attaches api routes
@@ -46,7 +41,7 @@ func (api *API) Bind(group *echo.Group) {
 
 	// Restore
 	group.GET("/restore/search/:db/:from", api.restoreSearchHandler)
-	group.GET("/restore/file/:type/:key", api.restoreFileHandler)
+	group.GET("/restore/file/:stype", api.restoreFileHandler)
 }
 
 // ConfHandler handle the app config, for example
@@ -108,21 +103,19 @@ func (api *API) restoreSearchHandler(c echo.Context) error {
 		return err
 	}
 	t = t.AddDate(0, 0, 1)
-	stype := api.storage.GetStorageType()
-	keys, _ := api.storage.SearchConsecutiveIncBackups(db, t)
-	bfiles := make([]BackupFiles, len(keys))
-	for i, key := range keys {
-		bfiles[i] = BackupFiles{
-			Type: stype,
-			Key:  key,
-		}
-	}
-
+	bfiles, _ := api.storage.SearchConsecutiveIncBackups(db, t)
 	return c.JSON(http.StatusOK, &RestoreSearchRes{
 		Keys: bfiles,
 	})
 }
 
 func (api *API) restoreFileHandler(c echo.Context) error {
-	return nil
+	//stype := c.Param("stype")
+	key := c.QueryParam("key")
+
+	r, err := api.storage.GetFileStream(key)
+	if err != nil {
+		return err
+	}
+	return c.Stream(http.StatusOK, "application/gzip", r)
 }

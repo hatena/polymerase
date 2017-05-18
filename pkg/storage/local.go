@@ -9,6 +9,8 @@ import (
 	"sort"
 	"time"
 
+	"io"
+
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
 	"github.com/taku-k/xtralab/pkg/config"
@@ -163,8 +165,8 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 				nextlsn = fromlsn
 				files = append(files, &BackupFile{
 					StorageType: st,
-					BackupType: t,
-					Key: key,
+					BackupType:  t,
+					Key:         key,
 				})
 				if t == "full-backuped" {
 					flag = true
@@ -172,12 +174,33 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 				}
 			}
 		}
-
 		if flag {
 			break
 		}
 	}
 	return files, nil
+}
+
+func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
+	var cp config.XtrabackupCheckpoints
+	err := ini.MapTo(&cp, filepath.Join(s.RootDir, key, "xtrabackup_checkpoints"))
+	if err != nil {
+		return nil, err
+	}
+	if cp.BackupType == "full-backuped" {
+		r, err := os.Open(filepath.Join(s.RootDir, key, "base.tar.gz"))
+		if err != nil {
+			return nil, err
+		}
+		return r, nil
+	} else if cp.BackupType == "incremental" {
+		r, err := os.Open(filepath.Join(s.RootDir, key, "inc.xb.gz"))
+		if err != nil {
+			return nil, err
+		}
+		return r, nil
+	}
+	return nil, errors.New("Not found such backup type")
 }
 
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {

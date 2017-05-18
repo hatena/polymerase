@@ -2,7 +2,7 @@ package config
 
 const (
 	defaultDebug      = false
-	defaultPort       = 5000
+	defaultPort       = 10109
 	defaultApiPrefix  = "/api"
 	defaultTimeFormat = "2006-01-02-15-04-05"
 )

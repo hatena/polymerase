@@ -45,8 +45,12 @@ func (bm *BackupManager) saveFullBackupFromReq(storage storage.BackupStorage, bo
 
 func (bm *BackupManager) saveIncBackupFromReq(storage storage.BackupStorage, body io.Reader, db, lastLsn string) (string, error) {
 	// FIXME: Fix hardcoding inc.gz
-	extractCmd := "gunzip -c inc.gz > inc.xb && mkdir inc && xbstream -x -C inc < inc.xb && cp inc/xtrabackup_checkpoints ./ && rm inc.gz inc.xb"
-	tempDir, err := bm.saveToTempDirFromReq(body, "inc.gz", extractCmd)
+	extractCmd := `gunzip -c inc.xb.gz > inc.xb && \
+	 mkdir inc && \
+	 xbstream -x -C inc < inc.xb && \
+	 cp inc/xtrabackup_checkpoints ./ && \
+	 rm -rf inc inc.xb`
+	tempDir, err := bm.saveToTempDirFromReq(body, "inc.xb.gz", extractCmd)
 	if err != nil {
 		return "", err
 	}

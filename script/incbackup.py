@@ -48,7 +48,7 @@ def main():
     parser.add_argument('--mysql-user', dest='mysql_user', type=str, required=True)
     parser.add_argument('--mysql-password', dest='mysql_password', type=str, required=True)
     parser.add_argument('--xtralab-host', dest='xtralab_host', type=str, required=True)
-    parser.add_argument('--xtralab-port', dest='xtralab_port', type=int, default=80)
+    parser.add_argument('--xtralab-port', dest='xtralab_port', type=int, default=10109)
     parser.add_argument('--db', dest='db', type=str, required=True)
     args = parser.parse_args()
 

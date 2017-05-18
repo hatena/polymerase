@@ -1,12 +1,16 @@
 package config
 
 /*
+XtrabackupCheckpoints is for reflection.
+xtrabackup_checkpoints is like this:
+```
 backup_type = incremental
 from_lsn = 100
 to_lsn = 110
 last_lsn = 120
 compact = 0
 recover_binlog_info = 0
+```
 */
 type XtrabackupCheckpoints struct {
 	BackupType        string `ini:"backup_type"`

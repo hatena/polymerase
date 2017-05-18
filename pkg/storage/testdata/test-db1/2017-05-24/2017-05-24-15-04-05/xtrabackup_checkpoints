@@ -1,6 +1,6 @@
 backup_type = full-backuped
 from_lsn = 0
-to_lsn = 8700723
-last_lsn = 8700723
+to_lsn = 100
+last_lsn = 100
 compact = 0
 recover_binlog_info = 0

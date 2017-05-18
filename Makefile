@@ -1,4 +1,4 @@
-NAME     := xtralab-api
+NAME     := xtralab
 
 SRCS    := $(shell find . -type f -name '*.go')
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""

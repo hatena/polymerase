@@ -6,20 +6,22 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"time"
 
-	"sort"
-
+	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
 	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/utils"
 )
 
+// LocalBackupStorage represents local directory backup.
 type LocalBackupStorage struct {
 	RootDir    string
 	TimeFormat string
 }
 
+// NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
 func NewLocalBackupStorage(conf *config.Config) (*LocalBackupStorage, error) {
 	s := &LocalBackupStorage{
 		RootDir:    conf.RootDir,
@@ -31,8 +33,9 @@ func NewLocalBackupStorage(conf *config.Config) (*LocalBackupStorage, error) {
 	return s, nil
 }
 
-func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", storage.RootDir, db))
+// GetLastLSN fetches `to_lsn` from most recent backup.
+func (s *LocalBackupStorage) GetLastLSN(db string) (string, error) {
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -42,13 +45,13 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 
 	latestBackupDir := ""
 	var latestBackupTime time.Time
-	fileDir := fmt.Sprintf("%s/%s/%s", storage.RootDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
+	fileDir := fmt.Sprintf("%s/%s/%s", s.RootDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
 	files, err := ioutil.ReadDir(fileDir)
 	if err != nil {
 		return "", err
 	}
 	for _, f := range files {
-		curBackupTime, err := time.Parse(storage.TimeFormat, f.Name())
+		curBackupTime, err := time.Parse(s.TimeFormat, f.Name())
 		if err != nil {
 			return "", err
 		}
@@ -71,8 +74,9 @@ func (storage *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 	return lastLsn, nil
 }
 
-func (storage *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", storage.RootDir, db))
+// SearchStartingPointByLSN returns a starting point containing `to_lsn` equals lsn.
+func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, error) {
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +86,7 @@ func (storage *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (stri
 	for i := len(startingPointDirs) - 1; i >= 0; i -= 1 {
 		// Search by descending order
 		sp := startingPointDirs[i].Name()
-		fileDir := path.Join(storage.RootDir, db, sp)
+		fileDir := path.Join(s.RootDir, db, sp)
 		files, err := ioutil.ReadDir(fileDir)
 		if err != nil {
 			continue
@@ -120,7 +124,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 		if err != nil {
 			continue
 		}
-		keys = make([]string, len(fs))
+		keys = make([]string, 0)
 		// FIXME: Sort based on time format, for now, based on filesystem display order
 		lp := sort.Search(len(fs), func(i int) bool {
 			d, err := time.Parse(s.TimeFormat, fs[i].Name())
@@ -130,30 +134,35 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 			return d.After(from)
 		})
 
+		// All timestamps included in the starting point are before the specified timestamp
 		if lp == 0 {
 			continue
 		}
 
-		nextlsn, err := utils.ExtractLSNFromFile(path.Join(fd, fs[lp-1].Name(), "xtrabackup_checkpoints"), "from_lsn")
-		if err != nil {
-			continue
-		}
-		keys = append(keys, path.Join(keyp, fs[lp-1].Name()))
+		nextlsn := ""
 		flag := false
-		for j := lp - 2; j >= 0; j -= 1 {
-			tolsn, _ := utils.ExtractLSNFromFile(path.Join(fd, fs[j].Name(), "xtrabackup_checkpoints"), "to_lsn")
-			t, _ := utils.ExtractLSNFromFile(path.Join(fd, fs[j].Name(), "xtrabackup_checkpoints"), "backup_type")
-			if t == "full-backuped" {
-				keys = append(keys, path.Join(keyp, fs[j].Name()))
-				flag = true
-				break
+		for j := lp - 1; j >= 0; j -= 1 {
+			var cp config.XtrabackupCheckpoints
+			key := path.Join(keyp, fs[j].Name())
+			err := ini.MapTo(&cp, path.Join(fd, fs[j].Name(), "xtrabackup_checkpoints"))
+			if err != nil {
+				return nil, err
 			}
-			if nextlsn == tolsn {
-				fromlsn, _ := utils.ExtractLSNFromFile(path.Join(fd, fs[j].Name(), "xtrabackup_checkpoints"), "from_lsn")
+
+			tolsn := cp.ToLSN
+			t := cp.BackupType
+			fromlsn := cp.FromLSN
+
+			if nextlsn == "" || nextlsn == tolsn {
 				nextlsn = fromlsn
-				keys = append(keys, path.Join(keyp, fs[j].Name()))
+				keys = append(keys, key)
+				if t == "full-backuped" {
+					flag = true
+					break
+				}
 			}
 		}
+
 		if flag {
 			break
 		}
@@ -161,23 +170,23 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 	return keys, nil
 }
 
-func (storage *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
-	return storage.transferTempBackup(tempDir, key)
+func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
+	return s.transferTempBackup(tempDir, key)
 }
 
-func (storage *LocalBackupStorage) TransferTempIncBackup(tempDir string, key string) error {
-	return storage.transferTempBackup(tempDir, key)
+func (s *LocalBackupStorage) TransferTempIncBackup(tempDir string, key string) error {
+	return s.transferTempBackup(tempDir, key)
 }
 
-func (storage *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
-	p := path.Join(storage.RootDir, key)
+func (s *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
+	p := path.Join(s.RootDir, key)
 	if err := os.MkdirAll(p, 0777); err != nil {
 		return err
 	}
 	if err := os.Remove(p); err != nil {
 		return err
 	}
-	if err := os.Rename(tempPath, path.Join(storage.RootDir, key)); err != nil {
+	if err := os.Rename(tempPath, path.Join(s.RootDir, key)); err != nil {
 		return err
 	}
 	return nil

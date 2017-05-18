@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-
 	"time"
 
 	"github.com/labstack/echo"
@@ -29,6 +28,15 @@ type GetLastLSNRes struct {
 	LastLSN string `json:"last_lsn"`
 }
 
+type RestoreSearchRes struct {
+	Keys []BackupFiles `json:"keys"`
+}
+
+type BackupFiles struct {
+	Type string `json:"type"`
+	Key  string `json:"key"`
+}
+
 // Bind attaches api routes
 func (api *API) Bind(group *echo.Group) {
 	group.GET("/conf", api.ConfHandler)
@@ -37,7 +45,8 @@ func (api *API) Bind(group *echo.Group) {
 	group.POST("/inc-backup/:db/:last-lsn", api.incBackupHandler)
 
 	// Restore
-	group.GET("/restore/:db/:from", api.restoreHandler)
+	group.GET("/restore/search/:db/:from", api.restoreSearchHandler)
+	group.GET("/restore/file/:type/:key", api.restoreFileHandler)
 }
 
 // ConfHandler handle the app config, for example
@@ -90,7 +99,7 @@ func (api *API) incBackupHandler(c echo.Context) error {
 	})
 }
 
-func (api *API) restoreHandler(c echo.Context) error {
+func (api *API) restoreSearchHandler(c echo.Context) error {
 	db := c.Param("db")
 	from := c.Param("from")
 
@@ -99,7 +108,21 @@ func (api *API) restoreHandler(c echo.Context) error {
 		return err
 	}
 	t = t.AddDate(0, 0, 1)
+	stype := api.storage.GetStorageType()
 	keys, _ := api.storage.SearchConsecutiveIncBackups(db, t)
-	fmt.Println(keys)
-	return c.JSON(http.StatusOK, "aaa")
+	bfiles := make([]BackupFiles, len(keys))
+	for i, key := range keys {
+		bfiles[i] = BackupFiles{
+			Type: stype,
+			Key:  key,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &RestoreSearchRes{
+		Keys: bfiles,
+	})
+}
+
+func (api *API) restoreFileHandler(c echo.Context) error {
+	return nil
 }

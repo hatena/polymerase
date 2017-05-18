@@ -33,6 +33,11 @@ func NewLocalBackupStorage(conf *config.Config) (*LocalBackupStorage, error) {
 	return s, nil
 }
 
+// GetStorageType returns storage type
+func (s *LocalBackupStorage) GetStorageType() string {
+	return "local"
+}
+
 // GetLastLSN fetches `to_lsn` from most recent backup.
 func (s *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
@@ -107,14 +112,15 @@ func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, er
 	return "", errors.New("Starting point is not found")
 }
 
-func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]string, error) {
-	var keys []string
+func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error) {
+	var files []*BackupFile
+	st := s.GetStorageType()
 	spd, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
 	if err != nil {
-		return keys, err
+		return files, err
 	}
 	if len(spd) == 0 {
-		return keys, errors.New("Not any full backup found")
+		return files, errors.New("Not any full backup found")
 	}
 	for i := len(spd) - 1; i >= 0; i -= 1 {
 		sp := spd[i].Name()
@@ -124,7 +130,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 		if err != nil {
 			continue
 		}
-		keys = make([]string, 0)
+		files = make([]*BackupFile, 0)
 		// FIXME: Sort based on time format, for now, based on filesystem display order
 		lp := sort.Search(len(fs), func(i int) bool {
 			d, err := time.Parse(s.TimeFormat, fs[i].Name())
@@ -155,7 +161,11 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 
 			if nextlsn == "" || nextlsn == tolsn {
 				nextlsn = fromlsn
-				keys = append(keys, key)
+				files = append(files, &BackupFile{
+					StorageType: st,
+					BackupType: t,
+					Key: key,
+				})
 				if t == "full-backuped" {
 					flag = true
 					break
@@ -167,7 +177,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 			break
 		}
 	}
-	return keys, nil
+	return files, nil
 }
 
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {

@@ -47,29 +47,50 @@ func TestLocalBackupStorage_SearchStaringPointByLSN(t *testing.T) {
 func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 	s := NewLocalBackupStorageForTest()
 	db := "test-db1"
+	st := s.GetStorageType()
 
 	var tests = []struct {
 		in  string
-		out []string
+		out []*BackupFile
 	}{
 		{
 			"2017-05-26",
-			[]string{
-				"test-db1/2017-05-24/2017-05-25-15-04-05",
-				"test-db1/2017-05-24/2017-05-24-15-04-05",
+			[]*BackupFile{
+				{
+					StorageType: st,
+					BackupType: "incremental",
+					Key: "test-db1/2017-05-24/2017-05-25-15-04-05",
+				},
+				{
+					StorageType: st,
+					BackupType: "full-backuped",
+					Key: "test-db1/2017-05-24/2017-05-24-15-04-05",
+				},
 			},
 		},
 		{
 			"2017-05-25",
-			[]string{
-				"test-db1/2017-05-24/2017-05-24-15-04-05",
+			[]*BackupFile{
+				{
+					StorageType: st,
+					BackupType: "full-backuped",
+					Key: "test-db1/2017-05-24/2017-05-24-15-04-05",
+				},
 			},
 		},
 		{
 			"2017-05-19",
-			[]string{
-				"test-db1/2017-05-17/2017-05-18-15-04-05",
-				"test-db1/2017-05-17/2017-05-17-15-04-05",
+			[]*BackupFile{
+				{
+					StorageType: st,
+					BackupType: "incremental",
+					Key: "test-db1/2017-05-17/2017-05-18-15-04-05",
+				},
+				{
+					StorageType: st,
+					BackupType: "full-backuped",
+					Key: "test-db1/2017-05-17/2017-05-17-15-04-05",
+				},
 			},
 		},
 	}

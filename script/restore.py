@@ -37,10 +37,12 @@ def get_full_backup(args, storage, key, tempd):
 def get_inc_backup(args, storage, key, tempd, inc):
     filename = os.path.join(tempd, 'inc{0}.xb.gz'.format(inc))
     get_backup(args, storage, key, filename)
-    subprocess.call(
-        'gunzip -c {0} > {1}/inc{2}.xb && mkdir -p {1}/inc{2} && xbstream -x -C {1}/inc{2} < {1}/inc{2}.xb && rm -rf {1}/inc{2}.xb*'.format(
-            filename, tempd, inc
-        ), shell=True)
+    subprocess.call("""
+        gunzip -c {0} > {1}/inc{2}.xb && \
+        mkdir -p {1}/inc{2} && \
+        xbstream -x -C {1}/inc{2} < {1}/inc{2}.xb && \
+        rm -rf {1}/inc{2}.xb*
+        """.format(filename, tempd, inc), shell=True)
 
 
 def get_backup(args, storage, key, filename):
@@ -55,6 +57,10 @@ def get_backup(args, storage, key, filename):
             f.write(data)
     except Exception as e:
         print(e)
+
+
+def apply_restore(inc, tempd):
+    pass
 
 
 def main():

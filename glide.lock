@@ -1,5 +1,5 @@
 hash: e04442fa072536cce16e53994684b6c547f79cf46656d348dfd7d75d83b628b4
-updated: 2017-05-18T15:53:22.382354465+09:00
+updated: 2017-05-19T17:31:23.829177575+09:00
 imports:
 - name: github.com/codegangsta/cli
   version: ab403a54a148f2d857920810291539e1f817ee7b
@@ -26,6 +26,8 @@ imports:
   version: a392f450ea64cee2b268dfaacdc2502b50a22b18
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
+- name: github.com/mattn/go-shellwords
+  version: 02e3cf038dcea8290e44424da473dd12be796a8a
 - name: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
 - name: github.com/olebedev/config

@@ -39,6 +39,19 @@ func (p *NCPool) CreateConn(db, output string) (int, error) {
 	return port, nil
 }
 
+func createNetcatServer() error {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return err
+	}
+	return l,
+}
+
 func getFreePort() int {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {

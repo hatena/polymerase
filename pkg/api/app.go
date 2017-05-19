@@ -2,7 +2,6 @@ package api
 
 import (
 	"os/exec"
-
 	"strconv"
 
 	"github.com/labstack/echo"
@@ -45,6 +44,7 @@ func NewApp(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 	bm := NewBackupManager(conf)
+	p := NewNCPool(conf)
 
 	// Initialize the application
 	app := &App{
@@ -53,6 +53,7 @@ func NewApp(conf *config.Config) (*App, error) {
 		API: &API{
 			storage: s,
 			bm:      bm,
+			pool:    p,
 		},
 	}
 
@@ -84,10 +85,10 @@ func ensureExistXtrabackup() error {
 
 // Run runs the app
 func (app *App) Run() {
-	if err := ensureExistXtrabackup(); err != nil {
-		log.Error("xtrabackup command not found")
-		panic(err)
-	}
+	//if err := ensureExistXtrabackup(); err != nil {
+	//	log.Error("xtrabackup command not found")
+	//	panic(err)
+	//}
 	err := app.Engine.Start(":" + strconv.Itoa(app.Conf.Port))
 	if err != nil {
 		panic(err)

@@ -29,7 +29,6 @@ func Run(args []string) {
 			Action: RunServer,
 			Flags: []cli.Flag{
 				cli.StringFlag{Name: "root-dir", Usage: ""},
-				cli.StringFlag{Name: "temp-dir", Usage: ""},
 			},
 		},
 	}

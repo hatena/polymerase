@@ -12,6 +12,11 @@ import (
 type API struct {
 	storage storage.BackupStorage
 	bm      *BackupManager
+	pool    *NCPool
+}
+
+type StartFullBackupRes struct {
+	Port int `json:"port"`
 }
 
 type FullBackupRes struct {
@@ -38,6 +43,7 @@ func (api *API) Bind(group *echo.Group) {
 	group.POST("/full-backup/:db", api.fullBackupHandler)
 	group.GET("/last-lsn/:db", api.getLastLSNHandler)
 	group.POST("/inc-backup/:db/:last-lsn", api.incBackupHandler)
+	group.GET("/full-backup/start/:db", api.startFullBackupHandler)
 
 	// Restore
 	group.GET("/restore/search/:db/:from", api.restoreSearchHandler)
@@ -48,6 +54,19 @@ func (api *API) Bind(group *echo.Group) {
 func (api *API) ConfHandler(c echo.Context) error {
 	app := c.Get("app").(*App)
 	return c.JSON(200, fmt.Sprintf("%#v", app.Conf))
+}
+
+func (api *API) startFullBackupHandler(c echo.Context) error {
+	db := c.Param("db")
+
+	port, err := api.pool.CreateConn(db, "base.tar.gz")
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &StartFullBackupRes{
+		Port: port,
+	})
 }
 
 func (api *API) fullBackupHandler(c echo.Context) error {

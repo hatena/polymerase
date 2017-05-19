@@ -1,10 +1,14 @@
 package config
 
+import "path"
+
 const (
-	defaultDebug      = false
-	defaultPort       = 10109
-	defaultApiPrefix  = "/api"
-	defaultTimeFormat = "2006-01-02-15-04-05"
+	defaultDebug          = false
+	defaultPort           = 10109
+	defaultApiPrefix      = "/api"
+	defaultTimeFormat     = "2006-01-02-15-04-05"
+	defaultPortRangeStart = 34000
+	defaultPortRangeEnd   = 35000
 )
 
 type Config struct {
@@ -12,6 +16,7 @@ type Config struct {
 	Port       int
 	ApiPrefix  string
 	RootDir    string
+	TempDir    string
 	TimeFormat string
 }
 
@@ -27,5 +32,8 @@ func (c *Config) SetDefault() {
 	}
 	if c.TimeFormat == "" {
 		c.TimeFormat = defaultTimeFormat
+	}
+	if c.TempDir == "" {
+		c.TempDir = path.Join(c.RootDir, "tmp")
 	}
 }

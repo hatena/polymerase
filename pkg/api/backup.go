@@ -16,11 +16,13 @@ import (
 
 type BackupManager struct {
 	TimeFormat string
+	TempDir    string
 }
 
 func NewBackupManager(conf *config.Config) *BackupManager {
 	return &BackupManager{
 		TimeFormat: conf.TimeFormat,
+		TempDir:    conf.TempDir,
 	}
 }
 
@@ -84,14 +86,15 @@ func (bm *BackupManager) kickTransferBackup(db, tempDir string, startingPointFun
 
 func (bm *BackupManager) saveToTempDirFromReq(body io.Reader, output, extractCmd string) (string, error) {
 	// Write out to temp file
-	tempFile, err := ioutil.TempFile("", "mysql-backup")
+	tempFile, err := ioutil.TempFile(bm.TempDir, "mysql-backup")
 	if err != nil {
 		return "", err
 	}
+	defer tempFile.Close()
 	if _, err = io.Copy(tempFile, body); err != nil {
 		return "", errors.Wrap(err, "Can't io.Copy(tmpFile, body)")
 	}
-	tempDir, err := ioutil.TempDir("", "mysql-backup-dir")
+	tempDir, err := ioutil.TempDir(bm.TempDir, "mysql-backup-dir")
 	if err != nil {
 		return "", err
 	}

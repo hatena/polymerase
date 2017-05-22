@@ -24,11 +24,25 @@ func Run(args []string) {
 
 	app.Commands = []cli.Command{
 		{
-			Name:   "run",
+			Name:   "server",
 			Usage:  "Runs server",
 			Action: RunServer,
 			Flags: []cli.Flag{
 				cli.StringFlag{Name: "root-dir", Usage: ""},
+			},
+		},
+		{
+			Name: "full-backup",
+			Usage: "",
+			Action: FullBackup,
+			Flags: []cli.Flag{
+				cli.StringFlag{Name: "mysql-host", Value: "localhost", Usage: "destination mysql host"},
+				cli.IntFlag{Name: "mysql-port", Value: 3306, Usage: "destination mysql port"},
+				cli.StringFlag{Name: "mysql-user", Usage: "destination mysql user"},
+				cli.StringFlag{Name: "mysql-password", Usage: "destination mysql password"},
+				cli.StringFlag{Name: "xtralab-host", Usage: "xtralab host"},
+				cli.IntFlag{Name: "xtralab-port", Value: 10109, Usage: "xtralab port"},
+				cli.StringFlag{Name: "db", Usage: "db name"},
 			},
 		},
 	}
@@ -48,4 +62,8 @@ func RunServer(c *cli.Context) {
 		return
 	}
 	app.Run()
+}
+
+func FullBackup(c *cli.Context) {
+
 }

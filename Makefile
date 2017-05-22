@@ -1,6 +1,10 @@
 NAME     := xtralab
 
+PROTO := protoc
+
 SRCS    := $(shell find . -type f -name '*.go')
+PROTOSRCS := $(shell find . -type f -name '*.proto')
+MOCKS := pkg/storage/storage.go
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
 
 .DEFAULT_GOAL := bin/$(NAME)
@@ -27,3 +31,10 @@ endif
 deps: glide
 	glide install
 
+.PHONY: proto
+proto: $(PROTOSRCS)
+	$(PROTO) -I pkg pkg/backup/proto/backup.proto --go_out=plugins=grpc:pkg
+
+.PHONY: mockgen
+mockgen: $(MOCKS)
+	$(MOCKGEN) -source pkg/storage/storage.go -destination pkg/storage/mock.go

@@ -44,7 +44,7 @@ func NewApp(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 	bm := NewBackupManager(conf)
-	p := NewNCPool(conf)
+	//p := NewNCPool(conf)
 
 	// Initialize the application
 	app := &App{
@@ -53,7 +53,7 @@ func NewApp(conf *config.Config) (*App, error) {
 		API: &API{
 			storage: s,
 			bm:      bm,
-			pool:    p,
+			//pool:    p,
 		},
 	}
 

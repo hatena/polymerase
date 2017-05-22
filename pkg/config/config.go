@@ -7,8 +7,6 @@ const (
 	defaultPort           = 10109
 	defaultApiPrefix      = "/api"
 	defaultTimeFormat     = "2006-01-02-15-04-05"
-	defaultPortRangeStart = 34000
-	defaultPortRangeEnd   = 35000
 )
 
 type Config struct {

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto;
+
+service BackupTransferService {
+  rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
+  rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
+}
+
+message FullBackupContentStream {
+  string db = 1;
+  bytes content = 2;
+}
+
+message IncBackupContentStream {
+  string db = 1;
+  string lsn = 2;
+  bytes content = 3;
+}
+
+message BackupReply {
+  string message = 1;
+}

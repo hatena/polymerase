@@ -39,14 +39,17 @@ func Run(args []string) {
 // RunServer creates, configures and runs
 // main server.App
 func RunServer(c *cli.Context) {
-	cfg := &config.Config{
+	conf := &config.Config{
 		RootDir: c.String("root-dir"),
 	}
-	cfg.SetDefault()
-	app, err := api.NewApp(cfg)
+	conf.SetDefault()
+	app, err := api.NewApp(conf)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
+	go func() {
+		api.NewgRPCServer(conf)
+	}()
 	app.Run()
 }

@@ -10,7 +10,7 @@ LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
 .DEFAULT_GOAL := bin/$(NAME)
 
 bin/$(NAME): $(SRCS)
-	go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o bin/$(NAME)
+	go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o bin/$(NAME) cmd/xtralab/main.go
 
 .PHONY: cross-build
 cross-build: deps

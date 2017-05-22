@@ -1,5 +1,5 @@
 hash: adaf8d696554ee1e16109e9a6e4c5dda530e88321dce778c4168db7cf143d409
-updated: 2017-05-22T21:40:40.245032246+09:00
+updated: 2017-05-23T03:26:11.398100817+09:00
 imports:
 - name: github.com/codegangsta/cli
   version: d70f47eeca3afd795160003bc6e28b001d60c67c
@@ -48,7 +48,7 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: dcecefd839c4193db0d35b88ec65b4c12d360ab0
 - name: golang.org/x/crypto
-  version: 0fe963104e9d1877082f8fb38f816fcd97eb1d10
+  version: 6c586e17d90a7d08bbbc4069984180dce3b04117
   subpackages:
   - acme
   - acme/autocert
@@ -78,7 +78,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 9bf8ea0a8282ebecd1aa474c926e3028f5c22a4c
+  version: 9f919f7b81bbce4fb49573291f5822c233d6054b
   subpackages:
   - codes
   - credentials

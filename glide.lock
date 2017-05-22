@@ -1,5 +1,5 @@
-hash: e04442fa072536cce16e53994684b6c547f79cf46656d348dfd7d75d83b628b4
-updated: 2017-05-22T21:36:16.600596754+09:00
+hash: adaf8d696554ee1e16109e9a6e4c5dda530e88321dce778c4168db7cf143d409
+updated: 2017-05-22T21:40:40.245032246+09:00
 imports:
 - name: github.com/codegangsta/cli
   version: d70f47eeca3afd795160003bc6e28b001d60c67c
@@ -20,6 +20,8 @@ imports:
   - ptypes/any
 - name: github.com/itsjamie/go-bindata-templates
   version: 78f87e838df0fb89dbcd26e1489f988cd7bc3bb8
+- name: github.com/jhoonb/archivex
+  version: be4efa7ec0c38ab76d56037014c90d48d6b13037
 - name: github.com/labstack/echo
   version: 3359eae3067d1f6dba4785ea0377796405a34429
   subpackages:

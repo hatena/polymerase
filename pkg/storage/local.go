@@ -187,13 +187,14 @@ func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cp.BackupType == "full-backuped" {
+	switch cp.BackupType {
+	case "full-backuped":
 		r, err := os.Open(filepath.Join(s.RootDir, key, "base.tar.gz"))
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	} else if cp.BackupType == "incremental" {
+	case "incremental":
 		r, err := os.Open(filepath.Join(s.RootDir, key, "inc.xb.gz"))
 		if err != nil {
 			return nil, err

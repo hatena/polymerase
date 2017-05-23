@@ -56,9 +56,9 @@ test-all: vet test-race
 
 .PHONY: fmt
 fmt:
-	gofmt -s -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)
+	gofmt -s -w $$(find . -type f -name '*.go' | grep -v -e vendor)
 
 .PHONY: imports
 imports:
-	goimports -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)
+	goimports -w $$(find . -type f -name '*.go' | grep -v -e vendor)
 

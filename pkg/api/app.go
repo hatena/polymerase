@@ -1,8 +1,8 @@
 package api
 
 import (
+	"net"
 	"os/exec"
-	"strconv"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -24,9 +24,11 @@ type App struct {
 
 // NewApp returns initialized struct
 // of main server application.
-func NewApp(conf *config.Config) (*App, error) {
+func NewApp(conf *config.Config, l net.Listener) (*App, error) {
 	// Make an engine
 	engine := echo.New()
+
+	engine.Listener = l
 
 	// Set up echo debug level
 	engine.Debug = conf.Debug
@@ -89,7 +91,8 @@ func (app *App) Run() {
 	//	log.Error("xtrabackup command not found")
 	//	panic(err)
 	//}
-	err := app.Engine.Start(":" + strconv.Itoa(app.Conf.Port))
+	//err := app.Engine.Start(":" + strconv.Itoa(app.Conf.Port))
+	err := app.Engine.Start("")
 	if err != nil {
 		panic(err)
 	}

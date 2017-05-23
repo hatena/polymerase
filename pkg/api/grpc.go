@@ -10,11 +10,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewgRPCServer(conf *config.Config) {
-	lis, err := net.Listen("tcp", ":10110")
-	if err != nil {
-		return
-	}
+func NewgRPCServer(conf *config.Config, l net.Listener) {
+	//lis, err := net.Listen("tcp", ":10110")
+	//if err != nil {
+	//	return
+	//}
 	server := grpc.NewServer()
 
 	s, err := storage.NewLocalBackupStorage(conf)
@@ -25,5 +25,5 @@ func NewgRPCServer(conf *config.Config) {
 	svc := backup.NewBackupTransferService(m)
 
 	pb.RegisterBackupTransferServiceServer(server, svc)
-	server.Serve(lis)
+	server.Serve(l)
 }

@@ -50,3 +50,7 @@ fmt:
 .PHONY: imports
 imports:
 	goimports -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)
+
+.PHONY: vet
+vet:
+	go tool vet -all -printfuncs=Wrap,Wrapf,Errorf $$(find . -maxdepth 1 -mindepth 1 -type d | grep -v -e "^\.\/\." -e vendor)

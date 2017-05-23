@@ -91,7 +91,6 @@ func runFullBackup(c *cli.Context) {
 		}
 		if err != nil {
 			panic(err)
-			return
 		}
 		fmt.Printf("Read %d bytes\n", n)
 		stream.Send(&pb.FullBackupContentStream{

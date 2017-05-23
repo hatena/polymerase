@@ -38,3 +38,7 @@ proto: $(PROTOSRCS)
 .PHONY: mockgen
 mockgen: $(MOCKS)
 	$(MOCKGEN) -source pkg/storage/storage.go -destination pkg/storage/mock.go
+
+.PHONY: test
+test:
+	go test -cover -v $(shell glide nv)

@@ -58,13 +58,13 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 			[]*BackupFile{
 				{
 					StorageType: st,
-					BackupType: "incremental",
-					Key: "test-db1/2017-05-24/2017-05-25-15-04-05",
+					BackupType:  "incremental",
+					Key:         "test-db1/2017-05-24/2017-05-25-15-04-05",
 				},
 				{
 					StorageType: st,
-					BackupType: "full-backuped",
-					Key: "test-db1/2017-05-24/2017-05-24-15-04-05",
+					BackupType:  "full-backuped",
+					Key:         "test-db1/2017-05-24/2017-05-24-15-04-05",
 				},
 			},
 		},
@@ -73,8 +73,8 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 			[]*BackupFile{
 				{
 					StorageType: st,
-					BackupType: "full-backuped",
-					Key: "test-db1/2017-05-24/2017-05-24-15-04-05",
+					BackupType:  "full-backuped",
+					Key:         "test-db1/2017-05-24/2017-05-24-15-04-05",
 				},
 			},
 		},
@@ -83,13 +83,13 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 			[]*BackupFile{
 				{
 					StorageType: st,
-					BackupType: "incremental",
-					Key: "test-db1/2017-05-17/2017-05-18-15-04-05",
+					BackupType:  "incremental",
+					Key:         "test-db1/2017-05-17/2017-05-18-15-04-05",
 				},
 				{
 					StorageType: st,
-					BackupType: "full-backuped",
-					Key: "test-db1/2017-05-17/2017-05-17-15-04-05",
+					BackupType:  "full-backuped",
+					Key:         "test-db1/2017-05-17/2017-05-17-15-04-05",
 				},
 			},
 		},

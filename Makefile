@@ -42,3 +42,11 @@ mockgen: $(MOCKS)
 .PHONY: test
 test:
 	go test -cover -v $(shell glide nv)
+
+.PHONY: fmt
+fmt:
+	gofmt -s -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)
+
+.PHONY: imports
+imports:
+	goimports -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)

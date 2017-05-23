@@ -1,19 +1,20 @@
 package cli
 
 import (
-	"github.com/codegangsta/cli"
-	"fmt"
-	"os/exec"
 	"bufio"
-	"io"
-	"google.golang.org/grpc"
-	pb "github.com/taku-k/xtralab/pkg/backup/proto"
 	"context"
+	"fmt"
+	"io"
+	"os/exec"
+
+	"github.com/codegangsta/cli"
+	pb "github.com/taku-k/xtralab/pkg/backup/proto"
+	"google.golang.org/grpc"
 )
 
 var fullBackupFlag = cli.Command{
-	Name: "full-backup",
-	Usage: "",
+	Name:   "full-backup",
+	Usage:  "",
 	Action: runFullBackup,
 	Flags: []cli.Flag{
 		cli.StringFlag{Name: "mysql-host", Value: "localhost", Usage: "destination mysql host"},
@@ -77,7 +78,7 @@ func runFullBackup(c *cli.Context) {
 		w2.Close()
 	}()
 
-	buf := make([]byte, 1024 * 1024)
+	buf := make([]byte, 1024*1024)
 	for {
 		n, err := bufReader.Read(buf)
 		if err == io.EOF {
@@ -95,7 +96,7 @@ func runFullBackup(c *cli.Context) {
 		fmt.Printf("Read %d bytes\n", n)
 		stream.Send(&pb.FullBackupContentStream{
 			Content: buf[:n],
-			Db: "test-db",
+			Db:      "test-db",
 		})
 	}
 }

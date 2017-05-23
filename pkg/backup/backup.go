@@ -1,9 +1,10 @@
 package backup
 
 import (
-	pb "github.com/taku-k/xtralab/pkg/backup/proto"
-	"io"
 	"fmt"
+	"io"
+
+	pb "github.com/taku-k/xtralab/pkg/backup/proto"
 )
 
 type BackupTransferService struct {

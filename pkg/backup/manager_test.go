@@ -1,17 +1,17 @@
 package backup
 
 import (
-	"testing"
-	"os"
-	"io/ioutil"
-	"reflect"
-	"path/filepath"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/taku-k/xtralab/pkg/storage"
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/jhoonb/archivex"
+	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/storage"
 )
 
 func newConfig() *config.Config {
@@ -21,7 +21,6 @@ func newConfig() *config.Config {
 	c.SetDefault()
 	return c
 }
-
 
 func TestTempBackupManager_OpenFullBackup(t *testing.T) {
 	ctrl := gomock.NewController(t)

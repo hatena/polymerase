@@ -4,9 +4,10 @@
 package storage
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	time "time"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // Mock of BackupStorage interface

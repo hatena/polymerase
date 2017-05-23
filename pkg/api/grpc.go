@@ -2,13 +2,13 @@ package api
 
 import (
 	"net"
-	"github.com/taku-k/xtralab/pkg/config"
-	"google.golang.org/grpc"
-	pb "github.com/taku-k/xtralab/pkg/backup/proto"
-	"github.com/taku-k/xtralab/pkg/backup"
-	"github.com/taku-k/xtralab/pkg/storage"
-)
 
+	"github.com/taku-k/xtralab/pkg/backup"
+	pb "github.com/taku-k/xtralab/pkg/backup/proto"
+	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/storage"
+	"google.golang.org/grpc"
+)
 
 func NewgRPCServer(conf *config.Config) {
 	lis, err := net.Listen("tcp", ":10110")

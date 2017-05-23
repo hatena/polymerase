@@ -3,10 +3,10 @@ package config
 import "path"
 
 const (
-	defaultDebug          = false
-	defaultPort           = 10109
-	defaultApiPrefix      = "/api"
-	defaultTimeFormat     = "2006-01-02-15-04-05"
+	defaultDebug      = false
+	defaultPort       = 10109
+	defaultApiPrefix  = "/api"
+	defaultTimeFormat = "2006-01-02-15-04-05"
 )
 
 type Config struct {

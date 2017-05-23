@@ -1,10 +1,12 @@
 package cli
 
 import (
-	"github.com/codegangsta/cli"
 	"fmt"
-	"github.com/taku-k/xtralab/pkg/config"
+
+	"github.com/codegangsta/cli"
+
 	"github.com/taku-k/xtralab/pkg/api"
+	"github.com/taku-k/xtralab/pkg/config"
 )
 
 var serverFlag = cli.Command{

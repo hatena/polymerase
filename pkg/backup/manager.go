@@ -1,42 +1,42 @@
 package backup
 
 import (
-	"github.com/taku-k/xtralab/pkg/config"
-	"time"
+	"bufio"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"fmt"
-	"github.com/taku-k/xtralab/pkg/storage"
 	"os/exec"
-	"errors"
-	"bufio"
-)
+	"path/filepath"
+	"time"
 
+	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/storage"
+)
 
 type TempBackupManager struct {
 	timeFormat string
-	tempDir string
-	storage storage.BackupStorage
+	tempDir    string
+	storage    storage.BackupStorage
 }
 
 type TempBackupState struct {
-	db string
-	file *os.File
-	writer *bufio.Writer
-	start time.Time
+	db         string
+	file       *os.File
+	writer     *bufio.Writer
+	start      time.Time
 	backupType config.BackupType
 	timeFormat string
-	storage storage.BackupStorage
-	lsn string
-	tempDir string
+	storage    storage.BackupStorage
+	lsn        string
+	tempDir    string
 }
 
 func NewTempBackupManager(storage storage.BackupStorage, conf *config.Config) *TempBackupManager {
 	return &TempBackupManager{
 		timeFormat: conf.TimeFormat,
-		tempDir: conf.TempDir,
-		storage: storage,
+		tempDir:    conf.TempDir,
+		storage:    storage,
 	}
 }
 
@@ -71,17 +71,16 @@ func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBacku
 		return nil, err
 	}
 	s := &TempBackupState{
-		db: db,
-		file: f,
-		writer: bufio.NewWriter(f),
-		start: now,
+		db:         db,
+		file:       f,
+		writer:     bufio.NewWriter(f),
+		start:      now,
 		timeFormat: m.timeFormat,
-		tempDir: tempDir,
-		storage: m.storage,
+		tempDir:    tempDir,
+		storage:    m.storage,
 	}
 	return s, nil
 }
-
 
 func (s *TempBackupState) Append(content []byte) error {
 	_, err := s.writer.Write(content)

@@ -29,7 +29,7 @@ endif
 
 .PHONY: deps
 deps: glide
-	glide install
+	go get github.com/golang/mock/mockgen
 
 .PHONY: proto
 proto: $(PROTOSRCS)
@@ -39,9 +39,20 @@ proto: $(PROTOSRCS)
 mockgen: $(MOCKS)
 	$(MOCKGEN) -source pkg/storage/storage.go -destination pkg/storage/mock.go
 
+.PHONY: vet
+vet:
+	go tool vet -all -printfuncs=Wrap,Wrapf,Errorf $$(find . -maxdepth 1 -mindepth 1 -type d | grep -v -e "^\.\/\." -e vendor)
+
 .PHONY: test
 test:
-	go test -cover -v $(shell glide nv)
+	go test -cover -v $$(glide nv)
+
+.PHONY: test-race
+test-race:
+	go test -v -race $$(glide nv)
+
+.PHONY: test-all
+test-all: vet test-race
 
 .PHONY: fmt
 fmt:
@@ -51,6 +62,3 @@ fmt:
 imports:
 	goimports -w $$(git ls-files | grep -e '\.go$$' | grep -v -e vendor)
 
-.PHONY: vet
-vet:
-	go tool vet -all -printfuncs=Wrap,Wrapf,Errorf $$(find . -maxdepth 1 -mindepth 1 -type d | grep -v -e "^\.\/\." -e vendor)

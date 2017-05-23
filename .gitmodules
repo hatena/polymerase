@@ -1,3 +1,0 @@
-[submodule "build/percona-xtrabackup"]
-	path = build/percona-xtrabackup
-	url = https://github.com/taku-k/percona-xtrabackup

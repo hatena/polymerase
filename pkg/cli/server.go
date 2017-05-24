@@ -2,7 +2,7 @@ package cli
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/taku-k/xtralab/pkg/server"
+	"github.com/taku-k/polymerase/pkg/server"
 )
 
 var serverFlag = cli.Command{

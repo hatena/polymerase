@@ -9,7 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/codegangsta/cli"
-	pb "github.com/taku-k/xtralab/pkg/tempbackup/proto"
+	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 	"google.golang.org/grpc"
 )
 
@@ -54,6 +54,7 @@ func runFullBackup(c *cli.Context) {
 	r, w := io.Pipe()
 
 	cmd.Stdout = w
+	cmd.Stderr = os.Stderr
 
 	buf := bufio.NewReader(r)
 
@@ -74,6 +75,7 @@ func runFullBackup(c *cli.Context) {
 	go func() {
 		err = cmd.Start()
 		if err != nil {
+			w.Close()
 			panic(err)
 		}
 		cmd.Wait()
@@ -94,7 +96,6 @@ func runFullBackup(c *cli.Context) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Read %d bytes\n", n)
 		stream.Send(&pb.FullBackupContentStream{
 			Content: chunk[:n],
 			Db:      db,

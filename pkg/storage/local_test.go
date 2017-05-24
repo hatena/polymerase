@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taku-k/xtralab/pkg/base"
+	"github.com/taku-k/polymerase/pkg/base"
 )
 
 func NewLocalBackupStorageForTest() *LocalBackupStorage {

@@ -1,4 +1,4 @@
-NAME     := xtralab
+NAME     := polymerase
 
 PROTO := protoc
 

@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 type BackupManager struct {

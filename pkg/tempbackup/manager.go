@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 type TempBackupManager struct {

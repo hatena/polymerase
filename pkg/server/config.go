@@ -1,6 +1,6 @@
 package server
 
-import "github.com/taku-k/xtralab/pkg/base"
+import "github.com/taku-k/polymerase/pkg/base"
 
 const (
 	// From IANA Service Name and Transport Protocol Port Number Registry

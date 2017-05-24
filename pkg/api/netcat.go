@@ -7,7 +7,7 @@ package api
 //	"os/exec"
 //
 //	"github.com/mattn/go-shellwords"
-//	"github.com/taku-k/xtralab/pkg/config"
+//	"github.com/taku-k/polymerase/pkg/config"
 //)
 
 //type NCPool struct {

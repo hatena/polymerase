@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
-	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/utils"
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 // LocalBackupStorage represents local directory backup.

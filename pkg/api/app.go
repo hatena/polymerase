@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/nu7hatch/gouuid"
-	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 // App struct.

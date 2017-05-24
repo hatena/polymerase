@@ -4,10 +4,10 @@ import (
 	"net"
 
 	"github.com/soheilhy/cmux"
-	"github.com/taku-k/xtralab/pkg/api"
-	"github.com/taku-k/xtralab/pkg/storage"
-	"github.com/taku-k/xtralab/pkg/tempbackup"
-	tempbackuppb "github.com/taku-k/xtralab/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/api"
+	"github.com/taku-k/polymerase/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/tempbackup"
+	tempbackuppb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 	"google.golang.org/grpc"
 )
 

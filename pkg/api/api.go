@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 type API struct {

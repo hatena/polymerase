@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/taku-k/xtralab/pkg/cli"
+	"github.com/taku-k/polymerase/pkg/cli"
 )
 
 func main() {

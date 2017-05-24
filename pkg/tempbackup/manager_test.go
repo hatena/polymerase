@@ -10,8 +10,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/jhoonb/archivex"
-	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 func newConfig() *base.Config {

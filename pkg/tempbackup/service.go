@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	pb "github.com/taku-k/xtralab/pkg/tempbackup/proto"
+	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 )
 
 type TempBackupTransferService struct {

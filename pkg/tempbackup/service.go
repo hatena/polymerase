@@ -1,23 +1,23 @@
-package backup
+package tempbackup
 
 import (
 	"fmt"
 	"io"
 
-	pb "github.com/taku-k/xtralab/pkg/backup/proto"
+	pb "github.com/taku-k/xtralab/pkg/tempbackup/proto"
 )
 
-type BackupTransferService struct {
+type TempBackupTransferService struct {
 	manager *TempBackupManager
 }
 
-func NewBackupTransferService(m *TempBackupManager) *BackupTransferService {
-	return &BackupTransferService{
+func NewBackupTransferService(m *TempBackupManager) *TempBackupTransferService {
+	return &TempBackupTransferService{
 		manager: m,
 	}
 }
 
-func (s *BackupTransferService) TransferFullBackup(stream pb.BackupTransferService_TransferFullBackupServer) error {
+func (s *TempBackupTransferService) TransferFullBackup(stream pb.BackupTransferService_TransferFullBackupServer) error {
 	var state *TempBackupState
 	for {
 		content, err := stream.Recv()
@@ -46,7 +46,7 @@ func (s *BackupTransferService) TransferFullBackup(stream pb.BackupTransferServi
 	}
 }
 
-func (s *BackupTransferService) TransferIncBackup(stream pb.BackupTransferService_TransferIncBackupServer) error {
+func (s *TempBackupTransferService) TransferIncBackup(stream pb.BackupTransferService_TransferIncBackupServer) error {
 	var state *TempBackupState
 	var content *pb.IncBackupContentStream
 	var err error

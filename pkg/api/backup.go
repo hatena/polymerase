@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/base"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
@@ -19,7 +19,7 @@ type BackupManager struct {
 	TempDir    string
 }
 
-func NewBackupManager(conf *config.Config) *BackupManager {
+func NewBackupManager(conf *base.Config) *BackupManager {
 	return &BackupManager{
 		TimeFormat: conf.TimeFormat,
 		TempDir:    conf.TempDir,

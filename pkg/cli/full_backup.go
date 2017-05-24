@@ -8,7 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/codegangsta/cli"
-	pb "github.com/taku-k/xtralab/pkg/backup/proto"
+	pb "github.com/taku-k/xtralab/pkg/tempbackup/proto"
 	"google.golang.org/grpc"
 )
 

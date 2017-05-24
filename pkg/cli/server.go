@@ -1,14 +1,9 @@
 package cli
 
 import (
-	"fmt"
-	"log"
-	"net"
-
 	"github.com/codegangsta/cli"
-	"github.com/soheilhy/cmux"
-	"github.com/taku-k/xtralab/pkg/api"
 	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/server"
 )
 
 var serverFlag = cli.Command{
@@ -34,28 +29,13 @@ func runServer(c *cli.Context) {
 	// Signal
 
 	// Server
-
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
+	cfg := server.MakeConfig()
+	cfg.RootDir = c.String("root-dir")
+	s, err := server.NewServer(cfg)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-
-	m := cmux.New(l)
-
-	httpl := m.Match(cmux.HTTP1Fast())
-	grpcl := m.MatchWithWriters(
-		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
-
-	app, err := api.NewApp(conf, httpl)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return
-	}
-
-	go api.NewgRPCServer(conf, grpcl)
-	go app.Run()
-
-	if err := m.Serve(); err != nil {
+	if err := s.Start(); err != nil {
 		panic(err)
 	}
 }

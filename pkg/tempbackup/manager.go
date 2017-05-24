@@ -1,4 +1,4 @@
-package backup
+package tempbackup
 
 import (
 	"bufio"
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/taku-k/xtralab/pkg/base"
 	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
@@ -32,7 +33,7 @@ type TempBackupState struct {
 	tempDir    string
 }
 
-func NewTempBackupManager(storage storage.BackupStorage, conf *config.Config) *TempBackupManager {
+func NewTempBackupManager(storage storage.BackupStorage, conf *base.Config) *TempBackupManager {
 	return &TempBackupManager{
 		timeFormat: conf.TimeFormat,
 		tempDir:    conf.TempDir,

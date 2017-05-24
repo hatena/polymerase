@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
+	"github.com/taku-k/xtralab/pkg/base"
 	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/utils"
 )
@@ -24,7 +25,7 @@ type LocalBackupStorage struct {
 }
 
 // NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
-func NewLocalBackupStorage(conf *config.Config) (*LocalBackupStorage, error) {
+func NewLocalBackupStorage(conf *base.Config) (*LocalBackupStorage, error) {
 	s := &LocalBackupStorage{
 		RootDir:    conf.RootDir,
 		TimeFormat: conf.TimeFormat,

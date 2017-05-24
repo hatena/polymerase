@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/jhoonb/archivex"
 	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
@@ -41,7 +40,7 @@ func TestTempBackupManager_OpenFullBackup(t *testing.T) {
 	if s.db != db {
 		t.Errorf("s.db should be %s", db)
 	}
-	if s.backupType != config.FULL {
+	if s.backupType != base.FULL {
 		t.Error("s.backupType should be FULL")
 	}
 }
@@ -64,7 +63,7 @@ func TestTempBackupManager_OpenIncBackup(t *testing.T) {
 	if s.db != db {
 		t.Errorf("s.db should be %s", db)
 	}
-	if s.backupType != config.INC {
+	if s.backupType != base.INC {
 		t.Error("s.backupType should be FULL")
 	}
 }

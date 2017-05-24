@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/taku-k/xtralab/pkg/config"
+	"github.com/taku-k/xtralab/pkg/base"
 )
 
 func NewLocalBackupStorageForTest() *LocalBackupStorage {
 	dir, _ := os.Getwd()
-	conf := &config.Config{}
-	conf.SetDefault()
+	cfg := &base.Config{}
+	cfg.InitDefaults()
 	return &LocalBackupStorage{
 		RootDir:    path.Join(dir, "testdata"),
-		TimeFormat: conf.TimeFormat,
+		TimeFormat: cfg.TimeFormat,
 	}
 }
 

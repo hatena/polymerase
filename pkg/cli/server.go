@@ -19,18 +19,14 @@ var serverFlag = cli.Command{
 // main server.App
 func runServer(c *cli.Context) {
 	// Config
-	conf := &config.Config{
-		RootDir: c.String("root-dir"),
-	}
-	conf.SetDefault()
+	cfg := server.MakeConfig()
+	cfg.RootDir = c.String("root-dir")
 
 	// Tracer
 
 	// Signal
 
 	// Server
-	cfg := server.MakeConfig()
-	cfg.RootDir = c.String("root-dir")
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		panic(err)

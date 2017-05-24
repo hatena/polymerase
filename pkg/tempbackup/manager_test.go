@@ -12,13 +12,14 @@ import (
 	"github.com/jhoonb/archivex"
 	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
+	"github.com/taku-k/xtralab/pkg/base"
 )
 
-func newConfig() *config.Config {
-	c := &config.Config{
+func newConfig() *base.Config {
+	c := &base.Config{
 		TempDir: os.TempDir(),
 	}
-	c.SetDefault()
+	c.InitDefaults()
 	return c
 }
 

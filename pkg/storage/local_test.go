@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/base"
 )
 

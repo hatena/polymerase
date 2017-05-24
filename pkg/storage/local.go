@@ -14,7 +14,6 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
 	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/utils"
 )
 
@@ -151,7 +150,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 		nextlsn := ""
 		flag := false
 		for j := lp - 1; j >= 0; j -= 1 {
-			var cp config.XtrabackupCheckpoints
+			var cp base.XtrabackupCheckpoints
 			key := path.Join(keyp, fs[j].Name())
 			err := ini.MapTo(&cp, path.Join(fd, fs[j].Name(), "xtrabackup_checkpoints"))
 			if err != nil {
@@ -183,7 +182,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 }
 
 func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
-	var cp config.XtrabackupCheckpoints
+	var cp base.XtrabackupCheckpoints
 	err := ini.MapTo(&cp, filepath.Join(s.RootDir, key, "xtrabackup_checkpoints"))
 	if err != nil {
 		return nil, err

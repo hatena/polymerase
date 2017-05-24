@@ -2,7 +2,6 @@ package cli
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/server"
 )
 

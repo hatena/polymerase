@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/jhoonb/archivex"
+	"github.com/taku-k/xtralab/pkg/base"
 	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
-	"github.com/taku-k/xtralab/pkg/base"
 )
 
 func newConfig() *base.Config {

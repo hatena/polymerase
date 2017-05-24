@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/taku-k/xtralab/pkg/base"
-	"github.com/taku-k/xtralab/pkg/config"
 	"github.com/taku-k/xtralab/pkg/storage"
 )
 
@@ -26,7 +25,7 @@ type TempBackupState struct {
 	file       *os.File
 	writer     *bufio.Writer
 	start      time.Time
-	backupType config.BackupType
+	backupType base.BackupType
 	timeFormat string
 	storage    storage.BackupStorage
 	lsn        string
@@ -46,7 +45,7 @@ func (m *TempBackupManager) OpenFullBackup(db string) (*TempBackupState, error) 
 	if err != nil {
 		return nil, err
 	}
-	s.backupType = config.FULL
+	s.backupType = base.FULL
 	return s, nil
 }
 
@@ -55,7 +54,7 @@ func (m *TempBackupManager) OpenIncBackup(db string, lsn string) (*TempBackupSta
 	if s == nil {
 		return nil, err
 	}
-	s.backupType = config.INC
+	s.backupType = base.INC
 	s.lsn = lsn
 	return s, nil
 }
@@ -91,9 +90,9 @@ func (s *TempBackupState) Append(content []byte) error {
 func (s *TempBackupState) Close() error {
 	s.closeTempFile()
 	switch s.backupType {
-	case config.FULL:
+	case base.FULL:
 		return s.closeFullBackup()
-	case config.INC:
+	case base.INC:
 		return s.closeIncBackup()
 	}
 	return errors.New("Not supported such a backup type")

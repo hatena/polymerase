@@ -22,8 +22,8 @@ var fullBackupFlag = cli.Command{
 		cli.StringFlag{Name: "mysql-port", Value: "3306", Usage: "destination mysql port"},
 		cli.StringFlag{Name: "mysql-user", Usage: "destination mysql user"},
 		cli.StringFlag{Name: "mysql-password", Usage: "destination mysql password"},
-		cli.StringFlag{Name: "xtralab-host", Usage: "xtralab host"},
-		cli.StringFlag{Name: "xtralab-port", Value: "24925", Usage: "xtralab port"},
+		cli.StringFlag{Name: "polymerase-host", Usage: "polymerase host"},
+		cli.StringFlag{Name: "polymerase-port", Value: "24925", Usage: "polymerase port"},
 		cli.StringFlag{Name: "db", Usage: "db name"},
 	},
 }
@@ -33,8 +33,8 @@ func runFullBackup(c *cli.Context) {
 	mysqlPort := c.String("mysql-port")
 	mysqlUser := c.String("mysql-user")
 	mysqlPassword := c.String("mysql-password")
-	xtralabHost := c.String("xtralab-host")
-	xtralabPort := c.String("xtralab-port")
+	polymeraseHost := c.String("polymerase-host")
+	polymerasePort := c.String("polymerase-port")
 	db := c.String("db")
 
 	if db == "" {
@@ -58,7 +58,7 @@ func runFullBackup(c *cli.Context) {
 
 	buf := bufio.NewReader(r)
 
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", xtralabHost, xtralabPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", polymeraseHost, polymerasePort), grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}

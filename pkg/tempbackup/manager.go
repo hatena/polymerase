@@ -61,7 +61,7 @@ func (m *TempBackupManager) OpenIncBackup(db string, lsn string) (*TempBackupSta
 
 func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBackupState, error) {
 	now := time.Now()
-	tempDir, err := ioutil.TempDir(m.tempDir, "xtralab-backup-dir")
+	tempDir, err := ioutil.TempDir(m.tempDir, "polymerase-backup-dir")
 	if err != nil {
 		return nil, err
 	}

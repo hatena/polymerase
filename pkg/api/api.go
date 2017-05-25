@@ -87,7 +87,7 @@ func (api *API) fullBackupHandler(c echo.Context) error {
 func (api *API) getLastLSNHandler(c echo.Context) error {
 	db := c.Param("db")
 
-	lastLsn, err := api.storage.GetLastLSN(db)
+	lastLsn, err := api.storage.GetLatestToLSN(db)
 	if err != nil {
 		return err
 	}

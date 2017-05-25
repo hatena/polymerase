@@ -39,8 +39,8 @@ func (s *LocalBackupStorage) GetStorageType() string {
 	return "local"
 }
 
-// GetLastLSN fetches `to_lsn` from most recent backup.
-func (s *LocalBackupStorage) GetLastLSN(db string) (string, error) {
+// GetLatestToLSN fetches `to_lsn` from most recent backup.
+func (s *LocalBackupStorage) GetLatestToLSN(db string) (string, error) {
 	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
 	if err != nil {
 		return "", err

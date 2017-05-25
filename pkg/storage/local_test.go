@@ -22,7 +22,7 @@ func NewLocalBackupStorageForTest() *LocalBackupStorage {
 
 func TestLocalBackupStorage_GetLastLSN(t *testing.T) {
 	s := NewLocalBackupStorageForTest()
-	a, err := s.GetLastLSN("test-db1")
+	a, err := s.GetLatestToLSN("test-db1")
 	e := "110"
 	if err != nil {
 		t.Errorf(`GetLastLSN("test-db1") is failed: %v`, err)

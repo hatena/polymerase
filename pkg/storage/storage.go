@@ -7,7 +7,7 @@ import (
 
 type BackupStorage interface {
 	GetStorageType() string
-	GetLastLSN(db string) (string, error)
+	GetLatestToLSN(db string) (string, error)
 	SearchStaringPointByLSN(db, lsn string) (string, error)
 	TransferTempFullBackup(tempDir string, key string) error
 	TransferTempIncBackup(tempDir string, key string) error

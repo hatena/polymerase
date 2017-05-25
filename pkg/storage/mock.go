@@ -41,15 +41,15 @@ func (_mr *_MockBackupStorageRecorder) GetStorageType() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetStorageType")
 }
 
-func (_m *MockBackupStorage) GetLastLSN(db string) (string, error) {
-	ret := _m.ctrl.Call(_m, "GetLastLSN", db)
+func (_m *MockBackupStorage) GetLatestToLSN(db string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetLatestToLSN", db)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockBackupStorageRecorder) GetLastLSN(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetLastLSN", arg0)
+func (_mr *_MockBackupStorageRecorder) GetLatestToLSN(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetLatestToLSN", arg0)
 }
 
 func (_m *MockBackupStorage) SearchStaringPointByLSN(db string, lsn string) (string, error) {

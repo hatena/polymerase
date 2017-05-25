@@ -1,6 +1,7 @@
 NAME     := polymerase
 
 PROTO := protoc
+MOCKGEN := mockgen
 
 SRCS    := $(shell find . -type f -name '*.go')
 PROTOSRCS := $(shell find . -type f -name '*.proto')
@@ -42,7 +43,7 @@ proto: $(PROTOSRCS)
 
 .PHONY: mockgen
 mockgen: $(MOCKS)
-	$(MOCKGEN) -source pkg/storage/storage.go -destination pkg/storage/mock.go
+	$(MOCKGEN) -source pkg/storage/storage.go -destination pkg/storage/mock.go -package storage
 
 .PHONY: vet
 vet:

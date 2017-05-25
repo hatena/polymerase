@@ -1,6 +1,6 @@
 package cli
 
-import "github.com/codegangsta/cli"
+import "github.com/urfave/cli"
 
 // Run creates, configures and runs
 // main cli.App
@@ -12,6 +12,7 @@ func Run(args []string) {
 	app.Commands = []cli.Command{
 		serverFlag,
 		fullBackupFlag,
+		incBackupFlag,
 	}
 	app.Run(args)
 }

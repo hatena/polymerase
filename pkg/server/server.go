@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
 	"net"
+	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
 	"github.com/taku-k/polymerase/pkg/api"
 	"github.com/taku-k/polymerase/pkg/storage"
@@ -73,4 +76,13 @@ func (s *Server) Start() error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
+	go s.grpc.GracefulStop()
+	if err := s.app.Engine.Shutdown(ctx); err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+	stopped <- struct{}{}
 }

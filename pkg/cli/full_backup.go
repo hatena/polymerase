@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/codegangsta/cli"
 	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
 

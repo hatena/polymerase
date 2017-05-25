@@ -39,7 +39,7 @@ func runFullBackup(c *cli.Context) {
 	db := c.String("db")
 
 	if db == "" {
-		fmt.Println("You should specify db")
+		fmt.Fprintln(os.Stdout, "You should specify db with '--db' flag")
 		os.Exit(1)
 	}
 	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "xtrabackup")

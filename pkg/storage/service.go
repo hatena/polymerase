@@ -18,13 +18,13 @@ func NewStorageService(storage BackupStorage) *StorageService {
 	}
 }
 
-func (s *StorageService) GetLastLSN(ctx context.Context, req *pb.GetLastLSNRequest) (*pb.GetLastLSNResponse, error) {
+func (s *StorageService) GetLatestToLSN(ctx context.Context, req *pb.GetLatestToLSNRequest) (*pb.GetLatestToLSNResponse, error) {
 	lsn, err := s.storage.GetLastLSN(req.Db)
 	if err != nil {
 		log.WithField("db", req.Db).Info("Not found")
-		return &pb.GetLastLSNResponse{Lsn: ""}, errors.New("Not found such a db")
+		return &pb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
 	}
-	return &pb.GetLastLSNResponse{
+	return &pb.GetLatestToLSNResponse{
 		Lsn: lsn,
 	}, nil
 }

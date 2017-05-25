@@ -50,7 +50,7 @@ func runIncBackup(c *cli.Context) {
 	defer conn.Close()
 
 	scli := storagepb.NewStorageServiceClient(conn)
-	res, err := scli.GetLastLSN(context.Background(), &storagepb.GetLastLSNRequest{Db: db})
+	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: db})
 	if err != nil {
 		panic(err)
 	}

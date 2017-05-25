@@ -3,13 +3,13 @@ syntax = "proto3";
 package proto;
 
 service StorageService {
-    rpc GetLastLSN(GetLastLSNRequest) returns (GetLastLSNResponse) {};
+    rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
 }
 
-message GetLastLSNRequest {
+message GetLatestToLSNRequest {
     string db = 1;
 }
 
-message GetLastLSNResponse {
+message GetLatestToLSNResponse {
     string lsn = 1;
 }

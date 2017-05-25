@@ -8,8 +8,8 @@ It is generated from these files:
 	storage/proto/storage.proto
 
 It has these top-level messages:
-	GetLastLSNRequest
-	GetLastLSNResponse
+	GetLatestToLSNRequest
+	GetLatestToLSNResponse
 */
 package proto
 
@@ -33,32 +33,32 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto1.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type GetLastLSNRequest struct {
+type GetLatestToLSNRequest struct {
 	Db string `protobuf:"bytes,1,opt,name=db" json:"db,omitempty"`
 }
 
-func (m *GetLastLSNRequest) Reset()                    { *m = GetLastLSNRequest{} }
-func (m *GetLastLSNRequest) String() string            { return proto1.CompactTextString(m) }
-func (*GetLastLSNRequest) ProtoMessage()               {}
-func (*GetLastLSNRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *GetLatestToLSNRequest) Reset()                    { *m = GetLatestToLSNRequest{} }
+func (m *GetLatestToLSNRequest) String() string            { return proto1.CompactTextString(m) }
+func (*GetLatestToLSNRequest) ProtoMessage()               {}
+func (*GetLatestToLSNRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *GetLastLSNRequest) GetDb() string {
+func (m *GetLatestToLSNRequest) GetDb() string {
 	if m != nil {
 		return m.Db
 	}
 	return ""
 }
 
-type GetLastLSNResponse struct {
+type GetLatestToLSNResponse struct {
 	Lsn string `protobuf:"bytes,1,opt,name=lsn" json:"lsn,omitempty"`
 }
 
-func (m *GetLastLSNResponse) Reset()                    { *m = GetLastLSNResponse{} }
-func (m *GetLastLSNResponse) String() string            { return proto1.CompactTextString(m) }
-func (*GetLastLSNResponse) ProtoMessage()               {}
-func (*GetLastLSNResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *GetLatestToLSNResponse) Reset()                    { *m = GetLatestToLSNResponse{} }
+func (m *GetLatestToLSNResponse) String() string            { return proto1.CompactTextString(m) }
+func (*GetLatestToLSNResponse) ProtoMessage()               {}
+func (*GetLatestToLSNResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *GetLastLSNResponse) GetLsn() string {
+func (m *GetLatestToLSNResponse) GetLsn() string {
 	if m != nil {
 		return m.Lsn
 	}
@@ -66,8 +66,8 @@ func (m *GetLastLSNResponse) GetLsn() string {
 }
 
 func init() {
-	proto1.RegisterType((*GetLastLSNRequest)(nil), "proto.GetLastLSNRequest")
-	proto1.RegisterType((*GetLastLSNResponse)(nil), "proto.GetLastLSNResponse")
+	proto1.RegisterType((*GetLatestToLSNRequest)(nil), "proto.GetLatestToLSNRequest")
+	proto1.RegisterType((*GetLatestToLSNResponse)(nil), "proto.GetLatestToLSNResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -81,7 +81,7 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for StorageService service
 
 type StorageServiceClient interface {
-	GetLastLSN(ctx context.Context, in *GetLastLSNRequest, opts ...grpc.CallOption) (*GetLastLSNResponse, error)
+	GetLatestToLSN(ctx context.Context, in *GetLatestToLSNRequest, opts ...grpc.CallOption) (*GetLatestToLSNResponse, error)
 }
 
 type storageServiceClient struct {
@@ -92,9 +92,9 @@ func NewStorageServiceClient(cc *grpc.ClientConn) StorageServiceClient {
 	return &storageServiceClient{cc}
 }
 
-func (c *storageServiceClient) GetLastLSN(ctx context.Context, in *GetLastLSNRequest, opts ...grpc.CallOption) (*GetLastLSNResponse, error) {
-	out := new(GetLastLSNResponse)
-	err := grpc.Invoke(ctx, "/proto.StorageService/GetLastLSN", in, out, c.cc, opts...)
+func (c *storageServiceClient) GetLatestToLSN(ctx context.Context, in *GetLatestToLSNRequest, opts ...grpc.CallOption) (*GetLatestToLSNResponse, error) {
+	out := new(GetLatestToLSNResponse)
+	err := grpc.Invoke(ctx, "/proto.StorageService/GetLatestToLSN", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,27 +104,27 @@ func (c *storageServiceClient) GetLastLSN(ctx context.Context, in *GetLastLSNReq
 // Server API for StorageService service
 
 type StorageServiceServer interface {
-	GetLastLSN(context.Context, *GetLastLSNRequest) (*GetLastLSNResponse, error)
+	GetLatestToLSN(context.Context, *GetLatestToLSNRequest) (*GetLatestToLSNResponse, error)
 }
 
 func RegisterStorageServiceServer(s *grpc.Server, srv StorageServiceServer) {
 	s.RegisterService(&_StorageService_serviceDesc, srv)
 }
 
-func _StorageService_GetLastLSN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLastLSNRequest)
+func _StorageService_GetLatestToLSN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestToLSNRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StorageServiceServer).GetLastLSN(ctx, in)
+		return srv.(StorageServiceServer).GetLatestToLSN(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.StorageService/GetLastLSN",
+		FullMethod: "/proto.StorageService/GetLatestToLSN",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServiceServer).GetLastLSN(ctx, req.(*GetLastLSNRequest))
+		return srv.(StorageServiceServer).GetLatestToLSN(ctx, req.(*GetLatestToLSNRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -134,8 +134,8 @@ var _StorageService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*StorageServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetLastLSN",
-			Handler:    _StorageService_GetLastLSN_Handler,
+			MethodName: "GetLatestToLSN",
+			Handler:    _StorageService_GetLatestToLSN_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -145,15 +145,15 @@ var _StorageService_serviceDesc = grpc.ServiceDesc{
 func init() { proto1.RegisterFile("storage/proto/storage.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 149 bytes of a gzipped FileDescriptorProto
+	// 153 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x2e, 0x2e, 0xc9, 0x2f,
 	0x4a, 0x4c, 0x4f, 0xd5, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x87, 0xf2, 0xf4, 0xc0, 0x3c, 0x21,
-	0x56, 0x30, 0xa5, 0xa4, 0xcc, 0x25, 0xe8, 0x9e, 0x5a, 0xe2, 0x93, 0x58, 0x5c, 0xe2, 0x13, 0xec,
-	0x17, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x22, 0xc4, 0xc7, 0xc5, 0x94, 0x92, 0x24, 0xc1, 0xa8,
-	0xc0, 0xa8, 0xc1, 0x19, 0xc4, 0x94, 0x92, 0xa4, 0xa4, 0xc6, 0x25, 0x84, 0xac, 0xa8, 0xb8, 0x20,
-	0x3f, 0xaf, 0x38, 0x55, 0x48, 0x80, 0x8b, 0x39, 0xa7, 0x38, 0x0f, 0xaa, 0x0c, 0xc4, 0x34, 0x0a,
-	0xe5, 0xe2, 0x0b, 0x86, 0x58, 0x12, 0x9c, 0x5a, 0x54, 0x96, 0x99, 0x9c, 0x2a, 0xe4, 0xcc, 0xc5,
-	0x85, 0xd0, 0x29, 0x24, 0x01, 0xb1, 0x5b, 0x0f, 0xc3, 0x46, 0x29, 0x49, 0x2c, 0x32, 0x10, 0x6b,
-	0x94, 0x18, 0x92, 0xd8, 0xc0, 0x72, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x21, 0x74, 0x6e,
-	0x9d, 0xd0, 0x00, 0x00, 0x00,
+	0x56, 0x30, 0xa5, 0xa4, 0xce, 0x25, 0xea, 0x9e, 0x5a, 0xe2, 0x93, 0x58, 0x92, 0x5a, 0x5c, 0x12,
+	0x92, 0xef, 0x13, 0xec, 0x17, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x22, 0xc4, 0xc7, 0xc5, 0x94,
+	0x92, 0x24, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x19, 0xc4, 0x94, 0x92, 0xa4, 0xa4, 0xc5, 0x25, 0x86,
+	0xae, 0xb0, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0x55, 0x48, 0x80, 0x8b, 0x39, 0xa7, 0x38, 0x0f, 0xaa,
+	0x14, 0xc4, 0x34, 0x4a, 0xe4, 0xe2, 0x0b, 0x86, 0x58, 0x16, 0x9c, 0x5a, 0x54, 0x96, 0x99, 0x9c,
+	0x2a, 0xe4, 0xcf, 0xc5, 0x87, 0xaa, 0x5b, 0x48, 0x06, 0xe2, 0x0e, 0x3d, 0xac, 0xb6, 0x4b, 0xc9,
+	0xe2, 0x90, 0x85, 0x58, 0xa9, 0xc4, 0x90, 0xc4, 0x06, 0x96, 0x37, 0x06, 0x04, 0x00, 0x00, 0xff,
+	0xff, 0xfd, 0x29, 0x62, 0xa4, 0xe4, 0x00, 0x00, 0x00,
 }

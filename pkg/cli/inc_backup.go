@@ -12,11 +12,11 @@ var incBackupFlag = cli.Command{
 	Usage:  "Backups incrementally",
 	Action: runIncBackup,
 	Flags: []cli.Flag{
-		cli.StringFlag{Name: "mysql-host", Value: "localhost", Usage: "destination mysql host"},
+		cli.StringFlag{Name: "mysql-host", Value: "127.0.0.1", Usage: "destination mysql host"},
 		cli.StringFlag{Name: "mysql-port", Value: "3306", Usage: "destination mysql port"},
 		cli.StringFlag{Name: "mysql-user", Usage: "destination mysql user"},
 		cli.StringFlag{Name: "mysql-password", Usage: "destination mysql password"},
-		cli.StringFlag{Name: "polymerase-host", Usage: "polymerase host"},
+		cli.StringFlag{Name: "polymerase-host", Value: "127.0.0.1", Usage: "polymerase host"},
 		cli.StringFlag{Name: "polymerase-port", Value: "24925", Usage: "polymerase port"},
 		cli.StringFlag{Name: "db", Usage: "db name"},
 	},

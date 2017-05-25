@@ -35,7 +35,7 @@ func TestLocalBackupStorage_GetLastLSN(t *testing.T) {
 func TestLocalBackupStorage_SearchStaringPointByLSN(t *testing.T) {
 	s := NewLocalBackupStorageForTest()
 	a, err := s.SearchStaringPointByLSN("test-db1", "110")
-	e := "2017-05-24-15-04-05"
+	e := "2017-05-24_15-04-05"
 	if err != nil {
 		t.Errorf(`SearchStartingPointByLSN("test-db1", "110") is failed: %v`, err)
 	}
@@ -59,12 +59,12 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 				{
 					StorageType: st,
 					BackupType:  "incremental",
-					Key:         "test-db1/2017-05-24-15-04-05/2017-05-25-15-04-05",
+					Key:         "test-db1/2017-05-24_15-04-05/2017-05-25_15-04-05",
 				},
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
-					Key:         "test-db1/2017-05-24-15-04-05/2017-05-24-15-04-05",
+					Key:         "test-db1/2017-05-24_15-04-05/2017-05-24_15-04-05",
 				},
 			},
 		},
@@ -74,7 +74,7 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
-					Key:         "test-db1/2017-05-24-15-04-05/2017-05-24-15-04-05",
+					Key:         "test-db1/2017-05-24_15-04-05/2017-05-24_15-04-05",
 				},
 			},
 		},
@@ -84,12 +84,12 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 				{
 					StorageType: st,
 					BackupType:  "incremental",
-					Key:         "test-db1/2017-05-17-15-04-05/2017-05-18-15-04-05",
+					Key:         "test-db1/2017-05-17_15-04-05/2017-05-18_15-04-05",
 				},
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
-					Key:         "test-db1/2017-05-17-15-04-05/2017-05-17-15-04-05",
+					Key:         "test-db1/2017-05-17_15-04-05/2017-05-17_15-04-05",
 				},
 			},
 		},

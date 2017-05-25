@@ -13,6 +13,7 @@ func Run(args []string) {
 		serverFlag,
 		fullBackupFlag,
 		incBackupFlag,
+		restoreFlag,
 	}
 	app.Run(args)
 }

@@ -108,6 +108,7 @@ func (s *TempBackupState) removeTempDir() {
 }
 
 func (s *TempBackupState) closeFullBackup() error {
+	defer s.removeTempDir()
 	key := fmt.Sprintf("%s/%s/%s", s.db,
 		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
 	if err := os.Chdir(s.tempDir); err != nil {
@@ -120,11 +121,11 @@ func (s *TempBackupState) closeFullBackup() error {
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	os.RemoveAll(s.tempDir)
 	return nil
 }
 
 func (s *TempBackupState) closeIncBackup() error {
+	defer s.removeTempDir()
 	from, err := s.storage.SearchStaringPointByLSN(s.db, s.lsn)
 	if err != nil {
 		return err
@@ -144,6 +145,5 @@ func (s *TempBackupState) closeIncBackup() error {
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	os.RemoveAll(s.tempDir)
 	return nil
 }

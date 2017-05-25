@@ -1,9 +1,9 @@
 package tempbackup
 
 import (
-	"fmt"
 	"io"
 
+	log "github.com/sirupsen/logrus"
 	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 )
 
@@ -34,12 +34,12 @@ func (s *TempBackupTransferService) TransferFullBackup(stream pb.BackupTransferS
 		}
 		if state == nil {
 			state, err = s.manager.OpenFullBackup(content.Db)
-			fmt.Printf("DB: %v\n", content.Db)
+			log.WithField("db", content.Db).Info("Connected from db")
+			log.WithField("path", state.tempDir).Info("Create temporary directory")
 			if err != nil {
 				return err
 			}
 		}
-		fmt.Printf("Received bytes: %v\n", len(content.Content))
 		if err := state.Append(content.Content); err != nil {
 			return err
 		}

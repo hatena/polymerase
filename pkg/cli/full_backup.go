@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/utils/envutil"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
@@ -41,13 +42,15 @@ func runFullBackup(c *cli.Context) {
 		fmt.Println("You should specify db")
 		os.Exit(1)
 	}
+	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "xtrabackup")
 
 	var cmdSh string
 	if mysqlPassword != "" {
-		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --password %s --slave-info --backup --stream=tar | gzip -c",
-			mysqlHost, mysqlPort, mysqlUser, mysqlPassword)
+		cmdSh = fmt.Sprintf("%s --host %s --port %s --user %s --password %s --slave-info --backup --stream=tar | gzip -c",
+			xtrabackupPath, mysqlHost, mysqlPort, mysqlUser, mysqlPassword)
 	} else {
-		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --slave-info --backup --stream=tar | gzip -c", mysqlHost, mysqlPort, mysqlUser)
+		cmdSh = fmt.Sprintf("%s --host %s --port %s --user %s --slave-info --backup --stream=tar | gzip -c",
+			xtrabackupPath, mysqlHost, mysqlPort, mysqlUser)
 	}
 	cmd := exec.Command("sh", "-c", cmdSh)
 
@@ -70,8 +73,7 @@ func runFullBackup(c *cli.Context) {
 		panic(err)
 	}
 
-	fmt.Println("Start xtrabackup")
-	fmt.Println("Start gzip")
+	fmt.Fprintln(os.Stdout, "Start xtrabackup")
 	go func() {
 		err = cmd.Start()
 		if err != nil {
@@ -82,7 +84,7 @@ func runFullBackup(c *cli.Context) {
 		w.Close()
 	}()
 
-	chunk := make([]byte, 1024*1024)
+	chunk := make([]byte, 1<<20)
 	for {
 		n, err := buf.Read(chunk)
 		if err == io.EOF {

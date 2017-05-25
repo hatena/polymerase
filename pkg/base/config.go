@@ -16,5 +16,7 @@ type Config struct {
 }
 
 func (cfg *Config) InitDefaults() {
-	cfg.TimeFormat = defaultTimeFormat
+	if cfg.TimeFormat == "" {
+		cfg.TimeFormat = defaultTimeFormat
+	}
 }

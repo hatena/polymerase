@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -9,12 +10,10 @@ import (
 	"sort"
 	"time"
 
-	"io"
-
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
+	//log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 // LocalBackupStorage represents local directory backup.
@@ -74,11 +73,11 @@ func (s *LocalBackupStorage) GetLastLSN(db string) (string, error) {
 	}
 
 	// Extract a LSN from a last checkpoint
-	lastLsn, err := utils.ExtractLSNFromFile(fmt.Sprintf("%s/xtrabackup_checkpoints", latestBackupDir), "to_lsn")
-	if err != nil {
-		return "", err
+	cp := base.LoadXtrabackupCP(filepath.Join(latestBackupDir, "xtrabackup_checkpoints"))
+	if cp.ToLSN == "" {
+		return "", errors.New("xtrabackup_checkpoints not found")
 	}
-	return lastLsn, nil
+	return cp.ToLSN, nil
 }
 
 // SearchStartingPointByLSN returns a starting point containing `to_lsn` equals lsn.
@@ -102,11 +101,9 @@ func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, er
 		for j := len(files) - 1; j >= 0; j -= 1 {
 			f := files[j]
 			bd := filepath.Join(fileDir, f.Name())
-			cur, err := utils.ExtractLSNFromFile(path.Join(bd, "xtrabackup_checkpoints"), "to_lsn")
-			if err != nil {
-				continue
-			}
-			if cur == lsn {
+			cp := base.LoadXtrabackupCP(path.Join(bd, "xtrabackup_checkpoints"))
+
+			if cp.ToLSN == lsn {
 				return sp, nil
 			}
 		}

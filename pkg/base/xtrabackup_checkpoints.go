@@ -1,5 +1,9 @@
 package base
 
+import (
+	"github.com/go-ini/ini"
+)
+
 /*
 XtrabackupCheckpoints is for reflection.
 xtrabackup_checkpoints is like this:
@@ -19,4 +23,13 @@ type XtrabackupCheckpoints struct {
 	LastLSN           string `ini:"last_lsn"`
 	Compact           int    `ini:"compact"`
 	RecoverBinlogInfo int    `ini:"recover_binlog_info"`
+}
+
+func LoadXtrabackupCP(path string) XtrabackupCheckpoints {
+	var cp XtrabackupCheckpoints
+	err := ini.MapTo(&cp, path)
+	if err != nil {
+		return XtrabackupCheckpoints{}
+	}
+	return cp
 }

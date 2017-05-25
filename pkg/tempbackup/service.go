@@ -4,7 +4,7 @@ import (
 	"io"
 
 	log "github.com/sirupsen/logrus"
-	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 )
 
 type TempBackupTransferService struct {
@@ -17,7 +17,7 @@ func NewBackupTransferService(m *TempBackupManager) *TempBackupTransferService {
 	}
 }
 
-func (s *TempBackupTransferService) TransferFullBackup(stream pb.BackupTransferService_TransferFullBackupServer) error {
+func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.BackupTransferService_TransferFullBackupServer) error {
 	var state *TempBackupState
 	for {
 		content, err := stream.Recv()
@@ -25,7 +25,7 @@ func (s *TempBackupTransferService) TransferFullBackup(stream pb.BackupTransferS
 			if err := state.Close(); err != nil {
 				return err
 			}
-			return stream.SendAndClose(&pb.BackupReply{
+			return stream.SendAndClose(&tempbackuppb.BackupReply{
 				Message: "success",
 			})
 		}
@@ -46,9 +46,9 @@ func (s *TempBackupTransferService) TransferFullBackup(stream pb.BackupTransferS
 	}
 }
 
-func (s *TempBackupTransferService) TransferIncBackup(stream pb.BackupTransferService_TransferIncBackupServer) error {
+func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.BackupTransferService_TransferIncBackupServer) error {
 	var state *TempBackupState
-	var content *pb.IncBackupContentStream
+	var content *tempbackuppb.IncBackupContentStream
 	var err error
 	for {
 		content, err = stream.Recv()
@@ -56,7 +56,7 @@ func (s *TempBackupTransferService) TransferIncBackup(stream pb.BackupTransferSe
 			if err := state.Close(); err != nil {
 				return err
 			}
-			return stream.SendAndClose(&pb.BackupReply{
+			return stream.SendAndClose(&tempbackuppb.BackupReply{
 				Message: "success",
 			})
 		}

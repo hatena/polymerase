@@ -9,9 +9,9 @@ import (
 	"github.com/soheilhy/cmux"
 	"github.com/taku-k/polymerase/pkg/api"
 	"github.com/taku-k/polymerase/pkg/storage"
-	storagepb "github.com/taku-k/polymerase/pkg/storage/proto"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
-	tempbackuppb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"google.golang.org/grpc"
 )
 

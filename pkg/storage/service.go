@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	log "github.com/sirupsen/logrus"
-	pb "github.com/taku-k/polymerase/pkg/storage/proto"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 )
 
@@ -18,13 +18,13 @@ func NewStorageService(storage BackupStorage) *StorageService {
 	}
 }
 
-func (s *StorageService) GetLatestToLSN(ctx context.Context, req *pb.GetLatestToLSNRequest) (*pb.GetLatestToLSNResponse, error) {
+func (s *StorageService) GetLatestToLSN(ctx context.Context, req *storagepb.GetLatestToLSNRequest) (*storagepb.GetLatestToLSNResponse, error) {
 	lsn, err := s.storage.GetLatestToLSN(req.Db)
 	if err != nil {
 		log.WithField("db", req.Db).Info("Not found")
-		return &pb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
+		return &storagepb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
 	}
-	return &pb.GetLatestToLSNResponse{
+	return &storagepb.GetLatestToLSNResponse{
 		Lsn: lsn,
 	}, nil
 }

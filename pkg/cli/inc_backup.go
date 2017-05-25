@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 
-	storagepb "github.com/taku-k/polymerase/pkg/storage/proto"
-	backuppb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
@@ -73,7 +73,7 @@ func runIncBackup(c *cli.Context) {
 
 	buf := bufio.NewReader(r)
 
-	bcli := backuppb.NewBackupTransferServiceClient(conn)
+	bcli := tempbackuppb.NewBackupTransferServiceClient(conn)
 	stream, err := bcli.TransferIncBackup(context.Background())
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func runIncBackup(c *cli.Context) {
 		if err != nil {
 			panic(err)
 		}
-		stream.Send(&backuppb.IncBackupContentStream{
+		stream.Send(&tempbackuppb.IncBackupContentStream{
 			Content: chunk[:n],
 			Db:      db,
 			Lsn:     lsn,

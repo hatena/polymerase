@@ -4,7 +4,7 @@ PROTO := protoc
 MOCKGEN := mockgen
 
 SRCS    := $(shell find . -type f -name '*.go')
-PROTOSRCS := $(shell find . -type f -name '*.proto')
+PROTOSRCS := $(shell find . -type f -name '*.proto' | grep -v -e vendor)
 MOCKS := pkg/storage/storage.go
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
 
@@ -38,8 +38,9 @@ deps: glide
 
 .PHONY: proto
 proto: $(PROTOSRCS)
-	$(PROTO) -I pkg pkg/tempbackup/proto/backup.proto --go_out=plugins=grpc:pkg
-	$(PROTO) -I pkg pkg/storage/proto/storage.proto --go_out=plugins=grpc:pkg
+	for src in $(PROTOSRCS); do \
+	  $(PROTO) -I pkg $$src --go_out=plugins=grpc:pkg; \
+	done
 
 .PHONY: mockgen
 mockgen: $(MOCKS)

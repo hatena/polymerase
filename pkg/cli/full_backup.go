@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 
-	pb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
+	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
@@ -67,7 +67,7 @@ func runFullBackup(c *cli.Context) {
 	}
 	defer conn.Close()
 
-	client := pb.NewBackupTransferServiceClient(conn)
+	client := tempbackuppb.NewBackupTransferServiceClient(conn)
 	stream, err := client.TransferFullBackup(context.Background())
 	if err != nil {
 		panic(err)
@@ -98,7 +98,7 @@ func runFullBackup(c *cli.Context) {
 		if err != nil {
 			panic(err)
 		}
-		stream.Send(&pb.FullBackupContentStream{
+		stream.Send(&tempbackuppb.FullBackupContentStream{
 			Content: chunk[:n],
 			Db:      db,
 		})

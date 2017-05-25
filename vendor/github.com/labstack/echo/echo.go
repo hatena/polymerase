@@ -74,21 +74,20 @@ type (
 		TLSListener      net.Listener
 		DisableHTTP2     bool
 		Debug            bool
-		HideBanner       bool
 		HTTPErrorHandler HTTPErrorHandler
 		Binder           Binder
 		Validator        Validator
 		Renderer         Renderer
 		AutoTLSManager   autocert.Manager
-		// Mutex            sync.RWMutex
-		Logger Logger
+		Mutex            sync.RWMutex
+		Logger           Logger
 	}
 
 	// Route contains a handler and information for matching against requests.
 	Route struct {
-		Method  string `json:"method"`
-		Path    string `json:"path"`
-		Handler string `json:"handler"`
+		Method  string
+		Path    string
+		Handler string
 	}
 
 	// HTTPError represents an error that occurred while handling a request.
@@ -203,22 +202,6 @@ const (
 	HeaderXFrameOptions           = "X-Frame-Options"
 	HeaderContentSecurityPolicy   = "Content-Security-Policy"
 	HeaderXCSRFToken              = "X-CSRF-Token"
-)
-
-const (
-	version = "3.1.0"
-	website = "https://echo.labstack.com"
-	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=Echo
-	banner = `
-   ____    __
-  / __/___/ /  ___
- / _// __/ _ \/ _ \
-/___/\__/_//_/\___/ %s
-High performance, minimalist Go web framework
-%s
-____________________________________O/_______
-                                    O\
-`
 )
 
 var (
@@ -456,7 +439,7 @@ func (e *Echo) add(method, path string, handler HandlerFunc, middleware ...Middl
 		}
 		return h(c)
 	})
-	r := &Route{
+	r := Route{
 		Method:  method,
 		Path:    path,
 		Handler: name,
@@ -502,8 +485,8 @@ func (e *Echo) URL(h HandlerFunc, params ...interface{}) string {
 }
 
 // Routes returns the registered routes.
-func (e *Echo) Routes() []*Route {
-	routes := []*Route{}
+func (e *Echo) Routes() []Route {
+	routes := []Route{}
 	for _, v := range e.router.routes {
 		routes = append(routes, v)
 	}
@@ -525,8 +508,8 @@ func (e *Echo) ReleaseContext(c Context) {
 // ServeHTTP implements `http.Handler` interface, which serves HTTP requests.
 func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Acquire lock
-	// e.Mutex.RLock()
-	// defer e.Mutex.RUnlock()
+	e.Mutex.RLock()
+	defer e.Mutex.RUnlock()
 
 	// Acquire context
 	c := e.pool.Get().(*context)
@@ -601,15 +584,8 @@ func (e *Echo) startTLS(address string) error {
 func (e *Echo) StartServer(s *http.Server) (err error) {
 	// Setup
 	e.colorer.SetOutput(e.Logger.Output())
-	s.ErrorLog = e.stdLogger
 	s.Handler = e
-	if e.Debug {
-		e.Logger.SetLevel(log.DEBUG)
-	}
-
-	if !e.HideBanner {
-		e.colorer.Printf(banner, e.colorer.Red("v"+version), e.colorer.Blue(website))
-	}
+	s.ErrorLog = e.stdLogger
 
 	if s.TLSConfig == nil {
 		if e.Listener == nil {
@@ -618,9 +594,7 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 				return err
 			}
 		}
-		if !e.HideBanner {
-			e.colorer.Printf("⇨ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
-		}
+		e.colorer.Printf("⇛ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
 		return s.Serve(e.Listener)
 	}
 	if e.TLSListener == nil {
@@ -630,9 +604,7 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 		}
 		e.TLSListener = tls.NewListener(l, s.TLSConfig)
 	}
-	if !e.HideBanner {
-		e.colorer.Printf("⇨ https server started on %s\n", e.colorer.Green(e.TLSListener.Addr()))
-	}
+	e.colorer.Printf("⇛ https server started on %s\n", e.colorer.Green(e.TLSListener.Addr()))
 	return s.Serve(e.TLSListener)
 }
 

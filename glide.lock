@@ -1,14 +1,14 @@
-hash: 1cf927b2e12305bfdd03486743c38114d02c29bf6db7a6cfa50ce018043c2611
-updated: 2017-05-23T23:23:36.368032801+09:00
+hash: 1a98edf2bca718de9f766984304cf59e8dbb344152cd2b612df2d9d8fc08b019
+updated: 2017-05-25T12:13:39.721151503+09:00
 imports:
 - name: github.com/codegangsta/cli
-  version: d70f47eeca3afd795160003bc6e28b001d60c67c
+  version: ab403a54a148f2d857920810291539e1f817ee7b
 - name: github.com/dgrijalva/jwt-go
-  version: 6c8dedd55f8a2e41f605de6d5d66e51ed1f299fc
+  version: 2268707a8f0843315e2004ee4f1d021dc08baedf
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
 - name: github.com/go-ini/ini
-  version: afbc45e87f3ba324c532d12c71918ef52e0fb194
+  version: 6f66b0e091edb3c7b380f7c4f0f884274d550b67
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -23,41 +23,48 @@ imports:
 - name: github.com/jhoonb/archivex
   version: be4efa7ec0c38ab76d56037014c90d48d6b13037
 - name: github.com/labstack/echo
-  version: 3359eae3067d1f6dba4785ea0377796405a34429
+  version: 0dfcb31d9ef356492d6dc33e5c83af53100db3ec
   subpackages:
   - middleware
 - name: github.com/labstack/gommon
-  version: 1121fd3e243c202482226a7afe4dcd07ffc4139a
+  version: 9298d710c664bcd21c454120f63a00fb7d484458
   subpackages:
   - bytes
   - color
   - log
   - random
 - name: github.com/mattn/go-colorable
-  version: ded68f7a9561c023e790de24279db7ebf473ea80
+  version: a392f450ea64cee2b268dfaacdc2502b50a22b18
 - name: github.com/mattn/go-isatty
-  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+  version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
 - name: github.com/olebedev/config
   version: afea898d27c7d17376ecc60c7c2e73c76b40060e
+- name: github.com/opentracing/opentracing-go
+  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/sirupsen/logrus
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/soheilhy/cmux
   version: bf4a8ede9e87c006fe1d4278c6c7f2b8be1fa84c
+- name: github.com/urfave/cli
+  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
 - name: github.com/valyala/bytebufferpool
   version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
 - name: github.com/valyala/fasttemplate
   version: dcecefd839c4193db0d35b88ec65b4c12d360ab0
 - name: golang.org/x/crypto
-  version: 7e9105388ebff089b3f99f0ef676ea55a6da3a7e
+  version: f6b343c37ca80bfa8ea539da67a0b621f84fab1d
   subpackages:
   - acme
   - acme/autocert
 - name: golang.org/x/net
-  version: 5961165da77ad3a2abf3a77ea904c13a76b0b073
+  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
   subpackages:
   - context
+  - context/ctxhttp
   - http2
   - http2/hpack
   - idna
@@ -65,7 +72,7 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/sys
-  version: dbc2be9168a660ef302e04b6ff6406de6f967473
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
   subpackages:
   - unix
 - name: golang.org/x/text
@@ -80,7 +87,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 79f73d62e5082ee8d6b86a2487fd6267c1495fcd
+  version: 3a46d9d51931de5beee75086205224a540233baa
   subpackages:
   - codes
   - credentials

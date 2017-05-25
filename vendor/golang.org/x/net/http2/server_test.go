@@ -142,6 +142,7 @@ func newServerTester(t testing.TB, handler http.HandlerFunc, opts ...interface{}
 		st.scMu.Lock()
 		defer st.scMu.Unlock()
 		st.sc = v
+		st.sc.testHookCh = make(chan func(int))
 	}
 	log.SetOutput(io.MultiWriter(stderrv(), twriter{t: t, st: st}))
 	if !onlyServer {
@@ -186,7 +187,7 @@ func (st *serverTester) addLogFilter(phrase string) {
 
 func (st *serverTester) stream(id uint32) *stream {
 	ch := make(chan *stream, 1)
-	st.sc.serveMsgCh <- func(int) {
+	st.sc.testHookCh <- func(int) {
 		ch <- st.sc.streams[id]
 	}
 	return <-ch
@@ -194,7 +195,7 @@ func (st *serverTester) stream(id uint32) *stream {
 
 func (st *serverTester) streamState(id uint32) streamState {
 	ch := make(chan streamState, 1)
-	st.sc.serveMsgCh <- func(int) {
+	st.sc.testHookCh <- func(int) {
 		state, _ := st.sc.state(id)
 		ch <- state
 	}
@@ -204,7 +205,7 @@ func (st *serverTester) streamState(id uint32) streamState {
 // loopNum reports how many times this conn's select loop has gone around.
 func (st *serverTester) loopNum() int {
 	lastc := make(chan int, 1)
-	st.sc.serveMsgCh <- func(loopNum int) {
+	st.sc.testHookCh <- func(loopNum int) {
 		lastc <- loopNum
 	}
 	return <-lastc
@@ -2431,7 +2432,6 @@ func TestServer_Rejects_TLSBadCipher(t *testing.T) {
 			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			cipher_TLS_RSA_WITH_AES_128_CBC_SHA256,
 		}
 	})
 	defer st.Close()
@@ -3414,9 +3414,8 @@ func TestServerHandleCustomConn(t *testing.T) {
 	}()
 	const testString = "my custom ConnectionState"
 	fakeConnState := tls.ConnectionState{
-		ServerName:  testString,
-		Version:     tls.VersionTLS12,
-		CipherSuite: cipher_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		ServerName: testString,
+		Version:    tls.VersionTLS12,
 	}
 	go s.ServeConn(connStateConn{c1, fakeConnState}, &ServeConnOpts{
 		BaseConfig: &http.Server{

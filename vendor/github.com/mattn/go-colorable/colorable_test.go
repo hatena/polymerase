@@ -56,7 +56,6 @@ func TestNonColorableNil(t *testing.T) {
 			paniced = true
 		}()
 		NewNonColorable(nil)
-		NewColorable(nil)
 	}()
 
 	if !paniced {

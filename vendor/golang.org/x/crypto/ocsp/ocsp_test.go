@@ -225,6 +225,7 @@ func TestOCSPResponse(t *testing.T) {
 		},
 	}
 
+	producedAt := time.Now().Truncate(time.Minute)
 	thisUpdate := time.Date(2010, 7, 7, 15, 1, 5, 0, time.UTC)
 	nextUpdate := time.Date(2010, 7, 7, 18, 35, 17, 0, time.UTC)
 	template := Response{
@@ -283,9 +284,8 @@ func TestOCSPResponse(t *testing.T) {
 				t.Errorf("resp.Extensions: got %v, want %v", resp.Extensions, template.ExtraExtensions)
 			}
 
-			delay := time.Since(resp.ProducedAt)
-			if delay < -time.Hour || delay > time.Hour {
-				t.Errorf("resp.ProducedAt: got %s, want close to current time (%s)", resp.ProducedAt, time.Now())
+			if !resp.ProducedAt.Equal(producedAt) {
+				t.Errorf("resp.ProducedAt: got %d, want %d", resp.ProducedAt, producedAt)
 			}
 
 			if resp.Status != template.Status {

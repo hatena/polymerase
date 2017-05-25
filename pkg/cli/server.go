@@ -71,7 +71,7 @@ func runServer(c *cli.Context) {
 	defer shutdownSpan.Finish()
 	shutdownCtx, cancel := context.WithTimeout(
 		opentracing.ContextWithSpan(context.Background(), shutdownSpan),
-		time.Minute,
+		10*time.Second,
 	)
 	defer cancel()
 

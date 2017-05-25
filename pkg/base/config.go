@@ -8,11 +8,17 @@ type Config struct {
 	// TimeFormat is used for a directory path
 	TimeFormat string
 
-	// RootDir
-	RootDir string
+	// StoreDir
+	StoreDir string
 
 	// TempDir
 	TempDir string
+
+	// LogDir
+	LogsDir string
+
+	// BackupsDir
+	BackupsDir string
 }
 
 func (cfg *Config) InitDefaults() {

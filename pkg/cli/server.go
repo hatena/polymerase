@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
+	"path/filepath"
 	"syscall"
 	"text/tabwriter"
 	"time"
@@ -14,6 +14,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/server"
+	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
 	"github.com/urfave/cli"
 )
@@ -23,8 +24,7 @@ var serverFlag = cli.Command{
 	Usage:  "Runs server",
 	Action: runServer,
 	Flags: []cli.Flag{
-		cli.StringFlag{Name: "root-dir", Usage: "Root directory for local storage (Not required)"},
-		cli.StringFlag{Name: "temp-dir", Usage: "Temporary directory (Not required)"},
+		cli.StringFlag{Name: "store-dir", Usage: "Store directory for local storage (Not required)"},
 	},
 }
 
@@ -57,8 +57,7 @@ func runServer(c *cli.Context) {
 			tw := tabwriter.NewWriter(&buf, 2, 1, 2, ' ', 0)
 			fmt.Fprintf(tw, "Polymerase server starting at %s\n", time.Now())
 			fmt.Fprintf(tw, "port:\t%s\n", serverCfg.Port)
-			fmt.Fprintf(tw, "root_dir:\t%s\n", serverCfg.RootDir)
-			fmt.Fprintf(tw, "temp_dir:\t%s\n", serverCfg.TempDir)
+			fmt.Fprintf(tw, "store_dir:\t%s\n", serverCfg.StoreDir)
 			if err := tw.Flush(); err != nil {
 				return err
 			}
@@ -107,30 +106,41 @@ func runServer(c *cli.Context) {
 }
 
 func setupAndInitializing(c *cli.Context) error {
-	var err error
-	// RootDir configuration
-	if c.String("root-dir") == "" {
-		serverCfg.RootDir, err = os.Getwd()
+	// StoreDir configuration
+	if c.String("store-dir") == "" {
+		wd, err := os.Getwd()
 		if err != nil {
 			log.Fatal("Cannot get current directory")
 			return err
 		}
+		serverCfg.StoreDir = filepath.Join(wd, "polymerase-data")
 	} else {
-		serverCfg.RootDir = c.String("root-dir")
+		serverCfg.StoreDir = c.String("store-dir")
 	}
 
+	// BackupsDir configuration
+	serverCfg.BackupsDir = filepath.Join(serverCfg.StoreDir, "backups")
+
 	// TempDir configuration
-	if c.String("temp-dir") == "" {
-		serverCfg.TempDir = path.Join(serverCfg.RootDir, "polymerase_tempdir")
-	} else {
-		serverCfg.TempDir = c.String("temp-dir")
+	serverCfg.TempDir = filepath.Join(serverCfg.StoreDir, "temp")
+
+	// LogsDir configuration
+	serverCfg.LogsDir = filepath.Join(serverCfg.StoreDir, "logs")
+
+	// Create BackupsDir
+	if err := dirutil.MkdirAllWithLog(serverCfg.BackupsDir); err != nil {
+		return err
 	}
 
 	// Create Tempdir
-	err = os.MkdirAll(serverCfg.TempDir, 0755)
-	if err != nil {
-		log.WithField("temp_dir", serverCfg.TempDir).Fatal("Cannot create temporary directory")
+	if err := dirutil.MkdirAllWithLog(serverCfg.TempDir); err != nil {
 		return err
 	}
+
+	// Create LogsDir
+	if err := dirutil.MkdirAllWithLog(serverCfg.LogsDir); err != nil {
+		return err
+	}
+
 	return nil
 }

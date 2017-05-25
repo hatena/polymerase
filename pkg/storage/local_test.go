@@ -15,7 +15,7 @@ func NewLocalBackupStorageForTest() *LocalBackupStorage {
 	cfg := &base.Config{}
 	cfg.InitDefaults()
 	return &LocalBackupStorage{
-		RootDir:    path.Join(dir, "testdata"),
+		StoreDir:   path.Join(dir, "testdata"),
 		TimeFormat: cfg.TimeFormat,
 	}
 }

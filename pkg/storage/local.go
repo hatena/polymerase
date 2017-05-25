@@ -18,17 +18,17 @@ import (
 
 // LocalBackupStorage represents local directory backup.
 type LocalBackupStorage struct {
-	RootDir    string
+	StoreDir   string
 	TimeFormat string
 }
 
 // NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
 func NewLocalBackupStorage(conf *base.Config) (*LocalBackupStorage, error) {
 	s := &LocalBackupStorage{
-		RootDir:    conf.RootDir,
+		StoreDir:   conf.StoreDir,
 		TimeFormat: conf.TimeFormat,
 	}
-	if s.RootDir == "" {
+	if s.StoreDir == "" {
 		return nil, errors.New("Backup root directory must be specified with (--root-dir option)")
 	}
 	return s, nil
@@ -41,7 +41,7 @@ func (s *LocalBackupStorage) GetStorageType() string {
 
 // GetLatestToLSN fetches `to_lsn` from most recent backup.
 func (s *LocalBackupStorage) GetLatestToLSN(db string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.StoreDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +51,7 @@ func (s *LocalBackupStorage) GetLatestToLSN(db string) (string, error) {
 
 	latestBackupDir := ""
 	var latestBackupTime time.Time
-	fileDir := fmt.Sprintf("%s/%s/%s", s.RootDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
+	fileDir := fmt.Sprintf("%s/%s/%s", s.StoreDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
 	files, err := ioutil.ReadDir(fileDir)
 	if err != nil {
 		return "", err
@@ -82,7 +82,7 @@ func (s *LocalBackupStorage) GetLatestToLSN(db string) (string, error) {
 
 // SearchStartingPointByLSN returns a starting point containing `to_lsn` equals lsn.
 func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
+	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.StoreDir, db))
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +92,7 @@ func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, er
 	for i := len(startingPointDirs) - 1; i >= 0; i -= 1 {
 		// Search by descending order
 		sp := startingPointDirs[i].Name()
-		fileDir := path.Join(s.RootDir, db, sp)
+		fileDir := path.Join(s.StoreDir, db, sp)
 		files, err := ioutil.ReadDir(fileDir)
 		if err != nil {
 			continue
@@ -114,7 +114,7 @@ func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, er
 func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error) {
 	var files []*BackupFile
 	st := s.GetStorageType()
-	spd, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.RootDir, db))
+	spd, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.StoreDir, db))
 	if err != nil {
 		return files, err
 	}
@@ -123,7 +123,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 	}
 	for i := len(spd) - 1; i >= 0; i -= 1 {
 		sp := spd[i].Name()
-		fd := path.Join(s.RootDir, db, sp)
+		fd := path.Join(s.StoreDir, db, sp)
 		keyp := path.Join(db, sp)
 		fs, err := ioutil.ReadDir(fd)
 		if err != nil {
@@ -180,19 +180,19 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 
 func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	var cp base.XtrabackupCheckpoints
-	err := ini.MapTo(&cp, filepath.Join(s.RootDir, key, "xtrabackup_checkpoints"))
+	err := ini.MapTo(&cp, filepath.Join(s.StoreDir, key, "xtrabackup_checkpoints"))
 	if err != nil {
 		return nil, err
 	}
 	switch cp.BackupType {
 	case "full-backuped":
-		r, err := os.Open(filepath.Join(s.RootDir, key, "base.tar.gz"))
+		r, err := os.Open(filepath.Join(s.StoreDir, key, "base.tar.gz"))
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
 	case "incremental":
-		r, err := os.Open(filepath.Join(s.RootDir, key, "inc.xb.gz"))
+		r, err := os.Open(filepath.Join(s.StoreDir, key, "inc.xb.gz"))
 		if err != nil {
 			return nil, err
 		}
@@ -210,14 +210,14 @@ func (s *LocalBackupStorage) TransferTempIncBackup(tempDir string, key string) e
 }
 
 func (s *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
-	p := path.Join(s.RootDir, key)
+	p := path.Join(s.StoreDir, key)
 	if err := os.MkdirAll(p, 0777); err != nil {
 		return err
 	}
 	if err := os.Remove(p); err != nil {
 		return err
 	}
-	if err := os.Rename(tempPath, path.Join(s.RootDir, key)); err != nil {
+	if err := os.Rename(tempPath, path.Join(s.StoreDir, key)); err != nil {
 		return err
 	}
 	return nil

@@ -1,10 +1,17 @@
 package cli
 
 import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
 	"os"
+	"os/exec"
 
-	log "github.com/sirupsen/logrus"
+	storagepb "github.com/taku-k/polymerase/pkg/storage/proto"
+	backuppb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 	"github.com/urfave/cli"
+	"google.golang.org/grpc"
 )
 
 var incBackupFlag = cli.Command{
@@ -23,17 +30,84 @@ var incBackupFlag = cli.Command{
 }
 
 func runIncBackup(c *cli.Context) {
-	//mysqlHost := c.String("mysql-host")
-	//mysqlPort := c.String("mysql-port")
-	//mysqlUser := c.String("mysql-user")
-	//mysqlPassword := c.String("mysql-password")
-	//polymeraseHost := c.String("polymerase-host")
-	//polymerasePort := c.String("polymerase-port")
+	mysqlHost := c.String("mysql-host")
+	mysqlPort := c.String("mysql-port")
+	mysqlUser := c.String("mysql-user")
+	mysqlPassword := c.String("mysql-password")
+	polymeraseHost := c.String("polymerase-host")
+	polymerasePort := c.String("polymerase-port")
 	db := c.String("db")
 
 	if db == "" {
-		log.Error("You should specify db")
+		fmt.Fprintln(os.Stdout, "You should specify db")
 		os.Exit(1)
 	}
 
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", polymeraseHost, polymerasePort), grpc.WithInsecure())
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	scli := storagepb.NewStorageServiceClient(conn)
+	res, err := scli.GetLastLSN(context.Background(), &storagepb.GetLastLSNRequest{Db: db})
+	if err != nil {
+		panic(err)
+	}
+	lsn := res.Lsn
+
+	var cmdSh string
+	if mysqlPassword != "" {
+		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --password %s --slave-info --backup --stream=xbstream --incremental-lsn=%s | gzip -c",
+			mysqlHost, mysqlPort, mysqlUser, mysqlPassword, lsn)
+	} else {
+		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --slave-info --backup --stream=xbstream --incremental-lsn=%s | gzip -c",
+			mysqlHost, mysqlPort, mysqlUser, lsn)
+	}
+	cmd := exec.Command("sh", "-c", cmdSh)
+
+	r, w := io.Pipe()
+
+	cmd.Stdout = w
+	cmd.Stderr = os.Stderr
+
+	buf := bufio.NewReader(r)
+
+	bcli := backuppb.NewBackupTransferServiceClient(conn)
+	stream, err := bcli.TransferIncBackup(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Fprintln(os.Stdout, "Start xtrabackup")
+	go func() {
+		err = cmd.Start()
+		if err != nil {
+			w.Close()
+			panic(err)
+		}
+		cmd.Wait()
+		w.Close()
+	}()
+
+	chunk := make([]byte, 1<<20)
+	for {
+		n, err := buf.Read(chunk)
+		if err == io.EOF {
+			reply, err := stream.CloseAndRecv()
+			if err != nil {
+				panic(err)
+			}
+			fmt.Fprintln(os.Stdout, reply)
+			return
+		}
+		if err != nil {
+			panic(err)
+		}
+		stream.Send(&backuppb.IncBackupContentStream{
+			Content: chunk[:n],
+			Db:      db,
+			Lsn:     lsn,
+		})
+	}
 }

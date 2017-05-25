@@ -9,6 +9,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"github.com/taku-k/polymerase/pkg/api"
 	"github.com/taku-k/polymerase/pkg/storage"
+	storagepb "github.com/taku-k/polymerase/pkg/storage/proto"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
 	tempbackuppb "github.com/taku-k/polymerase/pkg/tempbackup/proto"
 	"google.golang.org/grpc"
@@ -20,6 +21,7 @@ type Server struct {
 	storage       storage.BackupStorage
 	manager       *tempbackup.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
+	storageSvc    *storage.StorageService
 
 	// Deprecated
 	app *api.App
@@ -44,6 +46,9 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
 	tempbackuppb.RegisterBackupTransferServiceServer(s.grpc, s.tempBackupSvc)
+
+	s.storageSvc = storage.NewStorageService(s.storage)
+	storagepb.RegisterStorageServiceServer(s.grpc, s.storageSvc)
 
 	apiCfg := &api.Config{
 		Config:        cfg.Config,

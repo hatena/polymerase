@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proto;
+
+service StorageService {
+    rpc GetLastLSN(GetLastLSNRequest) returns (GetLastLSNResponse) {};
+}
+
+message GetLastLSNRequest {
+    string db = 1;
+}
+
+message GetLastLSNResponse {
+    string lsn = 1;
+}

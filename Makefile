@@ -33,7 +33,8 @@ deps: glide
 
 .PHONY: proto
 proto: $(PROTOSRCS)
-	$(PROTO) -I pkg pkg/backup/proto/backup.proto --go_out=plugins=grpc:pkg
+	$(PROTO) -I pkg pkg/tempbackup/proto/backup.proto --go_out=plugins=grpc:pkg
+	$(PROTO) -I pkg pkg/storage/proto/storage.proto --go_out=plugins=grpc:pkg
 
 .PHONY: mockgen
 mockgen: $(MOCKS)

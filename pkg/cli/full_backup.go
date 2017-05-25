@@ -16,7 +16,7 @@ import (
 
 var fullBackupFlag = cli.Command{
 	Name:   "full-backup",
-	Usage:  "",
+	Usage:  "Transfers full backups to a polymerase server",
 	Action: runFullBackup,
 	Flags: []cli.Flag{
 		cli.StringFlag{Name: "mysql-host", Value: "127.0.0.1", Usage: "destination mysql host"},

@@ -16,7 +16,7 @@ import (
 
 var incBackupFlag = cli.Command{
 	Name:   "inc-backup",
-	Usage:  "Backups incrementally",
+	Usage:  "Transfers incremental backups to a polymerase server",
 	Action: runIncBackup,
 	Flags: []cli.Flag{
 		cli.StringFlag{Name: "mysql-host", Value: "127.0.0.1", Usage: "destination mysql host"},

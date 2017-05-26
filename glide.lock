@@ -1,5 +1,5 @@
 hash: 1a98edf2bca718de9f766984304cf59e8dbb344152cd2b612df2d9d8fc08b019
-updated: 2017-05-25T12:13:39.721151503+09:00
+updated: 2017-05-26T19:37:48.134189069+09:00
 imports:
 - name: github.com/codegangsta/cli
   version: ab403a54a148f2d857920810291539e1f817ee7b
@@ -14,9 +14,10 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 7a211bcf3bce0e3f1d74f9894916e6f116ae83b4
+  version: 7b8002443fd4a3ce5f25ef93087c524546799a56
   subpackages:
   - proto
+  - protoc-gen-go/descriptor
   - ptypes/any
 - name: github.com/itsjamie/go-bindata-templates
   version: 78f87e838df0fb89dbcd26e1489f988cd7bc3bb8
@@ -43,6 +44,8 @@ imports:
   version: afea898d27c7d17376ecc60c7c2e73c76b40060e
 - name: github.com/opentracing/opentracing-go
   version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
+  subpackages:
+  - log
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/sirupsen/logrus
@@ -85,6 +88,7 @@ imports:
 - name: google.golang.org/genproto
   version: d80a6e20e776b0b17a324d0ba1ab50a39c8e8944
   subpackages:
+  - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
   version: 3a46d9d51931de5beee75086205224a540233baa

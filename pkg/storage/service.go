@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
@@ -26,5 +27,25 @@ func (s *StorageService) GetLatestToLSN(ctx context.Context, req *storagepb.GetL
 	}
 	return &storagepb.GetLatestToLSNResponse{
 		Lsn: lsn,
+	}, nil
+}
+
+func (s *StorageService) GetKeysAtPoint(ctx context.Context, req *storagepb.GetKeysAtPointRequest) (*storagepb.GetKeysAtPointResponse, error) {
+	t, err := time.Parse("2006-01-02", req.From)
+	if err != nil {
+		return &storagepb.GetKeysAtPointResponse{}, err
+	}
+	t = t.AddDate(0, 0, 1)
+	bfiles, _ := s.storage.SearchConsecutiveIncBackups(req.Db, t)
+	keys := make([]*storagepb.BackupFileInfo, len(bfiles), len(bfiles))
+	for i, f := range bfiles {
+		keys[i] = &storagepb.BackupFileInfo{
+			Key:         f.Key,
+			StorageType: f.StorageType,
+			BackupType:  f.BackupType,
+		}
+	}
+	return &storagepb.GetKeysAtPointResponse{
+		Keys: keys,
 	}, nil
 }

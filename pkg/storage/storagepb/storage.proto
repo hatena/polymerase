@@ -2,8 +2,11 @@ syntax = "proto3";
 
 package storagepb;
 
+import "google/api/annotations.proto";
+
 service StorageService {
     rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
+    rpc GetKeysAtPoint(GetKeysAtPointRequest) returns (GetKeysAtPointResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -12,4 +15,19 @@ message GetLatestToLSNRequest {
 
 message GetLatestToLSNResponse {
     string lsn = 1;
+}
+
+message GetKeysAtPointRequest {
+    string db = 1;
+    string from = 2;
+}
+
+message GetKeysAtPointResponse {
+    repeated BackupFileInfo keys = 1;
+}
+
+message BackupFileInfo {
+    string storage_type = 1;
+    string backup_type = 2;
+    string key = 3;
 }

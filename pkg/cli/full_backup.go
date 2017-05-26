@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -34,25 +32,22 @@ func runFullBackup(c *cli.Context) {
 	_exit(err)
 	defer os.RemoveAll(bcli.LsnTempDir)
 
-	errCh := make(chan error, 1)
-	finishCh := make(chan struct{})
-
 	// Connects to gRPC server
 	err, deferFunc := bcli.ConnectgRPC()
 	_exit(err)
 	defer deferFunc()
 
 	// Builds backup pipeline and start it
-	r, err := bcli.BuildPipelineAndStart(errCh)
+	r, err := bcli.BuildPipelineAndStart()
 	_exit(err)
 	buf := bufio.NewReader(r)
 
 	// Main backup work is following;
 	go func() {
-		client := tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
-		stream, err := client.TransferFullBackup(context.Background())
+		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		stream, err := bcli.transferSvcCli.TransferFullBackup(context.Background())
 		if err != nil {
-			errCh <- err
+			bcli.ErrCh <- err
 			return
 		}
 
@@ -64,7 +59,7 @@ func runFullBackup(c *cli.Context) {
 			if err == io.EOF {
 				reply, err := stream.CloseAndRecv()
 				if err != nil {
-					errCh <- err
+					bcli.ErrCh <- err
 					return
 				}
 				fmt.Fprintln(os.Stdout, reply)
@@ -72,7 +67,7 @@ func runFullBackup(c *cli.Context) {
 				break
 			}
 			if err != nil {
-				errCh <- err
+				bcli.ErrCh <- err
 				return
 			}
 			stream.Send(&tempbackuppb.FullBackupContentStream{
@@ -82,29 +77,21 @@ func runFullBackup(c *cli.Context) {
 		}
 
 		// Post xtrabackup_checkpoints
-		b, err := ioutil.ReadFile(filepath.Join(bcli.LsnTempDir, "xtrabackup_checkpoints"))
+		res, err := bcli.PostXtrabackupCP(key)
 		if err != nil {
-			errCh <- err
-			return
-		}
-		res, err := client.PostCheckpoints(context.Background(), &tempbackuppb.PostCheckpointsRequest{
-			Key:     key,
-			Content: b,
-		})
-		if err != nil {
-			errCh <- err
+			bcli.ErrCh <- err
 			return
 		}
 		fmt.Fprintln(os.Stdout, res)
-		finishCh <- struct{}{}
+		bcli.FinishCh <- struct{}{}
 		return
 	}()
 
 	select {
-	case err := <-errCh:
+	case err := <-bcli.ErrCh:
 		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
 		os.Exit(1)
-	case <-finishCh:
+	case <-bcli.FinishCh:
 		return
 	}
 }

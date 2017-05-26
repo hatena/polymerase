@@ -44,36 +44,36 @@ func runIncBackup(c *cli.Context) {
 	_exit(err)
 	bcli.ToLsn = res.Lsn
 
-	errCh := make(chan error, 1)
-	finishCh := make(chan struct{})
-
 	// Builds backup pipeline and start it
-	r, err := bcli.BuildPipelineAndStart(errCh)
+	r, err := bcli.BuildPipelineAndStart()
 	_exit(err)
 	buf := bufio.NewReader(r)
 
 	go func() {
-		client := tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
-		stream, err := client.TransferIncBackup(context.Background())
+		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		stream, err := bcli.transferSvcCli.TransferIncBackup(context.Background())
 		if err != nil {
-			errCh <- err
+			bcli.ErrCh <- err
 			return
 		}
+
 		chunk := make([]byte, 1<<20)
+		var key string
+
 		for {
 			n, err := buf.Read(chunk)
 			if err == io.EOF {
 				reply, err := stream.CloseAndRecv()
 				if err != nil {
-					errCh <- err
+					bcli.ErrCh <- err
 					return
 				}
 				fmt.Fprintln(os.Stdout, reply)
-				finishCh <- struct{}{}
-				return
+				key = reply.Key
+				break
 			}
 			if err != nil {
-				errCh <- err
+				bcli.ErrCh <- err
 				return
 			}
 			stream.Send(&tempbackuppb.IncBackupContentStream{
@@ -82,13 +82,22 @@ func runIncBackup(c *cli.Context) {
 				Lsn:     bcli.ToLsn,
 			})
 		}
+		// Post xtrabackup_checkpoints
+		res, err := bcli.PostXtrabackupCP(key)
+		if err != nil {
+			bcli.ErrCh <- err
+			return
+		}
+		fmt.Fprintln(os.Stdout, res)
+		bcli.FinishCh <- struct{}{}
+		return
 	}()
 
 	select {
-	case err := <-errCh:
+	case err := <-bcli.ErrCh:
 		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
 		os.Exit(1)
-	case <-finishCh:
+	case <-bcli.FinishCh:
 		return
 	}
 }

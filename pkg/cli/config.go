@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/server"
-	"github.com/taku-k/polymerase/pkg/tempbackup"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"github.com/urfave/cli"
@@ -17,7 +16,7 @@ const (
 
 var serverCfg = server.MakeConfig()
 
-func loadFlags(c *cli.Context, backupType base.BackupType) (*tempbackup.BackupClient, error) {
+func loadFlags(c *cli.Context, backupType base.BackupType) (*backupClient, error) {
 	mysqlHost := c.String("mysql-host")
 	mysqlPort := c.String("mysql-port")
 	mysqlUser := c.String("mysql-user")
@@ -31,7 +30,7 @@ func loadFlags(c *cli.Context, backupType base.BackupType) (*tempbackup.BackupCl
 	}
 	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "")
 
-	bcli := &tempbackup.BackupClient{
+	bcli := &backupClient{
 		XtrabackupConfig: &cmdexec.XtrabackupConfig{
 			BinPath:  xtrabackupPath,
 			Host:     mysqlHost,
@@ -43,6 +42,8 @@ func loadFlags(c *cli.Context, backupType base.BackupType) (*tempbackup.BackupCl
 		PolymeraseHost: polymeraseHost,
 		PolymerasePort: polymerasePort,
 		Db:             db,
+		ErrCh:          make(chan error, 1),
+		FinishCh:       make(chan struct{}),
 	}
 	err := bcli.InitDefaults()
 	if err != nil {

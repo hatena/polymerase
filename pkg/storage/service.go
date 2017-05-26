@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -48,4 +49,24 @@ func (s *StorageService) GetKeysAtPoint(ctx context.Context, req *storagepb.GetK
 	return &storagepb.GetKeysAtPointResponse{
 		Keys: keys,
 	}, nil
+}
+
+func (s *StorageService) GetFileByKey(req *storagepb.GetFileByKeyRequest, stream storagepb.StorageService_GetFileByKeyServer) error {
+	r, err := s.storage.GetFileStream(req.Key)
+	if err != nil {
+		return err
+	}
+	chunk := make([]byte, 1<<20)
+	for {
+		n, err := r.Read(chunk)
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		stream.Send(&storagepb.FileStream{
+			Content: chunk[:n],
+		})
+	}
 }

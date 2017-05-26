@@ -2,32 +2,40 @@ syntax = "proto3";
 
 package storagepb;
 
-import "google/api/annotations.proto";
-
 service StorageService {
-    rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
-    rpc GetKeysAtPoint(GetKeysAtPointRequest) returns (GetKeysAtPointResponse) {};
+  rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
+  rpc GetKeysAtPoint(GetKeysAtPointRequest) returns (GetKeysAtPointResponse) {};
+  rpc GetFileByKey(GetFileByKeyRequest) returns (stream FileStream) {};
 }
 
 message GetLatestToLSNRequest {
-    string db = 1;
+  string db = 1;
 }
 
 message GetLatestToLSNResponse {
-    string lsn = 1;
+  string lsn = 1;
 }
 
 message GetKeysAtPointRequest {
-    string db = 1;
-    string from = 2;
+  string db = 1;
+  string from = 2;
 }
 
 message GetKeysAtPointResponse {
-    repeated BackupFileInfo keys = 1;
+  repeated BackupFileInfo keys = 1;
 }
 
 message BackupFileInfo {
-    string storage_type = 1;
-    string backup_type = 2;
-    string key = 3;
+  string storage_type = 1;
+  string backup_type = 2;
+  string key = 3;
+}
+
+message GetFileByKeyRequest {
+  string key = 1;
+  string storage_type = 2;
+}
+
+message FileStream {
+  bytes content = 1;
 }

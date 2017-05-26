@@ -114,3 +114,13 @@ func (_m *MockBackupStorage) PostFile(key string, name string, r io.Reader) erro
 func (_mr *_MockBackupStorageRecorder) PostFile(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostFile", arg0, arg1, arg2)
 }
+
+func (_m *MockBackupStorage) RemoveBackups(key string) error {
+	ret := _m.ctrl.Call(_m, "RemoveBackups", key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockBackupStorageRecorder) RemoveBackups(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveBackups", arg0)
+}

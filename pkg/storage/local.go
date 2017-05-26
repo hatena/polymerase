@@ -221,6 +221,10 @@ func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) erro
 	return nil
 }
 
+func (s *LocalBackupStorage) RemoveBackups(key string) error {
+	return os.RemoveAll(filepath.Join(s.backupsDir, key))
+}
+
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
 	return s.transferTempBackup(tempDir, key)
 }

@@ -14,6 +14,7 @@ type BackupStorage interface {
 	SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error)
 	GetFileStream(key string) (io.Reader, error)
 	PostFile(key string, name string, r io.Reader) error
+	RemoveBackups(key string) error
 }
 
 type BackupFile struct {

@@ -19,7 +19,7 @@ var fullBackupTmpl = strings.TrimSpace(`
   --stream=tar
 `)
 
-func NewFullBackupCmd(cfg *XtrabackupConfig) (*exec.Cmd, error) {
+func BuildFullBackupCmd(cfg *XtrabackupConfig) (*exec.Cmd, error) {
 	err := cfg.InitDefaults()
 	if err != nil {
 		return nil, err

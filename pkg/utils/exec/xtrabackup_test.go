@@ -13,7 +13,7 @@ func TestNewFullBackupCmd(t *testing.T) {
 		LsnTempDir: "/tmp/test",
 	}
 	cfg.InitDefaults()
-	cmd, err := NewFullBackupCmd(cfg)
+	cmd, err := BuildFullBackupCmd(cfg)
 
 	expected := []string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \

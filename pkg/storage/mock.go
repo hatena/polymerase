@@ -104,3 +104,13 @@ func (_m *MockBackupStorage) GetFileStream(key string) (io.Reader, error) {
 func (_mr *_MockBackupStorageRecorder) GetFileStream(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFileStream", arg0)
 }
+
+func (_m *MockBackupStorage) PostFile(key string, name string, r io.Reader) error {
+	ret := _m.ctrl.Call(_m, "PostFile", key, name, r)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockBackupStorageRecorder) PostFile(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostFile", arg0, arg1, arg2)
+}

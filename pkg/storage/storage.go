@@ -13,6 +13,7 @@ type BackupStorage interface {
 	TransferTempIncBackup(tempDir string, key string) error
 	SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error)
 	GetFileStream(key string) (io.Reader, error)
+	PostFile(key string, name string, r io.Reader) error
 }
 
 type BackupFile struct {

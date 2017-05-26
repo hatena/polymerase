@@ -201,6 +201,26 @@ func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	return nil, errors.New("Not found such backup type")
 }
 
+func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) error {
+	f, err := os.Create(filepath.Join(s.backupsDir, key, name))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	chunk := make([]byte, 1<<20)
+	for {
+		n, err := r.Read(chunk)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		f.Write(chunk[:n])
+	}
+	return nil
+}
+
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
 	return s.transferTempBackup(tempDir, key)
 }

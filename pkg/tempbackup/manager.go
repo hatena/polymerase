@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -113,13 +112,6 @@ func (s *TempBackupState) closeFullBackup() error {
 	key := fmt.Sprintf("%s/%s/%s", s.db,
 		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
 	s.key = key
-	if err := os.Chdir(s.tempDir); err != nil {
-		return err
-	}
-	extractCmd := "gunzip -c base.tar.gz | tar xf - xtrabackup_checkpoints"
-	if err := exec.Command("sh", "-c", extractCmd).Run(); err != nil {
-		return errors.New(fmt.Sprintf("Command: `%s` is failed", extractCmd))
-	}
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		return err
 	}
@@ -134,17 +126,6 @@ func (s *TempBackupState) closeIncBackup() error {
 	}
 	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
 	s.key = key
-	if err := os.Chdir(s.tempDir); err != nil {
-		return err
-	}
-	extractCmd := `gunzip -c inc.xb.gz > inc.xb && \
-	 mkdir inc && \
-	 xbstream -x -C inc < inc.xb && \
-	 cp inc/xtrabackup_checkpoints ./ && \
-	 rm -rf inc inc.xb`
-	if err := exec.Command("sh", "-c", extractCmd).Run(); err != nil {
-		return errors.New(fmt.Sprintf("Command: `%s` is failed", extractCmd))
-	}
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		return err
 	}

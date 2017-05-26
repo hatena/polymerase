@@ -5,6 +5,7 @@ package tempbackuppb;
 service BackupTransferService {
   rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
   rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
+  rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
 }
 
 message FullBackupContentStream {
@@ -19,5 +20,15 @@ message IncBackupContentStream {
 }
 
 message BackupReply {
+  string message = 1;
+  string key = 2;
+}
+
+message PostCheckpointsRequest {
+  string key = 1;
+  bytes content = 2;
+}
+
+message PostCheckpointsResponse {
   string message = 1;
 }

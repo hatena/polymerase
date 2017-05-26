@@ -5,6 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
+	"golang.org/x/net/context"
 )
 
 type TempBackupTransferService struct {
@@ -73,4 +74,10 @@ func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.Backup
 			return err
 		}
 	}
+}
+
+func (s *TempBackupTransferService) PostCheckpoints(
+	ctx context.Context,
+	req *tempbackuppb.PostCheckpointsRequest) (*tempbackuppb.PostCheckpointsResponse, error) {
+	return &tempbackuppb.PostCheckpointsResponse{}, nil
 }

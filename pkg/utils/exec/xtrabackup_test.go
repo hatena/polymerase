@@ -8,18 +8,18 @@ import (
 )
 
 func TestBuildFullBackupCmd(t *testing.T) {
-	cfg := &XtrabackupConfig{
-		BinPath:    "xtrabackup",
-		User:       "user",
-		Password:   "password",
-		LsnTempDir: "/tmp/test",
-	}
-	cfg.InitDefaults()
-	defer os.RemoveAll(cfg.LsnTempDir)
-
-	cmd, err := BuildFullBackupCmd(cfg)
-
-	expected := []string{"sh", "-c", strings.TrimSpace(`
+	var tests = []struct {
+		cfg      *XtrabackupConfig
+		expected []string
+	}{
+		{
+			&XtrabackupConfig{
+				BinPath:    "xtrabackup",
+				User:       "user",
+				Password:   "password",
+				LsnTempDir: "/tmp/test",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
   --host 127.0.0.1 \
   --port 3306 \
@@ -28,13 +28,39 @@ xtrabackup \
   --slave-info \
   --backup \
   --extra-lsndir=/tmp/test \
-  --stream=tar`)}
-
-	if err != nil {
-		t.Errorf("Not failed: %v", err)
+  --stream=tar
+  			`)},
+		}, {
+			&XtrabackupConfig{
+				BinPath:    "/usr/bin/xtrabackup",
+				User:       "user",
+				LsnTempDir: "/tmp/test",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+/usr/bin/xtrabackup \
+  --host 127.0.0.1 \
+  --port 3306 \
+  --user user \
+  --slave-info \
+  --backup \
+  --extra-lsndir=/tmp/test \
+  --stream=tar
+			`)},
+		},
 	}
-	if !reflect.DeepEqual(cmd.Args, expected) {
-		t.Errorf("Command does not equal to expected command: actual=(%v) expected=(%v)", cmd.Args, expected)
+
+	for _, tt := range tests {
+		tt.cfg.InitDefaults()
+		defer os.RemoveAll(tt.cfg.LsnTempDir)
+
+		cmd, err := BuildFullBackupCmd(tt.cfg)
+
+		if err != nil {
+			t.Errorf("Not failed: %v", err)
+		}
+		if !reflect.DeepEqual(cmd.Args, tt.expected) {
+			t.Errorf("Command does not equal to expected command: actual=(%v) expected=(%v)", cmd.Args, tt.expected)
+		}
 	}
 }
 

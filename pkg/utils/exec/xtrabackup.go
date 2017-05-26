@@ -13,11 +13,13 @@ var fullBackupTmpl = strings.TrimSpace(`
 {{.BinPath}} \
   --host {{.Host}} \
   --port {{.Port}} \
-  --user {{.User}} \
-{{if .Password}}  --password {{.Password}} \{{end}}
+  --user {{.User}} \{{ if .Password }}
+  --password {{ .Password }} \
+  {{- end }}
   --slave-info \
-  --backup \
-{{if .LsnTempDir}}  --extra-lsndir={{.LsnTempDir}} \{{end}}
+  --backup \{{ if .LsnTempDir }}
+  --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}
   --stream=tar
 `)
 
@@ -25,11 +27,13 @@ var incBackupTmpl = strings.TrimSpace(`
 {{.BinPath}} \
   --host {{.Host}} \
   --port {{.Port}} \
-  --user {{.User}} \
-{{if .Password}}  --password {{.Password}} \{{end}}
+  --user {{.User}} \{{ if .Password }}
+  --password {{.Password}} \
+  {{- end }}
   --slave-info \
-  --backup \
-{{if .LsnTempDir}}  --extra-lsndir={{.LsnTempDir}} \{{end}}
+  --backup \{{ if .LsnTempDir }}
+  --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}
   --stream=xbstream \
   --incremental-lsn={{.ToLsn}}
 `)

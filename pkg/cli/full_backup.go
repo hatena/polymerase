@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"github.com/taku-k/polymerase/pkg/utils/envutil"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
 )
 
 var fullBackupFlag = cli.Command{
@@ -30,77 +28,60 @@ var fullBackupFlag = cli.Command{
 }
 
 func runFullBackup(c *cli.Context) {
-	mysqlHost := c.String("mysql-host")
-	mysqlPort := c.String("mysql-port")
-	mysqlUser := c.String("mysql-user")
-	mysqlPassword := c.String("mysql-password")
-	polymeraseHost := c.String("polymerase-host")
-	polymerasePort := c.String("polymerase-port")
-	db := c.String("db")
+	bcli, err := loadFlags(c, base.FULL)
+	_exit(err)
+	defer os.RemoveAll(bcli.LsnTempDir)
 
-	if db == "" {
-		fmt.Fprintln(os.Stdout, "You should specify db with '--db' flag")
-		os.Exit(1)
-	}
-	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "xtrabackup")
+	errCh := make(chan error, 1)
+	finishCh := make(chan struct{})
 
-	var cmdSh string
-	if mysqlPassword != "" {
-		cmdSh = fmt.Sprintf("%s --host %s --port %s --user %s --password %s --slave-info --backup --stream=tar | gzip -c",
-			xtrabackupPath, mysqlHost, mysqlPort, mysqlUser, mysqlPassword)
-	} else {
-		cmdSh = fmt.Sprintf("%s --host %s --port %s --user %s --slave-info --backup --stream=tar | gzip -c",
-			xtrabackupPath, mysqlHost, mysqlPort, mysqlUser)
-	}
-	cmd := exec.Command("sh", "-c", cmdSh)
+	// Connects to gRPC server
+	err, deferFunc := bcli.ConnectgRPC()
+	_exit(err)
+	defer deferFunc()
 
-	r, w := io.Pipe()
-
-	cmd.Stdout = w
-	cmd.Stderr = os.Stderr
-
+	// Builds backup pipeline and start it
+	r, err := bcli.BuildPipelineAndStart(errCh)
+	_exit(err)
 	buf := bufio.NewReader(r)
 
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", polymeraseHost, polymerasePort), grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
-	client := tempbackuppb.NewBackupTransferServiceClient(conn)
-	stream, err := client.TransferFullBackup(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Fprintln(os.Stdout, "Start xtrabackup")
+	// Main backup work is following;
 	go func() {
-		err = cmd.Start()
+		client := tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		stream, err := client.TransferFullBackup(context.Background())
 		if err != nil {
-			w.Close()
-			panic(err)
-		}
-		cmd.Wait()
-		w.Close()
-	}()
-
-	chunk := make([]byte, 1<<20)
-	for {
-		n, err := buf.Read(chunk)
-		if err == io.EOF {
-			reply, err := stream.CloseAndRecv()
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(reply)
+			errCh <- err
 			return
 		}
-		if err != nil {
-			panic(err)
+		chunk := make([]byte, 1<<20)
+		for {
+			n, err := buf.Read(chunk)
+			if err == io.EOF {
+				reply, err := stream.CloseAndRecv()
+				if err != nil {
+					errCh <- err
+					return
+				}
+				fmt.Fprintln(os.Stdout, reply)
+				finishCh <- struct{}{}
+				return
+			}
+			if err != nil {
+				errCh <- err
+				return
+			}
+			stream.Send(&tempbackuppb.FullBackupContentStream{
+				Content: chunk[:n],
+				Db:      bcli.Db,
+			})
 		}
-		stream.Send(&tempbackuppb.FullBackupContentStream{
-			Content: chunk[:n],
-			Db:      db,
-		})
+	}()
+
+	select {
+	case err := <-errCh:
+		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
+		os.Exit(1)
+	case <-finishCh:
+		return
 	}
 }

@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
 )
 
 var incBackupFlag = cli.Command{
@@ -30,84 +29,66 @@ var incBackupFlag = cli.Command{
 }
 
 func runIncBackup(c *cli.Context) {
-	mysqlHost := c.String("mysql-host")
-	mysqlPort := c.String("mysql-port")
-	mysqlUser := c.String("mysql-user")
-	mysqlPassword := c.String("mysql-password")
-	polymeraseHost := c.String("polymerase-host")
-	polymerasePort := c.String("polymerase-port")
-	db := c.String("db")
+	bcli, err := loadFlags(c, base.INC)
+	_exit(err)
+	defer os.RemoveAll(bcli.LsnTempDir)
 
-	if db == "" {
-		fmt.Fprintln(os.Stdout, "You should specify db")
-		os.Exit(1)
-	}
+	// Connects to gRPC server
+	err, deferFunc := bcli.ConnectgRPC()
+	_exit(err)
+	defer deferFunc()
 
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", polymeraseHost, polymerasePort), grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
+	// Fetches latest to_lsn
+	scli := storagepb.NewStorageServiceClient(bcli.GrpcConn)
+	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: bcli.Db})
+	_exit(err)
+	bcli.ToLsn = res.Lsn
 
-	scli := storagepb.NewStorageServiceClient(conn)
-	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: db})
-	if err != nil {
-		panic(err)
-	}
-	lsn := res.Lsn
+	errCh := make(chan error, 1)
+	finishCh := make(chan struct{})
 
-	var cmdSh string
-	if mysqlPassword != "" {
-		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --password %s --slave-info --backup --stream=xbstream --incremental-lsn=%s | gzip -c",
-			mysqlHost, mysqlPort, mysqlUser, mysqlPassword, lsn)
-	} else {
-		cmdSh = fmt.Sprintf("xtrabackup --host %s --port %s --user %s --slave-info --backup --stream=xbstream --incremental-lsn=%s | gzip -c",
-			mysqlHost, mysqlPort, mysqlUser, lsn)
-	}
-	cmd := exec.Command("sh", "-c", cmdSh)
-
-	r, w := io.Pipe()
-
-	cmd.Stdout = w
-	cmd.Stderr = os.Stderr
-
+	// Builds backup pipeline and start it
+	r, err := bcli.BuildPipelineAndStart(errCh)
+	_exit(err)
 	buf := bufio.NewReader(r)
 
-	bcli := tempbackuppb.NewBackupTransferServiceClient(conn)
-	stream, err := bcli.TransferIncBackup(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Fprintln(os.Stdout, "Start xtrabackup")
 	go func() {
-		err = cmd.Start()
+		client := tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		stream, err := client.TransferIncBackup(context.Background())
 		if err != nil {
-			w.Close()
-			panic(err)
-		}
-		cmd.Wait()
-		w.Close()
-	}()
-
-	chunk := make([]byte, 1<<20)
-	for {
-		n, err := buf.Read(chunk)
-		if err == io.EOF {
-			reply, err := stream.CloseAndRecv()
-			if err != nil {
-				panic(err)
-			}
-			fmt.Fprintln(os.Stdout, reply)
+			errCh <- err
 			return
 		}
-		if err != nil {
-			panic(err)
+		chunk := make([]byte, 1<<20)
+		for {
+			n, err := buf.Read(chunk)
+			if err == io.EOF {
+				reply, err := stream.CloseAndRecv()
+				if err != nil {
+					errCh <- err
+					return
+				}
+				fmt.Fprintln(os.Stdout, reply)
+				finishCh <- struct{}{}
+				return
+			}
+			if err != nil {
+				errCh <- err
+				return
+			}
+			stream.Send(&tempbackuppb.IncBackupContentStream{
+				Content: chunk[:n],
+				Db:      bcli.Db,
+				Lsn:     bcli.ToLsn,
+			})
 		}
-		stream.Send(&tempbackuppb.IncBackupContentStream{
-			Content: chunk[:n],
-			Db:      db,
-			Lsn:     lsn,
-		})
+	}()
+
+	select {
+	case err := <-errCh:
+		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
+		os.Exit(1)
+	case <-finishCh:
+		return
 	}
 }

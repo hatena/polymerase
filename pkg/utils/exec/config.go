@@ -17,6 +17,7 @@ type XtrabackupConfig struct {
 	User       string
 	Password   string
 	LsnTempDir string
+	ToLsn      string
 }
 
 func (cfg *XtrabackupConfig) InitDefaults() error {

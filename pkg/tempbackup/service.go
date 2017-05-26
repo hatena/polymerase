@@ -3,6 +3,7 @@ package tempbackup
 import (
 	"io"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"golang.org/x/net/context"
@@ -34,6 +35,9 @@ func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.Backu
 			return err
 		}
 		if state == nil {
+			if content.Db == "" {
+				return errors.New("empty db is not acceptable")
+			}
 			state, err = s.manager.OpenFullBackup(content.Db)
 			log.WithField("db", content.Db).Info("Connected from db")
 			log.WithField("path", state.tempDir).Info("Create temporary directory")
@@ -65,6 +69,12 @@ func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.Backup
 			return err
 		}
 		if state == nil {
+			if content.Db == "" {
+				return errors.New("empty db is not acceptable")
+			}
+			if content.Lsn == "" {
+				return errors.New("empty lsn is not acceptable")
+			}
 			state, err = s.manager.OpenIncBackup(content.Db, content.Lsn)
 			if err != nil {
 				return err

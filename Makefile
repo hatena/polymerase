@@ -41,9 +41,7 @@ proto: $(PROTOSRCS)
 	for src in $(PROTOSRCS); do \
 	  $(PROTO) \
 	   -Ipkg \
-	   -I$$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
 	   $$src \
-	   --grpc-gateway_out=logtostderr=true:pkg \
 	   --go_out=plugins=grpc:pkg; \
 	done
 

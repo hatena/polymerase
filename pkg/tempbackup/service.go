@@ -3,6 +3,8 @@ package tempbackup
 import (
 	"io"
 
+	"bytes"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -29,6 +31,7 @@ func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.Backu
 			}
 			return stream.SendAndClose(&tempbackuppb.BackupReply{
 				Message: "success",
+				Key:     state.key,
 			})
 		}
 		if err != nil {
@@ -63,6 +66,7 @@ func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.Backup
 			}
 			return stream.SendAndClose(&tempbackuppb.BackupReply{
 				Message: "success",
+				Key:     state.key,
 			})
 		}
 		if err != nil {
@@ -89,5 +93,11 @@ func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.Backup
 func (s *TempBackupTransferService) PostCheckpoints(
 	ctx context.Context,
 	req *tempbackuppb.PostCheckpointsRequest) (*tempbackuppb.PostCheckpointsResponse, error) {
-	return &tempbackuppb.PostCheckpointsResponse{}, nil
+	r := bytes.NewReader(req.Content)
+	if err := s.manager.storage.PostFile(req.Key, "xtrabackup_checkpoints_test", r); err != nil {
+		return &tempbackuppb.PostCheckpointsResponse{}, err
+	}
+	return &tempbackuppb.PostCheckpointsResponse{
+		Message: "success",
+	}, nil
 }

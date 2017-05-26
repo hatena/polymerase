@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -53,7 +55,10 @@ func runFullBackup(c *cli.Context) {
 			errCh <- err
 			return
 		}
+
 		chunk := make([]byte, 1<<20)
+		var key string
+
 		for {
 			n, err := buf.Read(chunk)
 			if err == io.EOF {
@@ -63,8 +68,8 @@ func runFullBackup(c *cli.Context) {
 					return
 				}
 				fmt.Fprintln(os.Stdout, reply)
-				finishCh <- struct{}{}
-				return
+				key = reply.Key
+				break
 			}
 			if err != nil {
 				errCh <- err
@@ -75,6 +80,24 @@ func runFullBackup(c *cli.Context) {
 				Db:      bcli.Db,
 			})
 		}
+
+		// Post xtrabackup_checkpoints
+		b, err := ioutil.ReadFile(filepath.Join(bcli.LsnTempDir, "xtrabackup_checkpoints"))
+		if err != nil {
+			errCh <- err
+			return
+		}
+		res, err := client.PostCheckpoints(context.Background(), &tempbackuppb.PostCheckpointsRequest{
+			Key:     key,
+			Content: b,
+		})
+		if err != nil {
+			errCh <- err
+			return
+		}
+		fmt.Fprintln(os.Stdout, res)
+		finishCh <- struct{}{}
+		return
 	}()
 
 	select {

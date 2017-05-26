@@ -30,6 +30,7 @@ type TempBackupState struct {
 	storage    storage.BackupStorage
 	lsn        string
 	tempDir    string
+	key        string
 }
 
 func NewTempBackupManager(storage storage.BackupStorage, conf *base.Config) *TempBackupManager {
@@ -111,6 +112,7 @@ func (s *TempBackupState) closeFullBackup() error {
 	//defer s.removeTempDir()
 	key := fmt.Sprintf("%s/%s/%s", s.db,
 		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
+	s.key = key
 	if err := os.Chdir(s.tempDir); err != nil {
 		return err
 	}
@@ -131,6 +133,7 @@ func (s *TempBackupState) closeIncBackup() error {
 		return err
 	}
 	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
+	s.key = key
 	if err := os.Chdir(s.tempDir); err != nil {
 		return err
 	}

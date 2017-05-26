@@ -44,10 +44,10 @@ func runFullBackup(c *cli.Context) {
 
 	// Main backup work is following;
 	go func() {
-		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.grpcConn)
 		stream, err := bcli.transferSvcCli.TransferFullBackup(context.Background())
 		if err != nil {
-			bcli.ErrCh <- err
+			bcli.errCh <- err
 			return
 		}
 
@@ -59,7 +59,7 @@ func runFullBackup(c *cli.Context) {
 			if err == io.EOF {
 				reply, err := stream.CloseAndRecv()
 				if err != nil {
-					bcli.ErrCh <- err
+					bcli.errCh <- err
 					return
 				}
 				fmt.Fprintln(os.Stdout, reply)
@@ -67,31 +67,31 @@ func runFullBackup(c *cli.Context) {
 				break
 			}
 			if err != nil {
-				bcli.ErrCh <- err
+				bcli.errCh <- err
 				return
 			}
 			stream.Send(&tempbackuppb.FullBackupContentStream{
 				Content: chunk[:n],
-				Db:      bcli.Db,
+				Db:      bcli.db,
 			})
 		}
 
 		// Post xtrabackup_checkpoints
 		res, err := bcli.PostXtrabackupCP(key)
 		if err != nil {
-			bcli.ErrCh <- err
+			bcli.errCh <- err
 			return
 		}
 		fmt.Fprintln(os.Stdout, res)
-		bcli.FinishCh <- struct{}{}
+		bcli.finishCh <- struct{}{}
 		return
 	}()
 
 	select {
-	case err := <-bcli.ErrCh:
+	case err := <-bcli.errCh:
 		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
 		os.Exit(1)
-	case <-bcli.FinishCh:
+	case <-bcli.finishCh:
 		return
 	}
 }

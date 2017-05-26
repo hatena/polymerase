@@ -9,14 +9,9 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-	defaultMySQLHost = "127.0.0.1"
-	defaultMySQLPort = "3306"
-)
-
 var serverCfg = server.MakeConfig()
 
-func loadFlags(c *cli.Context, backupType base.BackupType) (*backupClient, error) {
+func loadFlags(c *cli.Context, bt base.BackupType) (*backupClient, error) {
 	mysqlHost := c.String("mysql-host")
 	mysqlPort := c.String("mysql-port")
 	mysqlUser := c.String("mysql-user")
@@ -38,12 +33,12 @@ func loadFlags(c *cli.Context, backupType base.BackupType) (*backupClient, error
 			User:     mysqlUser,
 			Password: mysqlPassword,
 		},
-		BackupType:     backupType,
-		PolymeraseHost: polymeraseHost,
-		PolymerasePort: polymerasePort,
-		Db:             db,
-		ErrCh:          make(chan error, 1),
-		FinishCh:       make(chan struct{}),
+		backupType:     bt,
+		polymeraseHost: polymeraseHost,
+		polymerasePort: polymerasePort,
+		db:             db,
+		errCh:          make(chan error, 1),
+		finishCh:       make(chan struct{}),
 	}
 	err := bcli.InitDefaults()
 	if err != nil {

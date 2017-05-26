@@ -39,8 +39,8 @@ func runIncBackup(c *cli.Context) {
 	defer deferFunc()
 
 	// Fetches latest to_lsn
-	scli := storagepb.NewStorageServiceClient(bcli.GrpcConn)
-	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: bcli.Db})
+	scli := storagepb.NewStorageServiceClient(bcli.grpcConn)
+	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: bcli.db})
 	_exit(err)
 	bcli.ToLsn = res.Lsn
 
@@ -50,10 +50,10 @@ func runIncBackup(c *cli.Context) {
 	buf := bufio.NewReader(r)
 
 	go func() {
-		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.GrpcConn)
+		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.grpcConn)
 		stream, err := bcli.transferSvcCli.TransferIncBackup(context.Background())
 		if err != nil {
-			bcli.ErrCh <- err
+			bcli.errCh <- err
 			return
 		}
 
@@ -65,7 +65,7 @@ func runIncBackup(c *cli.Context) {
 			if err == io.EOF {
 				reply, err := stream.CloseAndRecv()
 				if err != nil {
-					bcli.ErrCh <- err
+					bcli.errCh <- err
 					return
 				}
 				fmt.Fprintln(os.Stdout, reply)
@@ -73,31 +73,31 @@ func runIncBackup(c *cli.Context) {
 				break
 			}
 			if err != nil {
-				bcli.ErrCh <- err
+				bcli.errCh <- err
 				return
 			}
 			stream.Send(&tempbackuppb.IncBackupContentStream{
 				Content: chunk[:n],
-				Db:      bcli.Db,
+				Db:      bcli.db,
 				Lsn:     bcli.ToLsn,
 			})
 		}
 		// Post xtrabackup_checkpoints
 		res, err := bcli.PostXtrabackupCP(key)
 		if err != nil {
-			bcli.ErrCh <- err
+			bcli.errCh <- err
 			return
 		}
 		fmt.Fprintln(os.Stdout, res)
-		bcli.FinishCh <- struct{}{}
+		bcli.finishCh <- struct{}{}
 		return
 	}()
 
 	select {
-	case err := <-bcli.ErrCh:
+	case err := <-bcli.errCh:
 		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
 		os.Exit(1)
-	case <-bcli.FinishCh:
+	case <-bcli.finishCh:
 		return
 	}
 }

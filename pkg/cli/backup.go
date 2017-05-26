@@ -1,13 +1,12 @@
 package cli
 
 import (
+	"context"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
-
-	"context"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -20,22 +19,22 @@ import (
 type backupClient struct {
 	*cmdexec.XtrabackupConfig
 
-	BackupType     base.BackupType
-	GrpcConn       *grpc.ClientConn
+	backupType     base.BackupType
+	grpcConn       *grpc.ClientConn
 	transferSvcCli tempbackuppb.BackupTransferServiceClient
 
-	PolymeraseHost string
-	PolymerasePort string
-	Db             string
+	polymeraseHost string
+	polymerasePort string
+	db             string
 
-	ErrCh    chan error
-	FinishCh chan struct{}
+	errCh    chan error
+	finishCh chan struct{}
 }
 
 func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 	var xtrabackupCmd *exec.Cmd
 	var err error
-	switch c.BackupType {
+	switch c.backupType {
 	case base.FULL:
 		xtrabackupCmd, err = cmdexec.BuildFullBackupCmd(c.XtrabackupConfig)
 		if err != nil {
@@ -69,7 +68,7 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 		err := xtrabackupCmd.Start()
 		if err != nil {
 			xtrabackupCmdStdout.Close()
-			c.ErrCh <- err
+			c.errCh <- err
 		}
 		xtrabackupCmd.Wait()
 		xtrabackupCmdStdout.Close()
@@ -79,7 +78,7 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 		err := gzipCmd.Start()
 		if err != nil {
 			w.Close()
-			c.ErrCh <- err
+			c.errCh <- err
 		}
 		gzipCmd.Wait()
 		w.Close()
@@ -89,13 +88,13 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 }
 
 func (c *backupClient) ConnectgRPC() (error, func()) {
-	addr := net.JoinHostPort(c.PolymeraseHost, c.PolymerasePort)
+	addr := net.JoinHostPort(c.polymeraseHost, c.polymerasePort)
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		return err, nil
 	}
-	c.GrpcConn = conn
-	return nil, func() { c.GrpcConn.Close() }
+	c.grpcConn = conn
+	return nil, func() { c.grpcConn.Close() }
 }
 
 func (c *backupClient) PostXtrabackupCP(key string) (*tempbackuppb.PostCheckpointsResponse, error) {

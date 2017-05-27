@@ -16,6 +16,12 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 )
 
+type LocalStorageConfig struct {
+	*base.Config
+
+	BackupsDir string
+}
+
 // LocalBackupStorage represents local directory backup.
 type LocalBackupStorage struct {
 	backupsDir string
@@ -23,7 +29,7 @@ type LocalBackupStorage struct {
 }
 
 // NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
-func NewLocalBackupStorage(cfg *base.Config) (*LocalBackupStorage, error) {
+func NewLocalBackupStorage(cfg *LocalStorageConfig) (*LocalBackupStorage, error) {
 	s := &LocalBackupStorage{
 		backupsDir: cfg.BackupsDir,
 		timeFormat: cfg.TimeFormat,

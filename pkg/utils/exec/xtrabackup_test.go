@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"context"
 )
 
 func TestBuildFullBackupCmd(t *testing.T) {
@@ -53,7 +54,7 @@ xtrabackup \
 		tt.cfg.InitDefaults()
 		defer os.RemoveAll(tt.cfg.LsnTempDir)
 
-		cmd, err := BuildFullBackupCmd(tt.cfg)
+		cmd, err := BuildFullBackupCmd(context.Background(), tt.cfg)
 
 		if err != nil {
 			t.Errorf("Not failed: %v", err)
@@ -75,7 +76,7 @@ func TestBuildIncBackupCmd(t *testing.T) {
 	cfg.InitDefaults()
 	defer os.RemoveAll(cfg.LsnTempDir)
 
-	cmd, err := BuildIncBackupCmd(cfg)
+	cmd, err := BuildIncBackupCmd(context.Background(), cfg)
 
 	expected := []string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \

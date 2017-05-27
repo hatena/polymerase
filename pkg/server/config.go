@@ -1,32 +1,45 @@
 package server
 
-import "github.com/taku-k/polymerase/pkg/base"
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/taku-k/polymerase/pkg/base"
+)
 
 const (
-	// From IANA Service Name and Transport Protocol Port Number Registry
-	// This port is unregistered for now.
-	// https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?&page=126
-	defaultPort = "24925"
-
-	defaultAddr = ":" + defaultPort
-
 	defaultHTTPApiPrefix = "/api"
 )
 
 type Config struct {
 	*base.Config
-	Port          string
-	Addr          string
+
 	HTTPApiPrefix string
+
+	// StoreDir
+	StoreDir string
+
+	// TempDir
+	TempDir string
+
+	// LogDir
+	LogsDir string
+
+	// BackupsDir
+	BackupsDir string
 }
 
 func MakeConfig() *Config {
 	cfg := &Config{
 		Config:        new(base.Config),
-		Port:          defaultPort,
-		Addr:          defaultAddr,
 		HTTPApiPrefix: defaultHTTPApiPrefix,
 	}
 	cfg.Config.InitDefaults()
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = os.TempDir()
+	}
+	cfg.StoreDir = filepath.Join(wd, "polymerase-data")
+
 	return cfg
 }

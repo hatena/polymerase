@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,32 +15,26 @@ import (
 	"google.golang.org/grpc"
 )
 
-type backupClient struct {
-	*cmdexec.XtrabackupConfig
+type backupContext struct {
+	*base.Config
 
-	backupType     base.BackupType
-	grpcConn       *grpc.ClientConn
-	transferSvcCli tempbackuppb.BackupTransferServiceClient
+	backupType base.BackupType
 
-	polymeraseHost string
-	polymerasePort string
-	db             string
-
-	errCh    chan error
-	finishCh chan struct{}
+	purgePrev bool
 }
 
-func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
+func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Reader, error) {
 	var xtrabackupCmd *exec.Cmd
 	var err error
-	switch c.backupType {
+
+	switch backupCtx.backupType {
 	case base.FULL:
-		xtrabackupCmd, err = cmdexec.BuildFullBackupCmd(c.XtrabackupConfig)
+		xtrabackupCmd, err = cmdexec.BuildFullBackupCmd(ctx, xtrabackupCfg)
 		if err != nil {
 			return nil, err
 		}
 	case base.INC:
-		xtrabackupCmd, err = cmdexec.BuildIncBackupCmd(c.XtrabackupConfig)
+		xtrabackupCmd, err = cmdexec.BuildIncBackupCmd(ctx, xtrabackupCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +61,7 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 		err := xtrabackupCmd.Start()
 		if err != nil {
 			xtrabackupCmdStdout.Close()
-			c.errCh <- err
+			errCh <- err
 		}
 		xtrabackupCmd.Wait()
 		xtrabackupCmdStdout.Close()
@@ -78,7 +71,7 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 		err := gzipCmd.Start()
 		if err != nil {
 			w.Close()
-			c.errCh <- err
+			errCh <- err
 		}
 		gzipCmd.Wait()
 		w.Close()
@@ -87,22 +80,20 @@ func (c *backupClient) BuildPipelineAndStart() (io.Reader, error) {
 	return r, nil
 }
 
-func (c *backupClient) ConnectgRPC() (error, func()) {
-	addr := net.JoinHostPort(c.polymeraseHost, c.polymerasePort)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
-	if err != nil {
-		return err, nil
-	}
-	c.grpcConn = conn
-	return nil, func() { c.grpcConn.Close() }
-}
-
-func (c *backupClient) PostXtrabackupCP(key string) (*tempbackuppb.PostCheckpointsResponse, error) {
-	b, err := ioutil.ReadFile(filepath.Join(c.LsnTempDir, "xtrabackup_checkpoints"))
+func connectGRPC(ctx context.Context) (*grpc.ClientConn, error) {
+	conn, err := grpc.DialContext(ctx, baseCfg.Addr, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.transferSvcCli.PostCheckpoints(context.Background(), &tempbackuppb.PostCheckpointsRequest{
+	return conn, err
+}
+
+func postXtrabackupCP(ctx context.Context, cli tempbackuppb.BackupTransferServiceClient, key string) (*tempbackuppb.PostCheckpointsResponse, error) {
+	b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
+	if err != nil {
+		return nil, err
+	}
+	res, err := cli.PostCheckpoints(ctx, &tempbackuppb.PostCheckpointsRequest{
 		Key:     key,
 		Content: b,
 	})

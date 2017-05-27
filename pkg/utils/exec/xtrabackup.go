@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/template"
 
+	"context"
 	"github.com/pkg/errors"
 )
 
@@ -38,18 +39,18 @@ var incBackupTmpl = strings.TrimSpace(`
   --incremental-lsn={{.ToLsn}}
 `)
 
-func BuildFullBackupCmd(cfg *XtrabackupConfig) (*exec.Cmd, error) {
-	return _buildBackupCmd(cfg, fullBackupTmpl)
+func BuildFullBackupCmd(ctx context.Context, cfg *XtrabackupConfig) (*exec.Cmd, error) {
+	return _buildBackupCmd(ctx, cfg, fullBackupTmpl)
 }
 
-func BuildIncBackupCmd(cfg *XtrabackupConfig) (*exec.Cmd, error) {
+func BuildIncBackupCmd(ctx context.Context, cfg *XtrabackupConfig) (*exec.Cmd, error) {
 	if cfg.ToLsn == "" {
 		return nil, errors.New("ToLSN cannot be empty")
 	}
-	return _buildBackupCmd(cfg, incBackupTmpl)
+	return _buildBackupCmd(ctx, cfg, incBackupTmpl)
 }
 
-func _buildBackupCmd(cfg *XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
+func _buildBackupCmd(ctx context.Context, cfg *XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
 	err := cfg.InitDefaults()
 	if err != nil {
 		return nil, err
@@ -58,6 +59,6 @@ func _buildBackupCmd(cfg *XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
 	t, _ = t.Parse(tmpl)
 	buf := new(bytes.Buffer)
 	t.Execute(buf, cfg)
-	cmd := exec.Command("sh", "-c", buf.String())
+	cmd := exec.CommandContext(ctx, "sh", "-c", buf.String())
 	return cmd, nil
 }

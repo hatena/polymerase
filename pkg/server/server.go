@@ -3,11 +3,8 @@ package server
 import (
 	"context"
 	"net"
-	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
-	"github.com/taku-k/polymerase/pkg/api"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
@@ -22,9 +19,6 @@ type Server struct {
 	manager       *tempbackup.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
-
-	// Deprecated
-	app *api.App
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -37,12 +31,18 @@ func NewServer(cfg *Config) (*Server, error) {
 	s.grpc = grpc.NewServer()
 
 	// For now, local storage only
-	s.storage, err = storage.NewLocalBackupStorage(cfg.Config)
+	s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
+		Config:     cfg.Config,
+		BackupsDir: cfg.BackupsDir,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.manager = tempbackup.NewTempBackupManager(s.storage, cfg.Config)
+	s.manager = tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
+		Config:  cfg.Config,
+		TempDir: cfg.TempDir,
+	})
 
 	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
 	tempbackuppb.RegisterBackupTransferServiceServer(s.grpc, s.tempBackupSvc)
@@ -50,19 +50,10 @@ func NewServer(cfg *Config) (*Server, error) {
 	s.storageSvc = storage.NewStorageService(s.storage)
 	storagepb.RegisterStorageServiceServer(s.grpc, s.storageSvc)
 
-	apiCfg := &api.Config{
-		Config:        cfg.Config,
-		HTTPApiPrefix: cfg.HTTPApiPrefix,
-	}
-	s.app, err = api.NewApp(apiCfg)
-	if err != nil {
-		return nil, err
-	}
-
 	return s, nil
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	l, err := net.Listen("tcp", s.cfg.Addr)
 	if err != nil {
 		return err
@@ -70,12 +61,10 @@ func (s *Server) Start() error {
 
 	m := cmux.New(l)
 
-	httpl := m.Match(cmux.HTTP1Fast())
 	grpcl := m.MatchWithWriters(
 		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 
 	go s.grpc.Serve(grpcl)
-	go s.app.Run(httpl)
 
 	if err := m.Serve(); err != nil {
 		return err
@@ -84,10 +73,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
-	go s.grpc.GracefulStop()
-	if err := s.app.Engine.Shutdown(ctx); err != nil {
-		log.Error(err)
-		os.Exit(1)
-	}
+	s.grpc.GracefulStop()
 	stopped <- struct{}{}
 }

@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
-// Run creates, configures and runs
-// main cli.App
-func Run(args []string) {
-	app := cli.NewApp()
-	app.Name = "polymerase"
-	app.Usage = "MySQL backup management API integreted with Percona Xtrabackup"
+var rootCmd = &cobra.Command{
+	Use:   "polymerase",
+	Short: "MySQL backup management API integreted with Percona Xtrabackup",
+}
 
-	app.Commands = []cli.Command{
-		serverFlag,
-		fullBackupFlag,
-		incBackupFlag,
-		restoreFlag,
+// Run creates, configures and runs
+func Run() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stdout, err)
+		os.Exit(1)
 	}
-	app.Run(args)
 }
 
 func _exit(err error) {

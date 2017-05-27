@@ -7,91 +7,95 @@ import (
 	"io"
 	"os"
 
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"github.com/urfave/cli"
 )
 
-var fullBackupFlag = cli.Command{
-	Name:   "full-backup",
-	Usage:  "Transfers full backups to a polymerase server",
-	Action: runFullBackup,
-	Flags: []cli.Flag{
-		cli.StringFlag{Name: "mysql-host", Value: "127.0.0.1", Usage: "destination mysql host"},
-		cli.StringFlag{Name: "mysql-port", Value: "3306", Usage: "destination mysql port"},
-		cli.StringFlag{Name: "mysql-user", Usage: "destination mysql user"},
-		cli.StringFlag{Name: "mysql-password", Usage: "destination mysql password"},
-		cli.StringFlag{Name: "polymerase-host", Value: "127.0.0.1", Usage: "polymerase host"},
-		cli.StringFlag{Name: "polymerase-port", Value: "24925", Usage: "polymerase port"},
-		cli.StringFlag{Name: "db", Usage: "db name"},
-	},
+var fullBackupCmd = &cobra.Command{
+	Use:   "full-backup",
+	Short: "Transfers full backups to a polymerase server",
+	RunE:  cleanupTempDirRunE(runFullBackup),
 }
 
-func runFullBackup(c *cli.Context) {
-	bcli, err := loadFlags(c, base.FULL)
-	_exit(err)
-	defer os.RemoveAll(bcli.LsnTempDir)
+func runFullBackup(cmd *cobra.Command, args []string) error {
+	if db == "" {
+		return errors.New("You should specify db with '--db' flag")
+	}
 
-	// Connects to gRPC server
-	err, deferFunc := bcli.ConnectgRPC()
-	_exit(err)
-	defer deferFunc()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	finishCh := make(chan struct{})
 
 	// Builds backup pipeline and start it
-	r, err := bcli.BuildPipelineAndStart()
-	_exit(err)
-	buf := bufio.NewReader(r)
+	r, err := buildBackupPipelineAndStart(ctx, errCh)
+	if err != nil {
+		fmt.Fprintln(os.Stdout, err)
+		return nil
+	}
 
 	// Main backup work is following;
-	go func() {
-		bcli.transferSvcCli = tempbackuppb.NewBackupTransferServiceClient(bcli.grpcConn)
-		stream, err := bcli.transferSvcCli.TransferFullBackup(context.Background())
-		if err != nil {
-			bcli.errCh <- err
-			return
-		}
-
-		chunk := make([]byte, 1<<20)
-		var key string
-
-		for {
-			n, err := buf.Read(chunk)
-			if err == io.EOF {
-				reply, err := stream.CloseAndRecv()
-				if err != nil {
-					bcli.errCh <- err
-					return
-				}
-				fmt.Fprintln(os.Stdout, reply)
-				key = reply.Key
-				break
-			}
-			if err != nil {
-				bcli.errCh <- err
-				return
-			}
-			stream.Send(&tempbackuppb.FullBackupContentStream{
-				Content: chunk[:n],
-				Db:      bcli.db,
-			})
-		}
-
-		// Post xtrabackup_checkpoints
-		res, err := bcli.PostXtrabackupCP(key)
-		if err != nil {
-			bcli.errCh <- err
-			return
-		}
-		fmt.Fprintln(os.Stdout, res)
-		bcli.finishCh <- struct{}{}
-		return
-	}()
+	go transferFullBackup(ctx, r, errCh, finishCh)
 
 	select {
-	case err := <-bcli.errCh:
-		fmt.Fprintf(os.Stdout, "Error happened: %v", err)
-		os.Exit(1)
-	case <-bcli.finishCh:
+	case err := <-errCh:
+		cancel()
+		fmt.Fprintf(os.Stdout, "Error happened: %v\n", err)
+		return nil
+	case <-finishCh:
+		log.Info("Full backup succeeded")
+		return nil
+	}
+}
+
+func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, finishCh chan struct{}) {
+	cli, err := getTempBackupClient(ctx, nil)
+	if err == nil {
+		errCh <- err
 		return
 	}
+	stream, err := cli.TransferFullBackup(ctx)
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	chunk := make([]byte, 1<<20)
+	buf := bufio.NewReader(r)
+	var key string
+
+	for {
+		n, err := buf.Read(chunk)
+		if err == io.EOF {
+			reply, err := stream.CloseAndRecv()
+			if err != nil {
+				errCh <- err
+				return
+			}
+			fmt.Fprintln(os.Stdout, reply)
+			key = reply.Key
+			break
+		}
+		if err != nil {
+			errCh <- err
+			return
+		}
+		stream.Send(&tempbackuppb.FullBackupContentStream{
+			Content: chunk[:n],
+			Db:      db,
+		})
+	}
+
+	// Post xtrabackup_checkpoints
+	res, err := postXtrabackupCP(ctx, cli, key)
+	if err != nil {
+		errCh <- err
+		return
+	}
+	fmt.Fprintln(os.Stdout, res)
+	finishCh <- struct{}{}
+	return
 }

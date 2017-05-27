@@ -12,25 +12,23 @@ import (
 	"time"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
-	"github.com/urfave/cli"
 )
 
-var serverFlag = cli.Command{
-	Name:   "server",
-	Usage:  "Runs server",
-	Action: runServer,
-	Flags: []cli.Flag{
-		cli.StringFlag{Name: "store-dir", Usage: "Store directory for local storage (Not required)"},
-	},
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "Runs server",
+	RunE:  runServer,
 }
 
 // runServer creates, configures and runs
 // main server.App
-func runServer(c *cli.Context) {
+func runServer(cmd *cobra.Command, args []string) error {
 	// Signal
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -38,16 +36,16 @@ func runServer(c *cli.Context) {
 	// Tracer
 	tracer := tracing.NewTracer()
 	sp := tracer.StartSpan("server start")
-	//startCtx := opentracing.ContextWithSpan(context.Background(), sp)
+	startCtx := opentracing.ContextWithSpan(context.Background(), sp)
 
-	if err := setupAndInitializing(c); err != nil {
-		panic(err)
+	if err := setupAndInitializing(); err != nil {
+		return err
 	}
 
 	// Server
 	s, err := server.NewServer(serverCfg)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	errCh := make(chan error, 1)
 	go func() {
@@ -66,7 +64,7 @@ func runServer(c *cli.Context) {
 			fmt.Fprintln(os.Stderr, msg)
 
 			// Start server
-			if err := s.Start(); err != nil {
+			if err := s.Start(startCtx); err != nil {
 				return err
 			}
 
@@ -98,26 +96,16 @@ func runServer(c *cli.Context) {
 	select {
 	case <-shutdownCtx.Done():
 		fmt.Fprintln(os.Stdout, "time limit reached, initiating hard shutdown")
+		return errors.New("Server is failed")
 	case <-stopped:
 		log.Infof("server shutdown completed")
 		fmt.Fprintln(os.Stdout, "server shutdown completed")
-		return
+		break
 	}
+	return nil
 }
 
-func setupAndInitializing(c *cli.Context) error {
-	// StoreDir configuration
-	if c.String("store-dir") == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Fatal("Cannot get current directory")
-			return err
-		}
-		serverCfg.StoreDir = filepath.Join(wd, "polymerase-data")
-	} else {
-		serverCfg.StoreDir = c.String("store-dir")
-	}
-
+func setupAndInitializing() error {
 	// BackupsDir configuration
 	serverCfg.BackupsDir = filepath.Join(serverCfg.StoreDir, "backups")
 

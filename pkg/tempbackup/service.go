@@ -23,6 +23,7 @@ func NewBackupTransferService(m *TempBackupManager) *TempBackupTransferService {
 
 func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.BackupTransferService_TransferFullBackupServer) error {
 	var state *TempBackupState
+	log.Info(stream.Context())
 	for {
 		content, err := stream.Recv()
 		if err == io.EOF {

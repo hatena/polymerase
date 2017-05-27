@@ -14,8 +14,9 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage"
 )
 
-func newConfig() *base.Config {
-	c := &base.Config{
+func newConfig() *TempBackupManagerConfig {
+	c := &TempBackupManagerConfig{
+		Config: new(base.Config),
 		TempDir: os.TempDir(),
 	}
 	c.InitDefaults()

@@ -13,6 +13,12 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage"
 )
 
+type TempBackupManagerConfig struct {
+	*base.Config
+
+	TempDir string
+}
+
 type TempBackupManager struct {
 	timeFormat string
 	tempDir    string
@@ -32,10 +38,10 @@ type TempBackupState struct {
 	key        string
 }
 
-func NewTempBackupManager(storage storage.BackupStorage, conf *base.Config) *TempBackupManager {
+func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerConfig) *TempBackupManager {
 	return &TempBackupManager{
-		timeFormat: conf.TimeFormat,
-		tempDir:    conf.TempDir,
+		timeFormat: cfg.TimeFormat,
+		tempDir:    cfg.TempDir,
 		storage:    storage,
 	}
 }

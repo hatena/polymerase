@@ -6,8 +6,8 @@ import (
 	"bytes"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
+	"github.com/taku-k/polymerase/pkg/utils/log"
 	"golang.org/x/net/context"
 )
 
@@ -23,7 +23,9 @@ func NewBackupTransferService(m *TempBackupManager) *TempBackupTransferService {
 
 func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.BackupTransferService_TransferFullBackupServer) error {
 	var state *TempBackupState
-	log.Info(stream.Context())
+
+	log.LogWithGRPC(stream.Context()).Info("Established peer")
+
 	for {
 		content, err := stream.Recv()
 		if err == io.EOF {
@@ -43,7 +45,7 @@ func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.Backu
 				return errors.New("empty db is not acceptable")
 			}
 			state, err = s.manager.OpenFullBackup(content.Db)
-			log.WithField("db", content.Db).Info("Connected from db")
+			log.WithField("db", content.Db).Info("Connected to db")
 			log.WithField("path", state.tempDir).Info("Create temporary directory")
 			if err != nil {
 				return err

@@ -24,6 +24,10 @@ var restoreCmd = &cobra.Command{
 }
 
 func runRestore(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return usageAndError(cmd)
+	}
+
 	if restoreCtx.from == "" {
 		return errors.New("You must specify `from`")
 	}

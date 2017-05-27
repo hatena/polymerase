@@ -20,6 +20,10 @@ var incBackupCmd = &cobra.Command{
 }
 
 func runIncBackup(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return usageAndError(cmd)
+	}
+
 	if db == "" {
 		return errors.New("You should specify db with '--db' flag")
 	}

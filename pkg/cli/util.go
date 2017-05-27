@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -40,4 +41,11 @@ func getTempBackupClient(ctx context.Context, conn *grpc.ClientConn) (tempbackup
 		}
 	}
 	return tempbackuppb.NewBackupTransferServiceClient(c), nil
+}
+
+func usageAndError(cmd *cobra.Command) error {
+	if err := cmd.Usage(); err != nil {
+		return err
+	}
+	return errors.New("invalid arguments")
 }

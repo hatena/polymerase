@@ -29,6 +29,10 @@ var serverCmd = &cobra.Command{
 // runServer creates, configures and runs
 // main server.App
 func runServer(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return usageAndError(cmd)
+	}
+
 	// Signal
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

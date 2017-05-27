@@ -39,13 +39,13 @@ func runServer(cmd *cobra.Command, args []string) error {
 	startCtx := opentracing.ContextWithSpan(context.Background(), sp)
 
 	if err := setupAndInitializing(); err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create backup directory")
 	}
 
 	// Server
 	s, err := server.NewServer(serverCfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Server cannot be created")
 	}
 	errCh := make(chan error, 1)
 	go func() {
@@ -60,8 +60,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			msg := buf.String()
-			log.Info(msg)
-			fmt.Fprintln(os.Stderr, msg)
+			fmt.Fprint(os.Stderr, msg)
 
 			// Start server
 			if err := s.Start(startCtx); err != nil {

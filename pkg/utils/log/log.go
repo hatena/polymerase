@@ -2,13 +2,14 @@ package log
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
 
-func LogWithGRPC(ctx context.Context) *log.Entry {
-	e := log.NewEntry(log.New())
+func LogWithGRPC(ctx context.Context) *logrus.Entry {
+	e := logrus.NewEntry(logrus.New())
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		for k, v := range md {
 			e = e.WithField(k, v)
@@ -25,10 +26,10 @@ func LogWithGRPC(ctx context.Context) *log.Entry {
 	return e
 }
 
-func WithField(key string, value interface{}) *log.Entry {
-	return log.WithField(key, value)
+func WithField(key string, value interface{}) *logrus.Entry {
+	return logrus.WithField(key, value)
 }
 
 func Info(args ...interface{}) {
-	log.Info(args)
+	logrus.Info(args)
 }

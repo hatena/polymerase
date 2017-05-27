@@ -16,3 +16,9 @@ import:
   version: ^0.11.5
 - package: github.com/opentracing/opentracing-go
   version: ^1.0.2
+- package: github.com/coreos/etcd
+  version: ^3.2.0-rc.1
+- package: github.com/spf13/cobra
+- package: golang.org/x/sync
+  subpackages:
+  - errgroup

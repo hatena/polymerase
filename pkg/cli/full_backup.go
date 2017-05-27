@@ -43,8 +43,8 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 	select {
 	case err := <-errCh:
 		cancel()
-		fmt.Fprintf(os.Stdout, "Error happened: %v\n", err)
-		return nil
+		<-ctx.Done()
+		return err
 	case <-finishCh:
 		log.Info("Full backup succeeded")
 		return nil
@@ -53,7 +53,7 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 
 func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, finishCh chan struct{}) {
 	cli, err := getTempBackupClient(ctx, nil)
-	if err == nil {
+	if err != nil {
 		errCh <- err
 		return
 	}

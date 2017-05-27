@@ -8,14 +8,15 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "polymerase",
-	Short: "MySQL backup management API integreted with Percona Xtrabackup",
+	Use:          "polymerase",
+	Short:        "MySQL backup management API integreted with Percona Xtrabackup",
+	SilenceUsage: true,
 }
 
 // Run creates, configures and runs
 func Run() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stdout, err)
+		fmt.Fprintf(os.Stderr, "Failed running %q\n", os.Args[1])
 		os.Exit(1)
 	}
 }

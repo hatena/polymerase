@@ -2,12 +2,12 @@ package cli
 
 import (
 	"context"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	"google.golang.org/grpc"
-	"os"
 )
 
 func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {

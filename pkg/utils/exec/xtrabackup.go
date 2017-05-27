@@ -2,11 +2,11 @@ package exec
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"strings"
 	"text/template"
 
-	"context"
 	"github.com/pkg/errors"
 )
 

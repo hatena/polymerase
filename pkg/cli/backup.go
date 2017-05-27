@@ -50,12 +50,12 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 	}
 
 	gzipCmd.Stdin = xtrabackupCmdStdout
-	xtrabackupCmd.Stderr = os.Stdout
+	xtrabackupCmd.Stderr = os.Stderr
 
 	r, w := io.Pipe()
 
 	gzipCmd.Stdout = w
-	gzipCmd.Stderr = os.Stdout
+	gzipCmd.Stderr = os.Stderr
 
 	go func() {
 		err := xtrabackupCmd.Start()

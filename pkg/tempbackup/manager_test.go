@@ -16,7 +16,7 @@ import (
 
 func newConfig() *TempBackupManagerConfig {
 	c := &TempBackupManagerConfig{
-		Config: new(base.Config),
+		Config:  new(base.Config),
 		TempDir: os.TempDir(),
 	}
 	c.InitDefaults()

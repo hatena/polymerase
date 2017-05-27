@@ -3,12 +3,15 @@ package server
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/soheilhy/cmux"
+	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
+	"github.com/taku-k/polymerase/pkg/utils/log"
 	"google.golang.org/grpc"
 )
 
@@ -65,6 +68,21 @@ func (s *Server) Start(ctx context.Context) error {
 		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 
 	go s.grpc.Serve(grpcl)
+	go func() {
+		e, err := etcd.NewEtcdServer()
+		if err != nil {
+			log.Info(err)
+		}
+		defer e.Close()
+		select {
+		case <-e.Server.ReadyNotify():
+			log.Info("Server is ready")
+		case <-time.After(60 * time.Second):
+			e.Server.Stop()
+			log.Info("Server took too long to start")
+		}
+		log.Info(<-e.Err())
+	}()
 
 	if err := m.Serve(); err != nil {
 		return err

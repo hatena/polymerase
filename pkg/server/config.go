@@ -27,6 +27,8 @@ type Config struct {
 
 	// BackupsDir
 	BackupsDir string
+
+	JoinAddr string
 }
 
 func MakeConfig() *Config {

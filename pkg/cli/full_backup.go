@@ -3,9 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
-	"os"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -33,8 +31,7 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 	// Builds backup pipeline and start it
 	r, err := buildBackupPipelineAndStart(ctx, errCh)
 	if err != nil {
-		fmt.Fprintln(os.Stdout, err)
-		return nil
+		return errors.Wrap(err, "Failed to build backup pipeline")
 	}
 
 	// Main backup work is following;
@@ -75,7 +72,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, fini
 				errCh <- err
 				return
 			}
-			fmt.Fprintln(os.Stdout, reply)
+			log.Info(reply)
 			key = reply.Key
 			break
 		}
@@ -95,7 +92,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, fini
 		errCh <- err
 		return
 	}
-	fmt.Fprintln(os.Stdout, res)
+	log.Info(res)
 	finishCh <- struct{}{}
 	return
 }

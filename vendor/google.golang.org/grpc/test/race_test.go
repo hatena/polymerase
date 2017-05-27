@@ -32,7 +32,7 @@
  *
  */
 
-package test
+package grpc_test
 
 func init() {
 	raceMode = true

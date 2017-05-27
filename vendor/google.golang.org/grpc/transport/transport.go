@@ -105,7 +105,6 @@ func (b *recvBuffer) load() {
 	if len(b.backlog) > 0 {
 		select {
 		case b.c <- b.backlog[0]:
-			b.backlog[0] = nil
 			b.backlog = b.backlog[1:]
 		default:
 		}
@@ -172,6 +171,11 @@ type Stream struct {
 	id uint32
 	// nil for client side Stream.
 	st ServerTransport
+	// clientStatsCtx keeps the user context for stats handling.
+	// It's only valid on client side. Server side stats context is same as s.ctx.
+	// All client side stats collection should use the clientStatsCtx (instead of the stream context)
+	// so that all the generated stats for a particular RPC can be associated in the processing phase.
+	clientStatsCtx context.Context
 	// ctx is the associated context of the stream.
 	ctx context.Context
 	// cancel is always nil for client side Stream.
@@ -185,17 +189,14 @@ type Stream struct {
 	recvCompress string
 	sendCompress string
 	buf          *recvBuffer
-	trReader     io.Reader
+	dec          io.Reader
 	fc           *inFlow
 	recvQuota    uint32
-
-	// TODO: Remote this unused variable.
 	// The accumulated inbound quota pending for window update.
 	updateQuota uint32
-
-	// Callback to state application's intentions to read data. This
-	// is used to adjust flow control, if need be.
-	requestRead func(int)
+	// The handler to control the window update procedure for both this
+	// particular stream and the associated transport.
+	windowHandler func(int)
 
 	sendQuotaPool *quotaPool
 	// Close headerChan to indicate the end of reception of header metadata.
@@ -250,7 +251,7 @@ func (s *Stream) GoAway() <-chan struct{} {
 
 // Header acquires the key-value pairs of header metadata once it
 // is available. It blocks until i) the metadata is ready or ii) there is no
-// header metadata or iii) the stream is canceled/expired.
+// header metadata or iii) the stream is cancelled/expired.
 func (s *Stream) Header() (metadata.MD, error) {
 	select {
 	case <-s.ctx.Done():
@@ -323,35 +324,16 @@ func (s *Stream) write(m recvMsg) {
 	s.buf.put(&m)
 }
 
-// Read reads all p bytes from the wire for this stream.
-func (s *Stream) Read(p []byte) (n int, err error) {
-	// Don't request a read if there was an error earlier
-	if er := s.trReader.(*transportReader).er; er != nil {
-		return 0, er
-	}
-	s.requestRead(len(p))
-	return io.ReadFull(s.trReader, p)
-}
-
-// tranportReader reads all the data available for this Stream from the transport and
+// Read reads all the data available for this Stream from the transport and
 // passes them into the decoder, which converts them into a gRPC message stream.
 // The error is io.EOF when the stream is done or another non-nil error if
 // the stream broke.
-type transportReader struct {
-	reader io.Reader
-	// The handler to control the window update procedure for both this
-	// particular stream and the associated transport.
-	windowHandler func(int)
-	er            error
-}
-
-func (t *transportReader) Read(p []byte) (n int, err error) {
-	n, err = t.reader.Read(p)
+func (s *Stream) Read(p []byte) (n int, err error) {
+	n, err = s.dec.Read(p)
 	if err != nil {
-		t.er = err
 		return
 	}
-	t.windowHandler(n)
+	s.windowHandler(n)
 	return
 }
 
@@ -410,14 +392,12 @@ const (
 
 // ServerConfig consists of all the configurations to establish a server transport.
 type ServerConfig struct {
-	MaxStreams            uint32
-	AuthInfo              credentials.AuthInfo
-	InTapHandle           tap.ServerInHandle
-	StatsHandler          stats.Handler
-	KeepaliveParams       keepalive.ServerParameters
-	KeepalivePolicy       keepalive.EnforcementPolicy
-	InitialWindowSize     int32
-	InitialConnWindowSize int32
+	MaxStreams      uint32
+	AuthInfo        credentials.AuthInfo
+	InTapHandle     tap.ServerInHandle
+	StatsHandler    stats.Handler
+	KeepaliveParams keepalive.ServerParameters
+	KeepalivePolicy keepalive.EnforcementPolicy
 }
 
 // NewServerTransport creates a ServerTransport with conn or non-nil error
@@ -445,10 +425,6 @@ type ConnectOptions struct {
 	KeepaliveParams keepalive.ClientParameters
 	// StatsHandler stores the handler for stats.
 	StatsHandler stats.Handler
-	// InitialWindowSize sets the intial window size for a stream.
-	InitialWindowSize int32
-	// InitialConnWindowSize sets the intial window size for a connection.
-	InitialConnWindowSize int32
 }
 
 // TargetInfo contains the information of the target such as network address and metadata.
@@ -491,9 +467,6 @@ type CallHdr struct {
 	// SendCompress specifies the compression algorithm applied on
 	// outbound message.
 	SendCompress string
-
-	// Creds specifies credentials.PerRPCCredentials for a call.
-	Creds credentials.PerRPCCredentials
 
 	// Flush indicates whether a new stream command should be sent
 	// to the peer without waiting for the first data. This is
@@ -638,6 +611,17 @@ type StreamError struct {
 
 func (e StreamError) Error() string {
 	return fmt.Sprintf("stream error: code = %s desc = %q", e.Code, e.Desc)
+}
+
+// ContextErr converts the error from context package into a StreamError.
+func ContextErr(err error) StreamError {
+	switch err {
+	case context.DeadlineExceeded:
+		return streamErrorf(codes.DeadlineExceeded, "%v", err)
+	case context.Canceled:
+		return streamErrorf(codes.Canceled, "%v", err)
+	}
+	panic(fmt.Sprintf("Unexpected error from context packet: %v", err))
 }
 
 // wait blocks until it can receive from ctx.Done, closing, or proceed.

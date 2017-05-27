@@ -36,8 +36,8 @@ package grpc
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +56,8 @@ var (
 	ErrClientConnClosing = errors.New("grpc: the client connection is closing")
 	// ErrClientConnTimeout indicates that the ClientConn cannot establish the
 	// underlying connections within the specified timeout.
-	// DEPRECATED: Please use context.DeadlineExceeded instead.
+	// DEPRECATED: Please use context.DeadlineExceeded instead. This error will be
+	// removed in Q1 2017.
 	ErrClientConnTimeout = errors.New("grpc: timed out when dialing")
 
 	// errNoTransportSecurity indicates that there is no transport security
@@ -78,8 +79,6 @@ var (
 	errConnClosing = errors.New("grpc: the connection is closing")
 	// errConnUnavailable indicates that the connection is unavailable.
 	errConnUnavailable = errors.New("grpc: the connection is unavailable")
-	// errBalancerClosed indicates that the balancer is closed.
-	errBalancerClosed = errors.New("grpc: balancer is closed")
 	// minimum time to give a connection to complete
 	minConnectTimeout = 20 * time.Second
 )
@@ -87,54 +86,30 @@ var (
 // dialOptions configure a Dial call. dialOptions are set by the DialOption
 // values passed to Dial.
 type dialOptions struct {
-	unaryInt    UnaryClientInterceptor
-	streamInt   StreamClientInterceptor
-	codec       Codec
-	cp          Compressor
-	dc          Decompressor
-	bs          backoffStrategy
-	balancer    Balancer
-	block       bool
-	insecure    bool
-	timeout     time.Duration
-	scChan      <-chan ServiceConfig
-	copts       transport.ConnectOptions
-	callOptions []CallOption
+	unaryInt   UnaryClientInterceptor
+	streamInt  StreamClientInterceptor
+	codec      Codec
+	cp         Compressor
+	dc         Decompressor
+	bs         backoffStrategy
+	balancer   Balancer
+	block      bool
+	insecure   bool
+	timeout    time.Duration
+	scChan     <-chan ServiceConfig
+	copts      transport.ConnectOptions
+	maxMsgSize int
 }
 
-const (
-	defaultClientMaxReceiveMessageSize = 1024 * 1024 * 4
-	defaultClientMaxSendMessageSize    = 1024 * 1024 * 4
-)
+const defaultClientMaxMsgSize = math.MaxInt32
 
 // DialOption configures how we set up the connection.
 type DialOption func(*dialOptions)
 
-// WithInitialWindowSize returns a DialOption which sets the value for initial window size on a stream.
-// The lower bound for window size is 64K and any value smaller than that will be ignored.
-func WithInitialWindowSize(s int32) DialOption {
-	return func(o *dialOptions) {
-		o.copts.InitialWindowSize = s
-	}
-}
-
-// WithInitialConnWindowSize returns a DialOption which sets the value for initial window size on a connection.
-// The lower bound for window size is 64K and any value smaller than that will be ignored.
-func WithInitialConnWindowSize(s int32) DialOption {
-	return func(o *dialOptions) {
-		o.copts.InitialConnWindowSize = s
-	}
-}
-
-// WithMaxMsgSize returns a DialOption which sets the maximum message size the client can receive. Deprecated: use WithDefaultCallOptions(MaxCallRecvMsgSize(s)) instead.
+// WithMaxMsgSize returns a DialOption which sets the maximum message size the client can receive.
 func WithMaxMsgSize(s int) DialOption {
-	return WithDefaultCallOptions(MaxCallRecvMsgSize(s))
-}
-
-// WithDefaultCallOptions returns a DialOption which sets the default CallOptions for calls over the connection.
-func WithDefaultCallOptions(cos ...CallOption) DialOption {
 	return func(o *dialOptions) {
-		o.callOptions = append(o.callOptions, cos...)
+		o.maxMsgSize = s
 	}
 }
 
@@ -229,7 +204,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DialOption
 }
 
 // WithPerRPCCredentials returns a DialOption which sets
-// credentials and places auth state on each outbound RPC.
+// credentials which will place auth state on each outbound RPC.
 func WithPerRPCCredentials(creds credentials.PerRPCCredentials) DialOption {
 	return func(o *dialOptions) {
 		o.copts.PerRPCCredentials = append(o.copts.PerRPCCredentials, creds)
@@ -266,7 +241,7 @@ func WithStatsHandler(h stats.Handler) DialOption {
 	}
 }
 
-// FailOnNonTempDialError returns a DialOption that specifies if gRPC fails on non-temporary dial errors.
+// FailOnNonTempDialError returns a DialOption that specified if gRPC fails on non-temporary dial errors.
 // If f is true, and dialer returns a non-temporary error, gRPC will fail the connection to the network
 // address and won't try to reconnect.
 // The default value of FailOnNonTempDialError is false.
@@ -320,16 +295,17 @@ func Dial(target string, opts ...DialOption) (*ClientConn, error) {
 }
 
 // DialContext creates a client connection to the given target. ctx can be used to
-// cancel or expire the pending connection. Once this function returns, the
+// cancel or expire the pending connecting. Once this function returns, the
 // cancellation and expiration of ctx will be noop. Users should call ClientConn.Close
 // to terminate all the pending operations after this function returns.
+// This is the EXPERIMENTAL API.
 func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *ClientConn, err error) {
 	cc := &ClientConn{
 		target: target,
 		conns:  make(map[Address]*addrConn),
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
-
+	cc.dopts.maxMsgSize = defaultClientMaxMsgSize
 	for _, opt := range opts {
 		opt(&cc.dopts)
 	}
@@ -367,16 +343,15 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 		}
 	}()
 
-	scSet := false
 	if cc.dopts.scChan != nil {
-		// Try to get an initial service config.
+		// Wait for the initial service config.
 		select {
 		case sc, ok := <-cc.dopts.scChan:
 			if ok {
 				cc.sc = sc
-				scSet = true
 			}
-		default:
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		}
 	}
 	// Set defaults.
@@ -407,7 +382,6 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 			}
 			config := BalancerConfig{
 				DialCreds: credsClone,
-				Dialer:    cc.dopts.copts.Dialer,
 			}
 			if err := cc.dopts.balancer.Start(target, config); err != nil {
 				waitC <- err
@@ -439,17 +413,7 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 			return nil, err
 		}
 	}
-	if cc.dopts.scChan != nil && !scSet {
-		// Blocking wait for the initial service config.
-		select {
-		case sc, ok := <-cc.dopts.scChan:
-			if ok {
-				cc.sc = sc
-			}
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
+
 	if cc.dopts.scChan != nil {
 		go cc.scWatcher()
 	}
@@ -659,23 +623,12 @@ func (cc *ClientConn) resetAddrConn(addr Address, block bool, tearDownErr error)
 	return nil
 }
 
-// GetMethodConfig gets the method config of the input method.
-// If there's an exact match for input method (i.e. /service/method), we return
-// the corresponding MethodConfig.
-// If there isn't an exact match for the input method, we look for the default config
-// under the service (i.e /service/). If there is a default MethodConfig for
-// the serivce, we return it.
-// Otherwise, we return an empty MethodConfig.
-func (cc *ClientConn) GetMethodConfig(method string) MethodConfig {
-	// TODO: Avoid the locking here.
+// TODO: Avoid the locking here.
+func (cc *ClientConn) getMethodConfig(method string) (m MethodConfig, ok bool) {
 	cc.mu.RLock()
 	defer cc.mu.RUnlock()
-	m, ok := cc.sc.Methods[method]
-	if !ok {
-		i := strings.LastIndex(method, "/")
-		m, _ = cc.sc.Methods[method[:i+1]]
-	}
-	return m
+	m, ok = cc.sc.Methods[method]
+	return
 }
 
 func (cc *ClientConn) getTransport(ctx context.Context, opts BalancerGetOptions) (transport.ClientTransport, func(), error) {
@@ -898,14 +851,11 @@ func (ac *addrConn) resetTransport(closeTransport bool) error {
 			}
 			ac.mu.Unlock()
 			closeTransport = false
-			timer := time.NewTimer(sleepTime - time.Since(connectTime))
 			select {
-			case <-timer.C:
+			case <-time.After(sleepTime - time.Since(connectTime)):
 			case <-ac.ctx.Done():
-				timer.Stop()
 				return ac.ctx.Err()
 			}
-			timer.Stop()
 			continue
 		}
 		ac.mu.Lock()

@@ -60,9 +60,6 @@ var (
 
 	// Explicitly write DEFAULT section header
 	DefaultHeader = false
-	
-	// Indicate whether to put a line between sections
-	PrettySection = true
 )
 
 func init() {
@@ -516,11 +513,9 @@ func (f *File) WriteToIndent(w io.Writer, indent string) (n int64, err error) {
 			}
 		}
 
-		if PrettySection {
-			// Put a line between sections
-			if _, err = buf.WriteString(LineBreak); err != nil {
-				return 0, err
-			}
+		// Put a line between sections
+		if _, err = buf.WriteString(LineBreak); err != nil {
+			return 0, err
 		}
 	}
 

@@ -42,8 +42,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// Peer contains the information of the peer for an RPC, such as the address
-// and authentication information.
+// Peer contains the information of the peer for an RPC.
 type Peer struct {
 	// Addr is the peer address.
 	Addr net.Addr

@@ -96,8 +96,8 @@ const (
 	GRPCLB
 )
 
-// AddrMetadataGRPCLB contains the information the name resolver for grpclb should provide. The
-// name resolver used by the grpclb balancer is required to provide this type of metadata in
+// AddrMetadataGRPCLB contains the information the name resolution for grpclb should provide. The
+// name resolver used by grpclb balancer is required to provide this type of metadata in
 // its address updates.
 type AddrMetadataGRPCLB struct {
 	// AddrType is the type of server (grpc load balancer or backend).
@@ -152,7 +152,6 @@ type balancer struct {
 func (b *balancer) watchAddrUpdates(w naming.Watcher, ch chan []remoteBalancerInfo) error {
 	updates, err := w.Next()
 	if err != nil {
-		grpclog.Printf("grpclb: failed to get next addr update from watcher: %v", err)
 		return err
 	}
 	b.mu.Lock()
@@ -307,7 +306,6 @@ func (b *balancer) sendLoadReport(s *balanceLoadClientStream, interval time.Dura
 				ClientStats: &stats,
 			},
 		}); err != nil {
-			grpclog.Printf("grpclb: failed to send load report: %v", err)
 			return
 		}
 	}
@@ -318,7 +316,7 @@ func (b *balancer) callRemoteBalancer(lbc *loadBalancerClient, seq int) (retry b
 	defer cancel()
 	stream, err := lbc.BalanceLoad(ctx)
 	if err != nil {
-		grpclog.Printf("grpclb: failed to perform RPC to the remote balancer %v", err)
+		grpclog.Printf("Failed to perform RPC to the remote balancer %v", err)
 		return
 	}
 	b.mu.Lock()
@@ -335,19 +333,17 @@ func (b *balancer) callRemoteBalancer(lbc *loadBalancerClient, seq int) (retry b
 		},
 	}
 	if err := stream.Send(initReq); err != nil {
-		grpclog.Printf("grpclb: failed to send init request: %v", err)
 		// TODO: backoff on retry?
 		return true
 	}
 	reply, err := stream.Recv()
 	if err != nil {
-		grpclog.Printf("grpclb: failed to recv init response: %v", err)
 		// TODO: backoff on retry?
 		return true
 	}
 	initResp := reply.GetInitialResponse()
 	if initResp == nil {
-		grpclog.Println("grpclb: reply from remote balancer did not include initial response.")
+		grpclog.Println("Failed to receive the initial response from the remote balancer.")
 		return
 	}
 	// TODO: Support delegation.
@@ -368,7 +364,6 @@ func (b *balancer) callRemoteBalancer(lbc *loadBalancerClient, seq int) (retry b
 	for {
 		reply, err := stream.Recv()
 		if err != nil {
-			grpclog.Printf("grpclb: failed to recv server list: %v", err)
 			break
 		}
 		b.mu.Lock()
@@ -402,7 +397,6 @@ func (b *balancer) Start(target string, config BalancerConfig) error {
 	w, err := b.r.Resolve(target)
 	if err != nil {
 		b.mu.Unlock()
-		grpclog.Printf("grpclb: failed to resolve address: %v, err: %v", target, err)
 		return err
 	}
 	b.w = w
@@ -412,7 +406,7 @@ func (b *balancer) Start(target string, config BalancerConfig) error {
 	go func() {
 		for {
 			if err := b.watchAddrUpdates(w, balancerAddrsCh); err != nil {
-				grpclog.Printf("grpclb: the naming watcher stops working due to %v.\n", err)
+				grpclog.Printf("grpc: the naming watcher stops working due to %v.\n", err)
 				close(balancerAddrsCh)
 				return
 			}
@@ -496,29 +490,22 @@ func (b *balancer) Start(target string, config BalancerConfig) error {
 				cc.Close()
 			}
 			// Talk to the remote load balancer to get the server list.
-			var (
-				err   error
-				dopts []DialOption
-			)
-			if creds := config.DialCreds; creds != nil {
+			var err error
+			creds := config.DialCreds
+			ccError = make(chan struct{})
+			if creds == nil {
+				cc, err = Dial(rb.addr, WithInsecure())
+			} else {
 				if rb.name != "" {
 					if err := creds.OverrideServerName(rb.name); err != nil {
-						grpclog.Printf("grpclb: failed to override the server name in the credentials: %v", err)
+						grpclog.Printf("Failed to override the server name in the credentials: %v", err)
 						continue
 					}
 				}
-				dopts = append(dopts, WithTransportCredentials(creds))
-			} else {
-				dopts = append(dopts, WithInsecure())
+				cc, err = Dial(rb.addr, WithTransportCredentials(creds))
 			}
-			if dialer := config.Dialer; dialer != nil {
-				// WithDialer takes a different type of function, so we instead use a special DialOption here.
-				dopts = append(dopts, func(o *dialOptions) { o.copts.Dialer = dialer })
-			}
-			ccError = make(chan struct{})
-			cc, err = Dial(rb.addr, dopts...)
 			if err != nil {
-				grpclog.Printf("grpclb: failed to setup a connection to the remote balancer %v: %v", rb.addr, err)
+				grpclog.Printf("Failed to setup a connection to the remote balancer %v: %v", rb.addr, err)
 				close(ccError)
 				continue
 			}
@@ -745,9 +732,6 @@ func (b *balancer) Notify() <-chan []Address {
 func (b *balancer) Close() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.done {
-		return errBalancerClosed
-	}
 	b.done = true
 	if b.expTimer != nil {
 		b.expTimer.Stop()

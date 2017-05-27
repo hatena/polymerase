@@ -295,20 +295,17 @@ func (b *emptyBalancer) Close() error {
 
 func TestNonblockingDialWithEmptyBalancer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	dialDone := make(chan error)
+	dialDone := make(chan struct{})
 	go func() {
-		dialDone <- func() error {
-			conn, err := DialContext(ctx, "Non-Existent.Server:80", WithInsecure(), WithBalancer(newEmptyBalancer()))
-			if err != nil {
-				return err
-			}
-			return conn.Close()
-		}()
+		conn, err := DialContext(ctx, "Non-Existent.Server:80", WithInsecure(), WithBalancer(newEmptyBalancer()))
+		if err != nil {
+			t.Fatalf("unexpected error dialing connection: %v", err)
+		}
+		conn.Close()
+		close(dialDone)
 	}()
-	if err := <-dialDone; err != nil {
-		t.Fatalf("unexpected error dialing connection: %s", err)
-	}
+	<-dialDone
+	cancel()
 }
 
 func TestClientUpdatesParamsAfterGoAway(t *testing.T) {

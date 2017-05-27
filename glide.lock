@@ -1,14 +1,12 @@
-hash: 845fc4f91048a299d6db8558eab88e6d7ee788abf7d3467d4c7cf2d965ccd91a
-updated: 2017-05-27T21:52:44.457531966+09:00
+hash: 0f563d02d71921c9bcf3ad139b6b794e972cb5ebc103686c1f7d6ab25d93ed40
+updated: 2017-05-28T00:45:40.642487465+09:00
 imports:
-- name: github.com/codegangsta/cli
-  version: d70f47eeca3afd795160003bc6e28b001d60c67c
 - name: github.com/coreos/etcd
   version: 9d7ed0e63a4e9907c04396d0a9a7a01ba08d2852
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
 - name: github.com/go-ini/ini
-  version: afbc45e87f3ba324c532d12c71918ef52e0fb194
+  version: 36da989cdc560b989d8f195aec46214d33665d20
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -24,12 +22,6 @@ imports:
   version: 78f87e838df0fb89dbcd26e1489f988cd7bc3bb8
 - name: github.com/jhoonb/archivex
   version: be4efa7ec0c38ab76d56037014c90d48d6b13037
-- name: github.com/labstack/echo
-  version: 466d509e34e07d1313fdb152a11243ae9df10b5c
-  subpackages:
-  - middleware
-- name: github.com/olebedev/config
-  version: afea898d27c7d17376ecc60c7c2e73c76b40060e
 - name: github.com/opentracing/opentracing-go
   version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
@@ -74,7 +66,7 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 2739967807cc0e3199513569f58fda34252ad65e
+  version: d2e1b51f33ff8c5e4a15560ff049d200e83726c5
   subpackages:
   - codes
   - credentials

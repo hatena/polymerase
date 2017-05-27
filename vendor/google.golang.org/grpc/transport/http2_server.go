@@ -113,8 +113,6 @@ type http2Server struct {
 	// 1 means yes.
 	resetPingStrikes uint32 // Accessed atomically.
 
-	initialWindowSize int32
-
 	mu            sync.Mutex // guard the following
 	state         transportState
 	activeStreams map[uint32]*Stream
@@ -144,24 +142,16 @@ func newHTTP2Server(conn net.Conn, config *ServerConfig) (_ ServerTransport, err
 			Val: maxStreams,
 		})
 	}
-	iwz := int32(initialWindowSize)
-	if config.InitialWindowSize >= defaultWindowSize {
-		iwz = config.InitialWindowSize
-	}
-	icwz := int32(initialConnWindowSize)
-	if config.InitialConnWindowSize >= defaultWindowSize {
-		icwz = config.InitialConnWindowSize
-	}
-	if iwz != defaultWindowSize {
+	if initialWindowSize != defaultWindowSize {
 		settings = append(settings, http2.Setting{
 			ID:  http2.SettingInitialWindowSize,
-			Val: uint32(iwz)})
+			Val: uint32(initialWindowSize)})
 	}
 	if err := framer.writeSettings(true, settings...); err != nil {
 		return nil, connectionErrorf(true, err, "transport: %v", err)
 	}
 	// Adjust the connection flow control window if needed.
-	if delta := uint32(icwz - defaultWindowSize); delta > 0 {
+	if delta := uint32(initialConnWindowSize - defaultWindowSize); delta > 0 {
 		if err := framer.writeWindowUpdate(true, 0, delta); err != nil {
 			return nil, connectionErrorf(true, err, "transport: %v", err)
 		}
@@ -190,29 +180,28 @@ func newHTTP2Server(conn net.Conn, config *ServerConfig) (_ ServerTransport, err
 	}
 	var buf bytes.Buffer
 	t := &http2Server{
-		ctx:               context.Background(),
-		conn:              conn,
-		remoteAddr:        conn.RemoteAddr(),
-		localAddr:         conn.LocalAddr(),
-		authInfo:          config.AuthInfo,
-		framer:            framer,
-		hBuf:              &buf,
-		hEnc:              hpack.NewEncoder(&buf),
-		maxStreams:        maxStreams,
-		inTapHandle:       config.InTapHandle,
-		controlBuf:        newRecvBuffer(),
-		fc:                &inFlow{limit: uint32(icwz)},
-		sendQuotaPool:     newQuotaPool(defaultWindowSize),
-		state:             reachable,
-		writableChan:      make(chan int, 1),
-		shutdownChan:      make(chan struct{}),
-		activeStreams:     make(map[uint32]*Stream),
-		streamSendQuota:   defaultWindowSize,
-		stats:             config.StatsHandler,
-		kp:                kp,
-		idle:              time.Now(),
-		kep:               kep,
-		initialWindowSize: iwz,
+		ctx:             context.Background(),
+		conn:            conn,
+		remoteAddr:      conn.RemoteAddr(),
+		localAddr:       conn.LocalAddr(),
+		authInfo:        config.AuthInfo,
+		framer:          framer,
+		hBuf:            &buf,
+		hEnc:            hpack.NewEncoder(&buf),
+		maxStreams:      maxStreams,
+		inTapHandle:     config.InTapHandle,
+		controlBuf:      newRecvBuffer(),
+		fc:              &inFlow{limit: initialConnWindowSize},
+		sendQuotaPool:   newQuotaPool(defaultWindowSize),
+		state:           reachable,
+		writableChan:    make(chan int, 1),
+		shutdownChan:    make(chan struct{}),
+		activeStreams:   make(map[uint32]*Stream),
+		streamSendQuota: defaultWindowSize,
+		stats:           config.StatsHandler,
+		kp:              kp,
+		idle:            time.Now(),
+		kep:             kep,
 	}
 	if t.stats != nil {
 		t.ctx = t.stats.TagConn(t.ctx, &stats.ConnTagInfo{
@@ -235,7 +224,7 @@ func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(
 		id:  frame.Header().StreamID,
 		st:  t,
 		buf: buf,
-		fc:  &inFlow{limit: uint32(t.initialWindowSize)},
+		fc:  &inFlow{limit: initialWindowSize},
 	}
 
 	var state decodeState
@@ -274,14 +263,10 @@ func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(
 	if len(state.mdata) > 0 {
 		s.ctx = metadata.NewIncomingContext(s.ctx, state.mdata)
 	}
-	s.trReader = &transportReader{
-		reader: &recvBufferReader{
-			ctx:  s.ctx,
-			recv: s.buf,
-		},
-		windowHandler: func(n int) {
-			t.updateWindow(s, uint32(n))
-		},
+
+	s.dec = &recvBufferReader{
+		ctx:  s.ctx,
+		recv: s.buf,
 	}
 	s.recvCompress = state.encoding
 	s.method = state.method
@@ -292,7 +277,7 @@ func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(
 		}
 		s.ctx, err = t.inTapHandle(s.ctx, info)
 		if err != nil {
-			grpclog.Printf("transport: http2Server.operateHeaders got an error from InTapHandle: %v", err)
+			// TODO: Log the real error.
 			t.controlBuf.put(&resetStream{s.id, http2.ErrCodeRefusedStream})
 			return
 		}
@@ -320,8 +305,8 @@ func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(
 		t.idle = time.Time{}
 	}
 	t.mu.Unlock()
-	s.requestRead = func(n int) {
-		t.adjustWindow(s, uint32(n))
+	s.windowHandler = func(n int) {
+		t.updateWindow(s, uint32(n))
 	}
 	s.ctx = traceCtx(s.ctx, s.method)
 	if t.stats != nil {
@@ -346,10 +331,7 @@ func (t *http2Server) HandleStreams(handle func(*Stream), traceCtx func(context.
 	// Check the validity of client preface.
 	preface := make([]byte, len(clientPreface))
 	if _, err := io.ReadFull(t.conn, preface); err != nil {
-		// Only log if it isn't a simple tcp accept check (ie: tcp balancer doing open/close socket)
-		if err != io.EOF {
-			grpclog.Printf("transport: http2Server.HandleStreams failed to receive the preface from client: %v", err)
-		}
+		grpclog.Printf("transport: http2Server.HandleStreams failed to receive the preface from client: %v", err)
 		t.Close()
 		return
 	}
@@ -365,7 +347,7 @@ func (t *http2Server) HandleStreams(handle func(*Stream), traceCtx func(context.
 		return
 	}
 	if err != nil {
-		grpclog.Printf("transport: http2Server.HandleStreams failed to read initial settings frame: %v", err)
+		grpclog.Printf("transport: http2Server.HandleStreams failed to read frame: %v", err)
 		t.Close()
 		return
 	}
@@ -439,20 +421,6 @@ func (t *http2Server) getStream(f http2.Frame) (*Stream, bool) {
 	return s, true
 }
 
-// adjustWindow sends out extra window update over the initial window size
-// of stream if the application is requesting data larger in size than
-// the window.
-func (t *http2Server) adjustWindow(s *Stream, n uint32) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.state == streamDone {
-		return
-	}
-	if w := s.fc.maybeAdjust(n); w > 0 {
-		t.controlBuf.put(&windowUpdate{s.id, w})
-	}
-}
-
 // updateWindow adjusts the inbound quota for the stream and the transport.
 // Window updates will deliver to the controller for sending when
 // the cumulative quota exceeds the corresponding threshold.
@@ -486,6 +454,11 @@ func (t *http2Server) handleData(f *http2.DataFrame) {
 		return
 	}
 	if size > 0 {
+		if f.Header().Flags.Has(http2.FlagDataPadded) {
+			if w := t.fc.onRead(uint32(size) - uint32(len(f.Data()))); w > 0 {
+				t.controlBuf.put(&windowUpdate{0, w})
+			}
+		}
 		s.mu.Lock()
 		if s.state == streamDone {
 			s.mu.Unlock()
@@ -502,9 +475,6 @@ func (t *http2Server) handleData(f *http2.DataFrame) {
 			return
 		}
 		if f.Header().Flags.Has(http2.FlagDataPadded) {
-			if w := t.fc.onRead(uint32(size) - uint32(len(f.Data()))); w > 0 {
-				t.controlBuf.put(&windowUpdate{0, w})
-			}
 			if w := s.fc.onRead(uint32(size) - uint32(len(f.Data()))); w > 0 {
 				t.controlBuf.put(&windowUpdate{s.id, w})
 			}

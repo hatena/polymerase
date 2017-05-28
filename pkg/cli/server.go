@@ -118,19 +118,14 @@ func setupAndInitializing() error {
 	// LogsDir configuration
 	serverCfg.LogsDir = filepath.Join(serverCfg.StoreDir, "logs")
 
-	// Create BackupsDir
-	if err := dirutil.MkdirAllWithLog(serverCfg.BackupsDir); err != nil {
-		return err
-	}
+	// EtcdDataDir configuration
+	serverCfg.EtcdDataDir = filepath.Join(serverCfg.StoreDir, "etcd")
 
-	// Create Tempdir
-	if err := dirutil.MkdirAllWithLog(serverCfg.TempDir); err != nil {
-		return err
-	}
-
-	// Create LogsDir
-	if err := dirutil.MkdirAllWithLog(serverCfg.LogsDir); err != nil {
-		return err
+	for _, d := range []string{
+		serverCfg.BackupsDir, serverCfg.TempDir, serverCfg.LogsDir, serverCfg.EtcdDataDir} {
+		if err := dirutil.MkdirAllWithLog(d); err != nil {
+			return err
+		}
 	}
 
 	return nil

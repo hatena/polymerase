@@ -2,9 +2,7 @@ package etcd
 
 import "github.com/coreos/etcd/embed"
 
-func NewEtcdServer() (*embed.Etcd, error) {
-	cfg := embed.NewConfig()
-	cfg.Dir = "default.etcd"
+func NewEtcdServer(cfg *embed.Config) (*embed.Etcd, error) {
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		return nil, err

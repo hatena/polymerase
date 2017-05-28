@@ -25,10 +25,15 @@ type Config struct {
 	// LogDir
 	LogsDir string
 
+	// EtcdDataDir
+	EtcdDataDir string
+
 	// BackupsDir
 	BackupsDir string
 
 	JoinAddr string
+
+	EtcdPeerPort string
 }
 
 func MakeConfig() *Config {

@@ -92,6 +92,7 @@ func init() {
 		f.StringVar(&serverConnPort, "port", serverCfg.Port, "The port to bind to.")
 		f.StringVar(&serverCfg.StoreDir, "store-dir", serverCfg.StoreDir, "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")
+		f.StringVar(&serverCfg.EtcdPeerPort, "etcd-peer-port", "2380", "")
 	}
 
 	rootCmd.AddCommand(serverCmd, fullBackupCmd, incBackupCmd, restoreCmd)

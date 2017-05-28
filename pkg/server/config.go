@@ -27,7 +27,7 @@ type Config struct {
 // MakeConfig creates a initial Config.
 func MakeConfig() *Config {
 	cfg := &Config{
-		Config:        new(base.Config),
+		Config: new(base.Config),
 	}
 	cfg.Config.InitDefaults()
 

@@ -9,16 +9,12 @@ import (
 )
 
 const (
-	defaultHTTPApiPrefix = "/api"
-
 	defaultStoraPath = "polymerase-data"
 )
 
 // Config is a configuration for polymerase server.
 type Config struct {
 	*base.Config
-
-	HTTPApiPrefix string
 
 	// StoreDir
 	StoreDir string
@@ -32,7 +28,6 @@ type Config struct {
 func MakeConfig() *Config {
 	cfg := &Config{
 		Config:        new(base.Config),
-		HTTPApiPrefix: defaultHTTPApiPrefix,
 	}
 	cfg.Config.InitDefaults()
 

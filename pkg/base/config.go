@@ -24,10 +24,10 @@ type Config struct {
 
 func (cfg *Config) InitDefaults() {
 	if cfg.TimeFormat == "" {
-		cfg.TimeFormat = defaultTimeFormat
+		cfg.TimeFormat = DefaultTimeFormat
 	}
 	if cfg.Port == "" {
-		cfg.Port = defaultPort
+		cfg.Port = DefaultPort
 	}
 	if cfg.Addr == "" {
 		cfg.Addr = defaultAddr

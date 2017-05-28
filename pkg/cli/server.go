@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"text/tabwriter"
 	"time"
@@ -109,23 +108,13 @@ func runServer(cmd *cobra.Command, args []string) error {
 }
 
 func setupAndInitializing() error {
-	// BackupsDir configuration
-	serverCfg.BackupsDir = filepath.Join(serverCfg.StoreDir, "backups")
-
-	// TempDir configuration
-	serverCfg.TempDir = filepath.Join(serverCfg.StoreDir, "temp")
-
-	// LogsDir configuration
-	serverCfg.LogsDir = filepath.Join(serverCfg.StoreDir, "logs")
-
-	// EtcdDataDir configuration
-	serverCfg.EtcdDataDir = filepath.Join(serverCfg.StoreDir, "etcd")
-
-	for _, d := range []string{
-		serverCfg.BackupsDir, serverCfg.TempDir, serverCfg.LogsDir, serverCfg.EtcdDataDir} {
-		if err := dirutil.MkdirAllWithLog(d); err != nil {
-			return err
-		}
+	ss, err := server.NewStoreDir(serverCfg.StoreDir)
+	if err != nil {
+		return err
+	}
+	serverCfg.StoreDir = ss
+	if err := dirutil.MkdirAllWithLog(serverCfg.StoreDir); err != nil {
+		return err
 	}
 
 	return nil

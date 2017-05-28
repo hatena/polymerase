@@ -34,20 +34,18 @@ func initXtrabackupConfig() error {
 }
 
 func init() {
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
-		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-	}
-
 	serverCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
 		baseCfg.Addr = net.JoinHostPort(serverConnHost, serverConnPort)
 	}
 
 	fullBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		backupCtx.backupType = base.FULL
 		return initXtrabackupConfig()
 	}
 
 	incBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		backupCtx.backupType = base.INC
 		return initXtrabackupConfig()
 	}

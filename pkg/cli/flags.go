@@ -35,6 +35,8 @@ func initXtrabackupConfig() error {
 
 func init() {
 	serverCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		baseCfg.Host = serverConnHost
+		baseCfg.Port = serverConnPort
 		baseCfg.Addr = net.JoinHostPort(serverConnHost, serverConnPort)
 	}
 
@@ -59,6 +61,7 @@ func init() {
 
 	for _, cmd := range clientCmds {
 		f := cmd.Flags()
+
 		f.StringVar(&clientConnHost, "host", "127.0.0.1", "Polymerase server hostname.")
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
 		f.StringVarP(&db, "db", "d", "", "DB name")
@@ -66,21 +69,24 @@ func init() {
 
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {
 		f := cmd.PersistentFlags()
+
 		f.StringVar(&mysqlHost, "mysql-host", "127.0.0.1", "The MySQL hostname to connect with.")
 		f.StringVarP(&mysqlPort, "mysql-port", "p", "3306", "The MySQL port to connect with.")
 		f.StringVarP(&mysqlUser, "mysql-user", "u", "", "The MySQL username to connect with.")
 		f.StringVarP(&mysqlPassword, "mysql-password", "P", "", "The MySQL password to connect with.")
 	}
 
-	// full-backup command specific
+	// Full-backup command specific
 	{
 		f := fullBackupCmd.Flags()
+
 		f.BoolVar(&backupCtx.purgePrev, "purge-prev", false, "The flag whether previous backups are purged.")
 	}
 
-	// restore command specific
+	// Restore command specific
 	{
 		f := restoreCmd.Flags()
+
 		f.StringVar(&restoreCtx.from, "from", "", "")
 	}
 
@@ -89,7 +95,7 @@ func init() {
 		f := serverCmd.Flags()
 
 		f.StringVar(&serverConnHost, "host", "", "The hostname to listen on.")
-		f.StringVar(&serverConnPort, "port", serverCfg.Port, "The port to bind to.")
+		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.StringVar(&serverCfg.StoreDir, "store-dir", serverCfg.StoreDir, "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")
 		f.StringVar(&serverCfg.EtcdPeerPort, "etcd-peer-port", "2380", "")

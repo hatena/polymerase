@@ -4,7 +4,7 @@
 Polymerase is a server application that performs periodic MySQL physical backups using Xtrabackup and manages backup data.
 
 ## Status
-Polymerase is now development phase. Testing and development are actively carried out.
+Polymerase is now under development. Testing and development are carried out at [Hatena Co., Ltd.](http://hatenacorp.jp/)
 
 ## TODO
 

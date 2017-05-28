@@ -48,5 +48,8 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	})
 	fmt.Fprintln(os.Stdout, res)
 
+	// TODO: implement the subsequent
+	fmt.Fprintln(os.Stdout, "Not implemented yet")
+
 	return nil
 }

@@ -13,17 +13,10 @@ var rootCmd = &cobra.Command{
 	SilenceUsage: true,
 }
 
-// Run creates, configures and runs
+// Run executes rootCmd.Execute().
 func Run() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed running %q\n", os.Args[1])
-		os.Exit(1)
-	}
-}
-
-func _exit(err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stdout, err)
 		os.Exit(1)
 	}
 }

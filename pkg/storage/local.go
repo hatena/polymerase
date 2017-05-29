@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
-	//log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
@@ -174,7 +173,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(
 					StorageType: st,
 					BackupType:  t,
 					Key:         key,
-					Size:        getFileSize(key, base.ConvertToType(t)),
+					Size:        getFileSize(path.Join(fd, fs[j].Name()), base.ConvertToType(t)),
 				})
 				if t == "full-backuped" {
 					flag = true

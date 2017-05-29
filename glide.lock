@@ -1,5 +1,5 @@
-hash: 0f563d02d71921c9bcf3ad139b6b794e972cb5ebc103686c1f7d6ab25d93ed40
-updated: 2017-05-28T01:45:54.437072965+09:00
+hash: 1bb83cd99ae21c68215e359af08bc68548adf47a8ef2dad27e07b917663187a4
+updated: 2017-05-30T02:31:02.82209644+09:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -165,7 +165,7 @@ imports:
 - name: github.com/soheilhy/cmux
   version: bf4a8ede9e87c006fe1d4278c6c7f2b8be1fa84c
 - name: github.com/spf13/cobra
-  version: ca57f0f5dba473a8a58765d16d7e811fb8027add
+  version: e606913c4ee45fec232e67e70105fb6c866b95d9
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/ugorji/go
@@ -224,6 +224,8 @@ imports:
   - status
   - tap
   - transport
+- name: gopkg.in/cheggaaa/pb.v2
+  version: 180c76fdb3025713f501cd481e47810a9c715bd7
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []

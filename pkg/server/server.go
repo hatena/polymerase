@@ -35,6 +35,8 @@ func NewServer(cfg *Config) (*Server, error) {
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
 		DataDir:    cfg.EtcdDataDir(),
+		JoinAddr:   cfg.JoinAddr,
+		Name:       cfg.Name,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "etcd embed config cannot be created")

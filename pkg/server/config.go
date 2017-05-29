@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -10,6 +11,8 @@ import (
 
 const (
 	defaultStoraPath = "polymerase-data"
+
+	defaultName = "default"
 )
 
 // Config is a configuration for polymerase server.
@@ -22,6 +25,8 @@ type Config struct {
 	JoinAddr string
 
 	EtcdPeerPort string
+
+	Name string
 }
 
 // MakeConfig creates a initial Config.
@@ -37,6 +42,12 @@ func MakeConfig() *Config {
 		panic(err)
 	}
 	cfg.StoreDir = ss
+
+	// Name configuration
+	cfg.Name, err = os.Hostname()
+	if err != nil {
+		cfg.Name = defaultName
+	}
 
 	return cfg
 }

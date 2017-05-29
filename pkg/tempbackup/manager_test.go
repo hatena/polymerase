@@ -29,7 +29,10 @@ func TestTempBackupManager_OpenFullBackup(t *testing.T) {
 
 	mockStorage := storage.NewMockBackupStorage(ctrl)
 
-	m := NewTempBackupManager(mockStorage, newConfig())
+	m, err := NewTempBackupManager(mockStorage, newConfig())
+	if err != nil {
+		t.Error(err)
+	}
 
 	db := "db1"
 	s, err := m.OpenFullBackup(db)
@@ -52,7 +55,10 @@ func TestTempBackupManager_OpenIncBackup(t *testing.T) {
 
 	mockStorage := storage.NewMockBackupStorage(ctrl)
 
-	m := NewTempBackupManager(mockStorage, newConfig())
+	m, err := NewTempBackupManager(mockStorage, newConfig())
+	if err != nil {
+		t.Error(err)
+	}
 
 	db := "db1"
 	lsn := "100"
@@ -75,7 +81,10 @@ func TestTempBackupState_Append(t *testing.T) {
 
 	mockStorage := storage.NewMockBackupStorage(ctrl)
 
-	m := NewTempBackupManager(mockStorage, newConfig())
+	m, err := NewTempBackupManager(mockStorage, newConfig())
+	if err != nil {
+		t.Error(err)
+	}
 
 	db := "db1"
 	s, err := m.OpenFullBackup(db)
@@ -102,7 +111,10 @@ func TestTempBackupState_Close(t *testing.T) {
 	mockStorage := storage.NewMockBackupStorage(ctrl)
 
 	// mockStorage
-	m := NewTempBackupManager(mockStorage, newConfig())
+	m, err := NewTempBackupManager(mockStorage, newConfig())
+	if err != nil {
+		t.Error(err)
+	}
 
 	tar := &archivex.TarFile{}
 	tempDir, _ := ioutil.TempDir(m.tempDir, "base-tar-gz")

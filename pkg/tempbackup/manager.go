@@ -2,15 +2,16 @@ package tempbackup
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 )
 
 type TempBackupManagerConfig struct {
@@ -38,12 +39,15 @@ type TempBackupState struct {
 	key        string
 }
 
-func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerConfig) *TempBackupManager {
+func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
+	if err := dirutil.MkdirAllWithLog(cfg.TempDir); err != nil {
+		return nil, errors.Wrap(err, "Cannot create temporary directory")
+	}
 	return &TempBackupManager{
 		timeFormat: cfg.TimeFormat,
 		tempDir:    cfg.TempDir,
 		storage:    storage,
-	}
+	}, nil
 }
 
 func (m *TempBackupManager) OpenFullBackup(db string) (*TempBackupState, error) {

@@ -45,11 +45,11 @@ func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.Backu
 				return errors.New("empty db is not acceptable")
 			}
 			state, err = s.manager.OpenFullBackup(content.Db)
-			log.WithField("db", content.Db).Info("Connected to db")
-			log.WithField("path", state.tempDir).Info("Create temporary directory")
 			if err != nil {
 				return err
 			}
+			log.WithField("db", content.Db).Info("Connected to db")
+			log.WithField("path", state.tempDir).Info("Create temporary directory")
 		}
 		if err := state.Append(content.Content); err != nil {
 			return err

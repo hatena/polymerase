@@ -52,10 +52,14 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, errors.Wrap(err, "backup storage configuration is failed")
 	}
 
-	s.manager = tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
+	mngr, err := tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
 	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
+	}
+	s.manager = mngr
 
 	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
 

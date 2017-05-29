@@ -41,7 +41,9 @@ func TestUnzipFullBackupCmd(t *testing.T) {
 		{
 			in: []string{"name", "dir"},
 			expected: []string{"sh", "-c", strings.TrimSpace(`
-mkdir dir/base && tar xf name -C dir/base
+mkdir dir/base && \
+  tar xf name -C dir/base && \
+  rm -rf dir/base.tar.gz
 			`)},
 		},
 	}

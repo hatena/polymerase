@@ -16,7 +16,11 @@ gunzip -c {{.name}} > {{.dir}}/inc{{.inc}}.xb && \
   rm -rf {{.dir}}/inc{{.inc}}.xb*
 `)
 
-var unzipFullTmpl = "mkdir {{.dir}}/base && tar xf {{.name}} -C {{.dir}}/base"
+var unzipFullTmpl = strings.TrimSpace(`
+mkdir {{.dir}}/base && \
+  tar xf {{.name}} -C {{.dir}}/base && \
+  rm -rf {{.dir}}/base.tar.gz
+`)
 
 func UnzipIncBackupCmd(ctx context.Context, name, dir string, inc int) *exec.Cmd {
 	t := template.New("unzip_inc_tmpl")

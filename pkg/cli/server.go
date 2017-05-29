@@ -89,7 +89,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	defer shutdownSpan.Finish()
 	shutdownCtx, cancel := context.WithTimeout(
 		opentracing.ContextWithSpan(context.Background(), shutdownSpan),
-		10*time.Second,
+		3*time.Second,
 	)
 	defer cancel()
 

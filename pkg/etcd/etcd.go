@@ -98,5 +98,6 @@ func (e *EtcdServer) Close() {
 			log.Info(res)
 		}
 	}
+	e.Server.Server.Stop()
 	e.Server.Close()
 }

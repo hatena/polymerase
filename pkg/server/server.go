@@ -22,7 +22,7 @@ type Server struct {
 	manager       *tempbackup.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
-	etcdServer    *embed.Etcd
+	etcdServer    *etcd.EtcdServer
 	etcdCfg       *embed.Config
 }
 
@@ -70,20 +70,20 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	e, err := etcd.NewEtcdServer(s.etcdCfg)
-	s.etcdServer = e
+	es, err := etcd.NewEtcdServer(s.etcdCfg)
+	s.etcdServer = es
 	if err != nil {
 		return errors.Wrap(err, "etcd server cannot be started")
 	}
-	defer e.Close()
+	defer es.Server.Close()
 	select {
-	case <-e.Server.ReadyNotify():
+	case <-es.Server.Server.ReadyNotify():
 		log.Info("Server is ready")
 	case <-time.After(60 * time.Second):
-		e.Server.Stop()
+		es.Server.Server.Stop()
 		log.Info("Server took too long to start")
 	}
-	log.Info(<-e.Err())
+	log.Info(<-es.Server.Err())
 
 	return nil
 }

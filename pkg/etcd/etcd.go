@@ -1,10 +1,10 @@
 package etcd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -13,12 +13,10 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/log"
 )
 
-type EtcdContext struct {
+type EtcdServer struct {
+	Server     *embed.Etcd
+	cfg        *embed.Config
 	ClientPort string
-	PeerPort   string
-	DataDir    string
-	JoinAddr   string
-	Name       string
 }
 
 func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
@@ -66,46 +64,39 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	return etcdCfg, nil
 }
 
-func (c *EtcdContext) isInitialCluster() bool {
-	return c.JoinAddr == ""
-}
-
-func (c *EtcdContext) AddMember(peerUrl string) (string, error) {
-	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{c.JoinAddr},
-		DialTimeout: 5 * time.Second,
-	})
-	if err != nil {
-		return "", err
-	}
-	defer cli.Close()
-	res, err := cli.MemberAdd(context.Background(), []string{peerUrl})
-	if err != nil {
-		return "", err
-	}
-	log.Info(res.Members)
-	newID := res.Member.ID
-	var buf bytes.Buffer
-	//fmt.Fprintf(&buf, "%s=%s", res.Member.Name, peerUrl)
-	for _, m := range res.Members {
-		for _, u := range m.PeerURLs {
-			n := m.Name
-			if m.ID == newID {
-				n = c.Name
-			}
-			fmt.Fprintf(&buf, "%s=%s,", n, u)
-		}
-	}
-	if l := buf.Len(); l > 0 {
-		buf.Truncate(l - 1)
-	}
-	return buf.String(), nil
-}
-
-func NewEtcdServer(cfg *embed.Config) (*embed.Etcd, error) {
+func NewEtcdServer(cfg *embed.Config) (*EtcdServer, error) {
+	es := &EtcdServer{}
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return e, nil
+	es.Server = e
+	es.cfg = cfg
+	return es, nil
+}
+
+func (e *EtcdServer) Close() {
+	defer os.RemoveAll(e.Server.Config().Dir)
+	ep := make([]string, len(e.cfg.ACUrls))
+	for i, e := range e.cfg.ACUrls {
+		ep[i] = e.String()
+	}
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints: ep,
+		// TODO: assign with default value, not hard coding
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		log.Info("Hard shutdown")
+	} else {
+		res, err := cli.MemberRemove(context.Background(), uint64(e.Server.Server.ID()))
+		if err != nil {
+			log.Info("Failed to remove myself")
+			e.Server.Server.TransferLeadership()
+		} else {
+			log.Info("Success to remove myself")
+			log.Info(res)
+		}
+	}
+	e.Server.Close()
 }

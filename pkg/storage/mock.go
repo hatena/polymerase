@@ -8,6 +8,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	storagepb "github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 // Mock of BackupStorage interface
@@ -83,9 +84,9 @@ func (_mr *_MockBackupStorageRecorder) TransferTempIncBackup(arg0, arg1 interfac
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TransferTempIncBackup", arg0, arg1)
 }
 
-func (_m *MockBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error) {
+func (_m *MockBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]*storagepb.BackupFileInfo, error) {
 	ret := _m.ctrl.Call(_m, "SearchConsecutiveIncBackups", db, from)
-	ret0, _ := ret[0].([]*BackupFile)
+	ret0, _ := ret[0].([]*storagepb.BackupFileInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

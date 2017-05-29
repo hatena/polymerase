@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	//log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 type LocalStorageConfig struct {
@@ -117,8 +118,11 @@ func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, er
 	return "", errors.New("Starting point is not found")
 }
 
-func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Time) ([]*BackupFile, error) {
-	var files []*BackupFile
+func (s *LocalBackupStorage) SearchConsecutiveIncBackups(
+	db string,
+	from time.Time,
+) ([]*storagepb.BackupFileInfo, error) {
+	var files []*storagepb.BackupFileInfo
 	st := s.GetStorageType()
 	spd, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.backupsDir, db))
 	if err != nil {
@@ -135,7 +139,7 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 		if err != nil {
 			continue
 		}
-		files = make([]*BackupFile, 0)
+		files = make([]*storagepb.BackupFileInfo, 0)
 		// FIXME: Sort based on time format, for now, based on filesystem display order
 		lp := sort.Search(len(fs), func(i int) bool {
 			d, err := time.Parse(s.timeFormat, fs[i].Name())
@@ -166,10 +170,11 @@ func (s *LocalBackupStorage) SearchConsecutiveIncBackups(db string, from time.Ti
 
 			if nextlsn == "" || nextlsn == tolsn {
 				nextlsn = fromlsn
-				files = append(files, &BackupFile{
+				files = append(files, &storagepb.BackupFileInfo{
 					StorageType: st,
 					BackupType:  t,
 					Key:         key,
+					Size:        getFileSize(key, base.ConvertToType(t)),
 				})
 				if t == "full-backuped" {
 					flag = true
@@ -251,4 +256,22 @@ func (s *LocalBackupStorage) transferTempBackup(tempPath string, key string) err
 		return err
 	}
 	return nil
+}
+
+func getFileSize(key string, t base.BackupType) int64 {
+	var name string
+	switch t {
+	case base.FULL:
+		// TODO: Avoid hard coding
+		name = filepath.Join(key, "base.tar.gz")
+	case base.INC:
+		name = filepath.Join(key, "inc.xb.gz")
+	default:
+		return 0
+	}
+	fi, err := os.Stat(name)
+	if err != nil {
+		return 0
+	}
+	return fi.Size()
 }

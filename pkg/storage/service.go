@@ -38,16 +38,8 @@ func (s *StorageService) GetKeysAtPoint(ctx context.Context, req *storagepb.GetK
 	}
 	t = t.AddDate(0, 0, 1)
 	bfiles, _ := s.storage.SearchConsecutiveIncBackups(req.Db, t)
-	keys := make([]*storagepb.BackupFileInfo, len(bfiles), len(bfiles))
-	for i, f := range bfiles {
-		keys[i] = &storagepb.BackupFileInfo{
-			Key:         f.Key,
-			StorageType: f.StorageType,
-			BackupType:  f.BackupType,
-		}
-	}
 	return &storagepb.GetKeysAtPointResponse{
-		Keys: keys,
+		Keys: bfiles,
 	}, nil
 }
 

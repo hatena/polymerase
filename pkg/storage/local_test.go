@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 func NewLocalBackupStorageForTest() *LocalBackupStorage {
@@ -51,45 +52,52 @@ func TestLocalBackupStorage_SearchConsecutiveIncBackups(t *testing.T) {
 
 	var tests = []struct {
 		in  string
-		out []*BackupFile
+		out []*storagepb.BackupFileInfo
 	}{
+		// The reason why BackupFileInfo.Size equals zero is base.tar.gz (or inc.xb.gz) is not found.
+		// So, getFileSize always returns zero because of error.
 		{
 			"2017-05-26",
-			[]*BackupFile{
+			[]*storagepb.BackupFileInfo{
 				{
 					StorageType: st,
 					BackupType:  "incremental",
 					Key:         "test-db1/2017-05-24_15-04-05/2017-05-25_15-04-05",
+					Size:        0,
 				},
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
 					Key:         "test-db1/2017-05-24_15-04-05/2017-05-24_15-04-05",
+					Size:        0,
 				},
 			},
 		},
 		{
 			"2017-05-25",
-			[]*BackupFile{
+			[]*storagepb.BackupFileInfo{
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
 					Key:         "test-db1/2017-05-24_15-04-05/2017-05-24_15-04-05",
+					Size:        0,
 				},
 			},
 		},
 		{
 			"2017-05-19",
-			[]*BackupFile{
+			[]*storagepb.BackupFileInfo{
 				{
 					StorageType: st,
 					BackupType:  "incremental",
 					Key:         "test-db1/2017-05-17_15-04-05/2017-05-18_15-04-05",
+					Size:        0,
 				},
 				{
 					StorageType: st,
 					BackupType:  "full-backuped",
 					Key:         "test-db1/2017-05-17_15-04-05/2017-05-17_15-04-05",
+					Size:        0,
 				},
 			},
 		},

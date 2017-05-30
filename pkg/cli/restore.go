@@ -14,8 +14,9 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 	"github.com/taku-k/polymerase/pkg/utils/exec"
+	"github.com/taku-k/polymerase/pkg/utils/log"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -67,23 +68,47 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	}
 	log.Info("Restore data directory: ", restoreDir)
 
-	inc := len(res.Keys) - 1
-	idx := 0
-	for ; inc > 0; inc -= 1 {
-		if err := getIncBackup(scli, res.Keys[idx], restoreDir, inc); err != nil {
-			return err
-		}
-		idx += 1
+	pbs := make([]*pb.ProgressBar, len(res.Keys))
+	pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
+	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
+		info := res.Keys[idx]
+		pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d |", inc))
 	}
-	if err := getFullBackup(scli, res.Keys[idx], restoreDir); err != nil {
+	for _, bar := range pbs {
+		bar.SetWidth(progressBarWidth)
+		bar.SetUnits(pb.U_BYTES)
+	}
+
+	pool, err := pb.StartPool(pbs...)
+	if err != nil {
 		return err
 	}
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
+		info := res.Keys[idx]
+		bar := pbs[idx]
+		g.Go(func() error {
+			return getIncBackup(scli, info, restoreDir, inc, bar)
+		})
+		idx += 1
+	}
+	g.Go(func() error {
+		return getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1])
+	})
+	if err := g.Wait(); err != nil {
+		pool.Stop()
+		return err
+	}
+	pool.Stop()
+
 	return nil
 }
 
-func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string, inc int) error {
+func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string, inc int, bar *pb.ProgressBar) error {
 	fn := filepath.Join(restoreDir, fmt.Sprintf("inc%d.xb.gz", inc))
-	if err := getBackup(cli, info, fn, fmt.Sprintf("inc%d | ", inc)); err != nil {
+	if err := getBackup(cli, info, fn, bar); err != nil {
 		return err
 	}
 	cmd := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc)
@@ -93,9 +118,9 @@ func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFile
 	return nil
 }
 
-func getFullBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string) error {
+func getFullBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string, bar *pb.ProgressBar) error {
 	fn := filepath.Join(restoreDir, "base.tar.gz")
-	if err := getBackup(cli, info, fn, "base | "); err != nil {
+	if err := getBackup(cli, info, fn, bar); err != nil {
 		return err
 	}
 	cmd := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir)
@@ -109,7 +134,7 @@ func getBackup(
 	cli storagepb.StorageServiceClient,
 	info *storagepb.BackupFileInfo,
 	fn string,
-	barPrefix string,
+	bar *pb.ProgressBar,
 ) error {
 	stream, err := cli.GetFileByKey(context.Background(), &storagepb.GetFileByKeyRequest{
 		Key:         info.Key,
@@ -123,9 +148,6 @@ func getBackup(
 		return err
 	}
 	bufw := bufio.NewWriter(f)
-	bar := pb.New64(int64(info.Size)).SetUnits(pb.U_BYTES).Prefix(barPrefix)
-	bar.SetWidth(progressBarWidth)
-	bar.Start()
 	multiw := io.MultiWriter(bufw, bar)
 	for {
 		fs, err := stream.Recv()

@@ -1,12 +1,12 @@
 package exec
 
 import (
+	"bytes"
 	"context"
 	"os/exec"
-	"text/template"
-	"strings"
-	"bytes"
 	"strconv"
+	"strings"
+	"text/template"
 )
 
 var unzipIncTmpl = strings.TrimSpace(`
@@ -28,8 +28,8 @@ func UnzipIncBackupCmd(ctx context.Context, name, dir string, inc int) *exec.Cmd
 	var buf bytes.Buffer
 	t.Execute(&buf, map[string]string{
 		"name": name,
-		"dir": dir,
-		"inc": strconv.Itoa(inc),
+		"dir":  dir,
+		"inc":  strconv.Itoa(inc),
 	})
 	return exec.CommandContext(ctx, "sh", "-c", buf.String())
 }
@@ -40,7 +40,7 @@ func UnzipFullBackupCmd(ctx context.Context, name, dir string) *exec.Cmd {
 	var buf bytes.Buffer
 	t.Execute(&buf, map[string]string{
 		"name": name,
-		"dir": dir,
+		"dir":  dir,
 	})
 	return exec.CommandContext(ctx, "sh", "-c", buf.String())
 }

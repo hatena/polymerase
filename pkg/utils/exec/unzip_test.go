@@ -1,15 +1,15 @@
 package exec
 
 import (
-	"testing"
-	"strings"
 	"context"
 	"reflect"
+	"strings"
+	"testing"
 )
 
 func TestUnzipIncBackupCmd(t *testing.T) {
 	var tests = []struct {
-		in []interface{}
+		in       []interface{}
 		expected []string
 	}{
 		{
@@ -35,7 +35,7 @@ gunzip -c name > dir/inc1.xb && \
 
 func TestUnzipFullBackupCmd(t *testing.T) {
 	var tests = []struct {
-		in []string
+		in       []string
 		expected []string
 	}{
 		{

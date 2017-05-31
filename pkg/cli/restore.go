@@ -89,6 +89,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
 		info := res.Keys[idx]
 		bar := pbs[idx]
+		inc := inc
 		g.Go(func() error {
 			return getIncBackup(scli, info, restoreDir, inc, bar)
 		})

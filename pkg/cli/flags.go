@@ -52,6 +52,10 @@ func init() {
 		return initXtrabackupConfig()
 	}
 
+	restoreCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		return initXtrabackupConfig()
+	}
+
 	// Client Flags
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,

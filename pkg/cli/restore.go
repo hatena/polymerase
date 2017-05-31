@@ -72,7 +72,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
 	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
 		info := res.Keys[idx]
-		pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d |", inc))
+		pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
 	}
 	for _, bar := range pbs {
 		bar.SetWidth(progressBarWidth)
@@ -84,7 +84,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(ctx)
 
 	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
 		info := res.Keys[idx]
@@ -103,6 +103,18 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	pool.Stop()
+
+	os.Chdir(restoreDir)
+	c := exec.PrepareBaseBackup(ctx, xtrabackupCfg)
+	if err := c.Run(); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+	}
+	for inc := 1; inc < len(res.Keys); inc += 1 {
+		c := exec.PrepareIncBackup(ctx, inc, xtrabackupCfg)
+		if err := c.Run(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+		}
+	}
 
 	return nil
 }

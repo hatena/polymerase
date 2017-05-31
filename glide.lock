@@ -1,5 +1,5 @@
 hash: 1bb83cd99ae21c68215e359af08bc68548adf47a8ef2dad27e07b917663187a4
-updated: 2017-05-30T02:31:02.82209644+09:00
+updated: 2017-05-31T11:19:30.947198263+09:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -94,6 +94,14 @@ imports:
   - capnslog
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+- name: github.com/dsnet/compress
+  version: 6e336cc7ed88357254ae4753d7964ff8c9d300c0
+  subpackages:
+  - bzip2
+  - bzip2/internal/sais
+  - internal
+  - internal/errors
+  - internal/prefix
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
 - name: github.com/ghodss/yaml
@@ -132,10 +140,20 @@ imports:
   version: be4efa7ec0c38ab76d56037014c90d48d6b13037
 - name: github.com/jonboulle/clockwork
   version: 2eee05ed794112d45db504eb05aa693efd2b8b09
+- name: github.com/mattn/go-colorable
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  repo: https://github.com/mattn/go-colorable
+- name: github.com/mattn/go-isatty
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+  repo: https://github.com/mattn/go-isatty
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
+- name: github.com/mholt/archiver
+  version: cdc68dd1f170b8dfc1a0d2231b5bb0967ed67006
+- name: github.com/nwaples/rardecode
+  version: f22b7ef81a0afac9ce1447d37e5ab8e99fbd2f73
 - name: github.com/opentracing/opentracing-go
   version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
@@ -172,6 +190,12 @@ imports:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
+- name: github.com/ulikunitz/xz
+  version: 3807218c9f4ed05861fa9eb75b8fb8afd3325a34
+  subpackages:
+  - internal/hash
+  - internal/xlog
+  - lzma
 - name: github.com/xiang90/probing
   version: 07dd2e8dfe18522e9c447ba95f2fe95262f63bb2
 - name: golang.org/x/crypto
@@ -194,11 +218,11 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: a55a76086885b80f79961eacb876ebd8caf3868d
+  version: b90f89a1e7a9c1f6b918820b3daa7f08488c8594
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 19e51611da83d6be54ddafce4a4af510cb3e9ea4
+  version: 4ee4af566555f5fbe026368b75596286a312663a
   subpackages:
   - secure/bidirule
   - transform
@@ -226,6 +250,18 @@ imports:
   - transport
 - name: gopkg.in/cheggaaa/pb.v2
   version: 180c76fdb3025713f501cd481e47810a9c715bd7
+  subpackages:
+  - termutil
+- name: gopkg.in/fatih/color.v1
+  version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+- name: gopkg.in/mattn/go-colorable.v0
+  version: d228849504861217f796da67fae4f6e347643f15
+- name: gopkg.in/mattn/go-isatty.v0
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+- name: gopkg.in/mattn/go-runewidth.v0
+  version: 9e777a8366cce605130a531d2cd6363d07ad7317
+- name: gopkg.in/VividCortex/ewma.v1
+  version: 2f8aa9741ab4b5b80945c750b871131b88ef5b7f
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []

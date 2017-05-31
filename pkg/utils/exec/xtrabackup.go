@@ -3,6 +3,7 @@ package exec
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 	"text/template"
@@ -48,6 +49,14 @@ func BuildIncBackupCmd(ctx context.Context, cfg *XtrabackupConfig) (*exec.Cmd, e
 		return nil, errors.New("ToLSN cannot be empty")
 	}
 	return _buildBackupCmd(ctx, cfg, incBackupTmpl)
+}
+
+func PrepareBaseBackup(ctx context.Context, cfg *XtrabackupConfig) *exec.Cmd {
+	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base")
+}
+
+func PrepareIncBackup(ctx context.Context, inc int, cfg *XtrabackupConfig) *exec.Cmd {
+	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base", fmt.Sprintf("--incremental-dir=inc%d", inc))
 }
 
 func _buildBackupCmd(ctx context.Context, cfg *XtrabackupConfig, tmpl string) (*exec.Cmd, error) {

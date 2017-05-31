@@ -112,8 +112,7 @@ func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFile
 	if err := getBackup(cli, info, fn, bar); err != nil {
 		return err
 	}
-	cmd := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc)
-	if err := cmd.Run(); err != nil {
+	if err := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
 		return err
 	}
 	return nil
@@ -124,8 +123,7 @@ func getFullBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFil
 	if err := getBackup(cli, info, fn, bar); err != nil {
 		return err
 	}
-	cmd := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir)
-	if err := cmd.Run(); err != nil {
+	if err := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
 		return err
 	}
 	return nil

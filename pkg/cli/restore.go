@@ -27,6 +27,8 @@ type restoreContext struct {
 	*base.Config
 
 	from string
+
+	applyPrepare bool
 }
 
 var restoreCmd = &cobra.Command{
@@ -104,15 +106,18 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	}
 	pool.Stop()
 
-	os.Chdir(restoreDir)
-	c := exec.PrepareBaseBackup(ctx, xtrabackupCfg)
-	if err := c.Run(); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
-	}
-	for inc := 1; inc < len(res.Keys); inc += 1 {
-		c := exec.PrepareIncBackup(ctx, inc, xtrabackupCfg)
+	// Automatically preparing backups only when applyPrepare flag is true.
+	if restoreCtx.applyPrepare {
+		os.Chdir(restoreDir)
+		c := exec.PrepareBaseBackup(ctx, xtrabackupCfg)
 		if err := c.Run(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+			return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+		}
+		for inc := 1; inc < len(res.Keys); inc += 1 {
+			c := exec.PrepareIncBackup(ctx, inc, xtrabackupCfg)
+			if err := c.Run(); err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+			}
 		}
 	}
 

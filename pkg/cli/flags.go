@@ -18,7 +18,7 @@ var db string
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg}
+var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: true}
 var xtrabackupCfg *exec.XtrabackupConfig
 
 func initXtrabackupConfig() error {
@@ -91,7 +91,8 @@ func init() {
 	{
 		f := restoreCmd.Flags()
 
-		f.StringVar(&restoreCtx.from, "from", "", "")
+		f.StringVar(&restoreCtx.from, "from", restoreCtx.from, "")
+		f.BoolVar(&restoreCtx.applyPrepare, "apply-prepare", restoreCtx.applyPrepare, "")
 	}
 
 	// Server Flags

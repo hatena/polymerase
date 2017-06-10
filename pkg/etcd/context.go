@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -20,6 +21,11 @@ type EtcdContext struct {
 
 func (c *EtcdContext) isInitialCluster() bool {
 	return c.JoinAddr == ""
+}
+
+func (c *EtcdContext) existsDataDir() bool {
+	_, err := os.Stat(c.DataDir)
+	return err == nil
 }
 
 func (c *EtcdContext) AddMember(peerUrl string) (string, error) {

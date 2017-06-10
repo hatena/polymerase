@@ -51,7 +51,8 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 
 	if ctx.isInitialCluster() {
 		etcdCfg.InitialCluster = etcdCfg.InitialClusterFromName(ctx.Name)
-	} else {
+	} else if !ctx.existsDataDir() {
+		// If data dir exists, it is launched with recovery mode.
 		cluster, err := ctx.AddMember(apurl.String())
 		if err != nil {
 			return nil, errors.Wrap(err, "AddMember API is failed")

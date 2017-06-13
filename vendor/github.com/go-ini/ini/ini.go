@@ -37,7 +37,7 @@ const (
 
 	// Maximum allowed depth when recursively substituing variable names.
 	_DEPTH_VALUES = 99
-	_VERSION      = "1.27.2"
+	_VERSION      = "1.28.0"
 )
 
 // Version returns current package version literal.
@@ -60,6 +60,9 @@ var (
 
 	// Explicitly write DEFAULT section header
 	DefaultHeader = false
+
+	// Indicate whether to put a line between sections
+	PrettySection = true
 )
 
 func init() {
@@ -513,9 +516,11 @@ func (f *File) WriteToIndent(w io.Writer, indent string) (n int64, err error) {
 			}
 		}
 
-		// Put a line between sections
-		if _, err = buf.WriteString(LineBreak); err != nil {
-			return 0, err
+		if PrettySection {
+			// Put a line between sections
+			if _, err = buf.WriteString(LineBreak); err != nil {
+				return 0, err
+			}
 		}
 	}
 

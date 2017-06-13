@@ -20,7 +20,9 @@ func NewStorageService(storage BackupStorage) *StorageService {
 	}
 }
 
-func (s *StorageService) GetLatestToLSN(ctx context.Context, req *storagepb.GetLatestToLSNRequest) (*storagepb.GetLatestToLSNResponse, error) {
+func (s *StorageService) GetLatestToLSN(
+	ctx context.Context, req *storagepb.GetLatestToLSNRequest,
+) (*storagepb.GetLatestToLSNResponse, error) {
 	lsn, err := s.storage.GetLatestToLSN(req.Db)
 	if err != nil {
 		log.WithField("db", req.Db).Info("Not found")
@@ -31,7 +33,9 @@ func (s *StorageService) GetLatestToLSN(ctx context.Context, req *storagepb.GetL
 	}, nil
 }
 
-func (s *StorageService) GetKeysAtPoint(ctx context.Context, req *storagepb.GetKeysAtPointRequest) (*storagepb.GetKeysAtPointResponse, error) {
+func (s *StorageService) GetKeysAtPoint(
+	ctx context.Context, req *storagepb.GetKeysAtPointRequest,
+) (*storagepb.GetKeysAtPointResponse, error) {
 	t, err := time.Parse("2006-01-02", req.From)
 	if err != nil {
 		return &storagepb.GetKeysAtPointResponse{}, err
@@ -43,7 +47,9 @@ func (s *StorageService) GetKeysAtPoint(ctx context.Context, req *storagepb.GetK
 	}, nil
 }
 
-func (s *StorageService) GetFileByKey(req *storagepb.GetFileByKeyRequest, stream storagepb.StorageService_GetFileByKeyServer) error {
+func (s *StorageService) GetFileByKey(
+	req *storagepb.GetFileByKeyRequest, stream storagepb.StorageService_GetFileByKeyServer,
+) error {
 	r, err := s.storage.GetFileStream(req.Key)
 	if err != nil {
 		return err
@@ -63,7 +69,9 @@ func (s *StorageService) GetFileByKey(req *storagepb.GetFileByKeyRequest, stream
 	}
 }
 
-func (s *StorageService) PurgePrevBackup(ctx context.Context, req *storagepb.PurgePrevBackupRequest) (*storagepb.PurgePrevBackupResponse, error) {
+func (s *StorageService) PurgePrevBackup(
+	ctx context.Context, req *storagepb.PurgePrevBackupRequest,
+) (*storagepb.PurgePrevBackupResponse, error) {
 	key, err := s.storage.GetKPastBackupKey(req.Db, 2)
 	if err != nil {
 		return &storagepb.PurgePrevBackupResponse{

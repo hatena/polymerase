@@ -125,3 +125,14 @@ func (_m *MockBackupStorage) RemoveBackups(key string) error {
 func (_mr *_MockBackupStorageRecorder) RemoveBackups(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveBackups", arg0)
 }
+
+func (_m *MockBackupStorage) GetKPastBackupKey(db string, k int) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetKPastBackupKey", db, k)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockBackupStorageRecorder) GetKPastBackupKey(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetKPastBackupKey", arg0, arg1)
+}

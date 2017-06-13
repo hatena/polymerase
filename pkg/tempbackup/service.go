@@ -1,9 +1,8 @@
 package tempbackup
 
 import (
-	"io"
-
 	"bytes"
+	"io"
 
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -21,7 +20,9 @@ func NewBackupTransferService(m *TempBackupManager) *TempBackupTransferService {
 	}
 }
 
-func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.BackupTransferService_TransferFullBackupServer) error {
+func (s *TempBackupTransferService) TransferFullBackup(
+	stream tempbackuppb.BackupTransferService_TransferFullBackupServer,
+) error {
 	var state *TempBackupState
 
 	log.LogWithGRPC(stream.Context()).Info("Established peer")
@@ -57,7 +58,9 @@ func (s *TempBackupTransferService) TransferFullBackup(stream tempbackuppb.Backu
 	}
 }
 
-func (s *TempBackupTransferService) TransferIncBackup(stream tempbackuppb.BackupTransferService_TransferIncBackupServer) error {
+func (s *TempBackupTransferService) TransferIncBackup(
+	stream tempbackuppb.BackupTransferService_TransferIncBackupServer,
+) error {
 	var state *TempBackupState
 	var content *tempbackuppb.IncBackupContentStream
 	var err error

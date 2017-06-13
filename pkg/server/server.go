@@ -32,6 +32,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	etcdCfg, err := etcd.NewEtcdEmbedConfig(&etcd.EtcdContext{
+		Host:       cfg.Host,
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
 		DataDir:    cfg.EtcdDataDir(),

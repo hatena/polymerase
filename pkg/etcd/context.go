@@ -12,6 +12,7 @@ import (
 )
 
 type EtcdContext struct {
+	Host       string
 	ClientPort string
 	PeerPort   string
 	DataDir    string

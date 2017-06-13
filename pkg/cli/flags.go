@@ -99,7 +99,7 @@ func init() {
 	{
 		f := serverCmd.Flags()
 
-		f.StringVar(&serverConnHost, "host", "", "The hostname to listen on.")
+		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.StringVar(&serverCfg.StoreDir, "store-dir", serverCfg.StoreDir, "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")

@@ -3,6 +3,7 @@ package etcd
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"time"
@@ -27,7 +28,7 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	}
 	etcdCfg.LCUrls = []url.URL{*lcurl}
 
-	acurl, err := url.Parse(fmt.Sprintf("http://localhost:%s", ctx.ClientPort))
+	acurl, err := url.Parse(fmt.Sprintf("http://%s", net.JoinHostPort(ctx.Host, ctx.ClientPort)))
 	if err != nil {
 		return nil, errors.Wrap(err, "port cannot be parsed")
 	}
@@ -39,7 +40,7 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	}
 	etcdCfg.LPUrls = []url.URL{*lpurl}
 
-	apurl, err := url.Parse(fmt.Sprintf("http://localhost:%s", ctx.PeerPort))
+	apurl, err := url.Parse(fmt.Sprintf("http://%s", net.JoinHostPort(ctx.Host, ctx.PeerPort)))
 	if err != nil {
 		return nil, errors.Wrap(err, "etcd peer port cannot be parsed")
 	}

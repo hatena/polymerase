@@ -24,7 +24,7 @@ type Server struct {
 	manager       *tempbackup.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
-	etcdServer    *EtcdServer
+	etcdServer    *etcdServer
 	etcdCfg       *embed.Config
 }
 
@@ -33,7 +33,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg: cfg,
 	}
 
-	etcdCfg, err := NewEtcdEmbedConfig(&EtcdContext{
+	etcdCfg, err := newEtcdEmbedConfig(&EtcdContext{
 		Host:       cfg.Host,
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
@@ -78,7 +78,7 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	es, err := NewEtcdServer(s.etcdCfg)
+	es, err := newEtcdServer(s.etcdCfg)
 	s.etcdServer = es
 	if err != nil {
 		return errors.Wrap(err, "etcd server cannot be started")
@@ -112,7 +112,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 	if s.etcdServer != nil {
-		s.etcdServer.Close()
+		s.etcdServer.close()
 	}
 	stopped <- struct{}{}
 }

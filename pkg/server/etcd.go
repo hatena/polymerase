@@ -14,13 +14,13 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/log"
 )
 
-type EtcdServer struct {
+type etcdServer struct {
 	Server     *embed.Etcd
 	cfg        *embed.Config
 	ClientPort string
 }
 
-func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
+func newEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	etcdCfg := embed.NewConfig()
 	lcurl, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", ctx.ClientPort))
 	if err != nil {
@@ -66,8 +66,8 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	return etcdCfg, nil
 }
 
-func NewEtcdServer(cfg *embed.Config) (*EtcdServer, error) {
-	es := &EtcdServer{}
+func newEtcdServer(cfg *embed.Config) (*etcdServer, error) {
+	es := &etcdServer{}
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		os.RemoveAll(cfg.Dir)
@@ -78,7 +78,7 @@ func NewEtcdServer(cfg *embed.Config) (*EtcdServer, error) {
 	return es, nil
 }
 
-func (e *EtcdServer) Close() {
+func (e *etcdServer) close() {
 	defer os.RemoveAll(e.Server.Config().Dir)
 	ep := make([]string, len(e.cfg.ACUrls))
 	for i, e := range e.cfg.ACUrls {

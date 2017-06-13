@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/coreos/etcd/integration"
 	"github.com/golang/mock/gomock"
 	"github.com/jhoonb/archivex"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -115,6 +116,11 @@ func TestTempBackupState_Close(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
+	defer clus.Terminate(t)
+
+	m.EtcdCli = clus.RandClient()
 
 	tar := &archivex.TarFile{}
 	tempDir, _ := ioutil.TempDir(m.tempDir, "base-tar-gz")

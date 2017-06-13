@@ -180,7 +180,7 @@ func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
 	if err != nil {
 		return nil
 	}
-	if res == nil {
+	if len(res.Kvs) == 0 {
 		return &storagepb.BackupInfo{
 			Db:             s.db,
 			LastFullbackup: 0,

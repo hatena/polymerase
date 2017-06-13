@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/coreos/etcd/clientv3"
@@ -14,16 +15,19 @@ type StatusRecorder struct {
 
 	storeDir string
 
-	cli clientv3.Client
+	cli *clientv3.Client
 
 	storage storage.BackupStorage
+
+	name string
 }
 
-func NewStatusRecorder(client clientv3.Client, storeDir string, storage storage.BackupStorage) *StatusRecorder {
+func NewStatusRecorder(client *clientv3.Client, storeDir string, storage storage.BackupStorage, name string) *StatusRecorder {
 	return &StatusRecorder{
 		cli:      client,
 		storeDir: storeDir,
 		storage:  storage,
+		name:     name,
 	}
 }
 
@@ -36,9 +40,10 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
+	_, err := sr.cli.KV.Put(sr.cli.Ctx(), fmt.Sprintf("/diskinfo/%s/total", sr.name), fmt.Sprintf("%v", fileSystemUsage.Total))
+	if err != nil {
+		return err
+	}
+
 	return nil
-}
-
-func (sr *StatusRecorder) collectBackupInfo() {
-
 }

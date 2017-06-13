@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
+	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
@@ -118,13 +118,15 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 }
 
 func (s *Server) startWriteStatus(freq time.Duration) {
+	recorder := status.NewStatusRecorder(s.manager.EtcdCli, s.cfg.StoreDir, s.storage, s.cfg.Name)
 	ticker := time.NewTicker(freq)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("Ticker")
-
+			if err := recorder.WriteStatus(context.Background()); err != nil {
+				log.Info(err)
+			}
 		}
 	}
 }

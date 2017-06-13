@@ -235,6 +235,17 @@ func (s *LocalBackupStorage) RemoveBackups(key string) error {
 	return os.RemoveAll(filepath.Join(s.backupsDir, key))
 }
 
+func (s *LocalBackupStorage) GetKPastBackupKey(db string, k int) (string, error) {
+	spd, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.backupsDir, db))
+	if err != nil {
+		return "", err
+	}
+	if len(spd) < k {
+		return "", errors.New("Not enough key to search for")
+	}
+	return path.Join(db, spd[len(spd)-k].Name()), nil
+}
+
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
 	return s.transferTempBackup(tempDir, key)
 }

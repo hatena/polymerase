@@ -17,6 +17,7 @@ type BackupStorage interface {
 	GetFileStream(key string) (io.Reader, error)
 	PostFile(key string, name string, r io.Reader) error
 	RemoveBackups(key string) error
+	GetKPastBackupKey(db string, k int) (string, error)
 }
 
 type BackupFile struct {

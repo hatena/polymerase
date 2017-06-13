@@ -8,7 +8,7 @@ Polymerase is now under development. Testing and development are carried out at 
 
 ## TODO
 
-TBD
+- [ ] Add more tests
 
 ## Author
 

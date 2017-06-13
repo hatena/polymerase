@@ -6,6 +6,7 @@ service StorageService {
   rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
   rpc GetKeysAtPoint(GetKeysAtPointRequest) returns (GetKeysAtPointResponse) {};
   rpc GetFileByKey(GetFileByKeyRequest) returns (stream FileStream) {};
+  rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -39,4 +40,12 @@ message GetFileByKeyRequest {
 
 message FileStream {
   bytes content = 1;
+}
+
+message PurgePrevBackupRequest {
+  string db = 1;
+}
+
+message PurgePrevBackupResponse {
+  string message = 1;
 }

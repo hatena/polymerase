@@ -62,3 +62,20 @@ func (s *StorageService) GetFileByKey(req *storagepb.GetFileByKeyRequest, stream
 		})
 	}
 }
+
+func (s *StorageService) PurgePrevBackup(ctx context.Context, req *storagepb.PurgePrevBackupRequest) (*storagepb.PurgePrevBackupResponse, error) {
+	key, err := s.storage.GetKPastBackupKey(req.Db, 2)
+	if err != nil {
+		return &storagepb.PurgePrevBackupResponse{
+			Message: "There is no backup to purge.",
+		}, nil
+	}
+	log.WithField("key", key).Info("Purge key")
+	err = s.storage.RemoveBackups(key)
+	if err != nil {
+		return &storagepb.PurgePrevBackupResponse{}, err
+	}
+	return &storagepb.PurgePrevBackupResponse{
+		Message: "Purge succeeds",
+	}, nil
+}

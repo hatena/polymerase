@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/coreos/etcd/embed"
@@ -88,6 +89,10 @@ func (s *Server) Start(ctx context.Context) error {
 		es.Server.Server.Stop()
 		log.Info("Server took too long to start")
 	}
+
+	// Start status sampling
+	go s.startWriteStatus(s.cfg.StatusSampleInterval)
+
 	log.Info(<-es.Server.Err())
 
 	return nil
@@ -98,4 +103,15 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 		s.etcdServer.Close()
 	}
 	stopped <- struct{}{}
+}
+
+func (s *Server) startWriteStatus(freq time.Duration) {
+	ticker := time.NewTicker(freq)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Println("Ticker")
+		}
+	}
 }

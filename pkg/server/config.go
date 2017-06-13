@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -13,6 +14,8 @@ const (
 	defaultStoraPath = "polymerase-data"
 
 	defaultName = "default"
+
+	defaultStatusSampleInterval = 10 * time.Second
 )
 
 // Config is a configuration for polymerase server.
@@ -27,6 +30,8 @@ type Config struct {
 	EtcdPeerPort string
 
 	Name string
+
+	StatusSampleInterval time.Duration
 }
 
 // MakeConfig creates a initial Config.
@@ -48,6 +53,9 @@ func MakeConfig() *Config {
 	if err != nil {
 		cfg.Name = defaultName
 	}
+
+	// TODO: It can be changed by option
+	cfg.StatusSampleInterval = defaultStatusSampleInterval
 
 	return cfg
 }

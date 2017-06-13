@@ -19,9 +19,3 @@ type BackupStorage interface {
 	RemoveBackups(key string) error
 	GetKPastBackupKey(db string, k int) (string, error)
 }
-
-type BackupFile struct {
-	StorageType string `json:"storage_type"`
-	BackupType  string `json:"backup_type"`
-	Key         string `json:"key"`
-}

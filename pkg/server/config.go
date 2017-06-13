@@ -64,7 +64,7 @@ func (cfg *Config) LogsDir() string {
 
 // BackupsDir returns a directory path for backup data.
 func (cfg *Config) BackupsDir() string {
-	return filepath.Join(cfg.StoreDir, "basckups")
+	return filepath.Join(cfg.StoreDir, "backups")
 }
 
 // EtcdDataDir returns a directory path for etcd data dir.

@@ -1,5 +1,5 @@
-hash: c8d20679508ca84ef5169a618005ed657c9a20dccc33e1fa05bdd224dfb5a36c
-updated: 2017-06-13T11:29:28.353586793+09:00
+hash: b7c6e0c458586cc133a5969ae26401097503fc804a1fb85e7e164ff7953d9f75
+updated: 2017-06-13T17:12:41.946858262+09:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -96,6 +96,8 @@ imports:
   - capnslog
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+- name: github.com/elastic/gosigar
+  version: 5a9ad8e33837b4e4c776d129142fcd5ccf41f639
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
 - name: github.com/ghodss/yaml

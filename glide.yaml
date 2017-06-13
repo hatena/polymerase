@@ -23,3 +23,5 @@ import:
   version: ^1.27.2
 - package: github.com/cheggaaa/pb
   version: ^1.0.15
+- package: github.com/elastic/gosigar
+  version: ^0.4.0

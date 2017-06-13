@@ -9,7 +9,6 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
-	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
@@ -25,7 +24,7 @@ type Server struct {
 	manager       *tempbackup.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
-	etcdServer    *etcd.EtcdServer
+	etcdServer    *EtcdServer
 	etcdCfg       *embed.Config
 }
 
@@ -34,7 +33,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg: cfg,
 	}
 
-	etcdCfg, err := etcd.NewEtcdEmbedConfig(&etcd.EtcdContext{
+	etcdCfg, err := NewEtcdEmbedConfig(&EtcdContext{
 		Host:       cfg.Host,
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
@@ -79,7 +78,7 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	es, err := etcd.NewEtcdServer(s.etcdCfg)
+	es, err := NewEtcdServer(s.etcdCfg)
 	s.etcdServer = es
 	if err != nil {
 		return errors.Wrap(err, "etcd server cannot be started")

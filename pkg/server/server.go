@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/etcd"
@@ -57,6 +59,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	mngr, err := tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
+		Name:    cfg.Name,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
@@ -90,6 +93,16 @@ func (s *Server) Start(ctx context.Context) error {
 		log.Info("Server took too long to start")
 	}
 
+	// Create etcd client
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{net.JoinHostPort(s.cfg.Host, s.cfg.Port)},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		return err
+	}
+	s.manager.EtcdCli = cli
+
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
 
@@ -112,6 +125,7 @@ func (s *Server) startWriteStatus(freq time.Duration) {
 		select {
 		case <-ticker.C:
 			fmt.Println("Ticker")
+
 		}
 	}
 }

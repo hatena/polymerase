@@ -9,7 +9,7 @@ Polymerase is now under development. Testing and development are carried out at 
 ## TODO
 
 - [ ] Add more tests
-- [ ] Migrate pkg/etcd to pkg/server
+- [x] Migrate pkg/etcd to pkg/server
 
 ## Author
 

@@ -21,7 +21,7 @@ type EtcdServer struct {
 
 func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	etcdCfg := embed.NewConfig()
-	lcurl, err := url.Parse(fmt.Sprintf("http://localhost:%s", ctx.ClientPort))
+	lcurl, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", ctx.ClientPort))
 	if err != nil {
 		return nil, errors.Wrap(err, "port cannot be parsed")
 	}
@@ -33,7 +33,7 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	}
 	etcdCfg.ACUrls = []url.URL{*acurl}
 
-	lpurl, err := url.Parse(fmt.Sprintf("http://localhost:%s", ctx.PeerPort))
+	lpurl, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", ctx.PeerPort))
 	if err != nil {
 		return nil, errors.Wrap(err, "etcd peer port cannot be parsed")
 	}
@@ -69,6 +69,7 @@ func NewEtcdServer(cfg *embed.Config) (*EtcdServer, error) {
 	es := &EtcdServer{}
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
+		os.RemoveAll(cfg.Dir)
 		return nil, err
 	}
 	es.Server = e

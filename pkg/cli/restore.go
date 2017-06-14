@@ -56,6 +56,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	errCh := make(chan error, 1)
+	finishCh := make(chan struct{})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -129,12 +130,15 @@ func runRestore(cmd *cobra.Command, args []string) error {
 				}
 			}
 		}
+
+		finishCh <- struct{}{}
 	}()
 
 	select {
 	case err := <-errCh:
 		return err
-	case _ = <-signalCh:
+	case <-signalCh:
+	case <-finishCh:
 	}
 	return nil
 }

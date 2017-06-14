@@ -8,6 +8,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/elastic/gosigar"
 	"github.com/taku-k/polymerase/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/base"
 )
 
 type StatusRecorder struct {
@@ -40,9 +41,18 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
-	_, err := sr.cli.KV.Put(sr.cli.Ctx(), fmt.Sprintf("/diskinfo/%s/total", sr.name), fmt.Sprintf("%v", fileSystemUsage.Total))
-	if err != nil {
-		return err
+	kvs := []struct{
+		k string
+		v string
+	}{
+		{k: base.DiskInfoTotalKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Total)},
+		{k: base.DiskInfoAvailKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Avail)},
+	}
+	for _, kv := range kvs {
+		_, err := sr.cli.KV.Put(sr.cli.Ctx(), kv.k, kv.v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

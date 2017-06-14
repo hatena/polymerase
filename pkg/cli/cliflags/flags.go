@@ -28,52 +28,52 @@ The port to bind to.`,
 	}
 
 	ClientHost = FlagInfo{
-		Name: "host",
+		Name:   "host",
 		EnvVar: "POLYMERASE_HOST",
 		Desc: `
 Polymerase server hostname`,
 	}
 
 	ClientPort = FlagInfo{
-		Name: "port",
+		Name:   "port",
 		EnvVar: "POLYMERASE_PORT",
 		Desc: `
 Polymerase server port`,
 	}
 
 	MySQLHost = FlagInfo{
-		Name: "mysql-host",
+		Name:   "mysql-host",
 		EnvVar: "POLYMERASE_MYSQL_HOST",
 		Desc: `
 The MySQL hostname to connect with.`,
 	}
 
 	MySQLPort = FlagInfo{
-		Name: "mysql-port",
+		Name:      "mysql-port",
 		Shorthand: "p",
-		EnvVar: "POLYMERASE_MYSQL_PORT",
+		EnvVar:    "POLYMERASE_MYSQL_PORT",
 		Desc: `
 The MySQL port to connect with.`,
 	}
 
 	MySQLUser = FlagInfo{
-		Name: "mysql-user",
+		Name:      "mysql-user",
 		Shorthand: "u",
-		EnvVar: "POLYMERASE_MYSQL_USER",
+		EnvVar:    "POLYMERASE_MYSQL_USER",
 		Desc: `
 The MySQL username to connect with.`,
 	}
 
 	MySQLPassword = FlagInfo{
-		Name: "mysql-password",
+		Name:      "mysql-password",
 		Shorthand: "P",
-		EnvVar: "POLYMERASE_MYSQL_PASSWORD",
+		EnvVar:    "POLYMERASE_MYSQL_PASSWORD",
 		Desc: `
 The MySQL password to connect with.`,
 	}
 
 	UniqueDBKey = FlagInfo{
-		Name: "db-key",
+		Name:      "db-key",
 		Shorthand: "k",
 		Desc: `
 Unique DB Key`,
@@ -86,20 +86,20 @@ The dir path to store data files.`,
 	}
 
 	Join = FlagInfo{
-		Name: "join",
+		Name:      "join",
 		Shorthand: "j",
 		Desc: `
 The address of node which acts as bootstrap when joining an existing cluster.`,
 	}
 
-	EtcdPeerPort = FlagInfo {
+	EtcdPeerPort = FlagInfo{
 		Name: "etcd-peer-port",
 		Desc: `
 The port to be used for etcd peer communication.`,
 	}
 
 	NameFlag = FlagInfo{
-		Name: "name",
+		Name:      "name",
 		Shorthand: "n",
 		Desc: `
 The human-readable name.`,

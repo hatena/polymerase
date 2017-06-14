@@ -15,7 +15,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 )
 
 type TempBackupManagerConfig struct {
@@ -155,7 +154,6 @@ func (s *TempBackupState) closeFullBackup() error {
 		info.IsFailed = false
 		info.LastFullbackup = time.Now().Unix()
 		out, err := proto.Marshal(info)
-		log.Info(string(out))
 		if err == nil {
 			_, err := s.cli.Put(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db), string(out))
 			if err != nil {

@@ -17,7 +17,7 @@ const (
 
 	defaultStatusSampleInterval = 10 * time.Second
 
-	defaultServeRateLimit = 20 * (1 << 10)
+	defaultServeRateLimit = 10 * 1024 * 1024 // 10MB/sec
 )
 
 // Config is a configuration for polymerase server.

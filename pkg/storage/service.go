@@ -5,18 +5,21 @@ import (
 	"io"
 	"time"
 
+	"github.com/fujiwara/shapeio"
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 )
 
 type StorageService struct {
-	storage BackupStorage
+	storage   BackupStorage
+	rateLimit float64
 }
 
-func NewStorageService(storage BackupStorage) *StorageService {
+func NewStorageService(storage BackupStorage, rateLimit uint64) *StorageService {
 	return &StorageService{
-		storage: storage,
+		storage:   storage,
+		rateLimit: float64(rateLimit),
 	}
 }
 
@@ -54,9 +57,11 @@ func (s *StorageService) GetFileByKey(
 	if err != nil {
 		return err
 	}
+	sr := shapeio.NewReader(r)
+	sr.SetRateLimit(s.rateLimit)
 	chunk := make([]byte, 1<<20)
 	for {
-		n, err := r.Read(chunk)
+		n, err := sr.Read(chunk)
 		if err == io.EOF {
 			return nil
 		}

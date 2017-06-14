@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-ini/ini"
-	"github.com/juju/ratelimit"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
@@ -199,7 +198,6 @@ func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	rate := float64(s.serveRateLimit)
 	var r io.Reader
 	switch cp.BackupType {
 	case "full-backuped":
@@ -215,8 +213,7 @@ func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	default:
 		return nil, errors.New("Not found such backup type")
 	}
-	limiter := ratelimit.NewBucketWithRate(rate, 1<<40)
-	return ratelimit.Reader(r, limiter), nil
+	return r, nil
 }
 
 func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) error {

@@ -68,7 +68,7 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
 
-	s.storageSvc = storage.NewStorageService(s.storage)
+	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		tempbackuppb.RegisterBackupTransferServiceServer(gs, s.tempBackupSvc)

@@ -49,8 +49,9 @@ func (s *TempBackupTransferService) TransferFullBackup(
 			if err != nil {
 				return err
 			}
-			log.WithField("db", content.Db).Info("Connected to db")
-			log.WithField("path", state.tempDir).Info("Create temporary directory")
+			log.WithField("db", content.Db).
+				WithField("temp_path", state.tempDir).
+				Info("Start full-backup")
 		}
 		if err := state.Append(content.Content); err != nil {
 			return err
@@ -62,10 +63,11 @@ func (s *TempBackupTransferService) TransferIncBackup(
 	stream tempbackuppb.BackupTransferService_TransferIncBackupServer,
 ) error {
 	var state *TempBackupState
-	var content *tempbackuppb.IncBackupContentStream
-	var err error
+
+	log.LogWithGRPC(stream.Context()).Info("Established peer")
+
 	for {
-		content, err = stream.Recv()
+		content, err := stream.Recv()
 		if err == io.EOF {
 			if err := state.Close(); err != nil {
 				return err
@@ -89,6 +91,9 @@ func (s *TempBackupTransferService) TransferIncBackup(
 			if err != nil {
 				return err
 			}
+			log.WithField("db", content.Db).
+				WithField("temp_path", state.tempDir).
+				Info("Start inc-backup")
 		}
 		if err := state.Append(content.Content); err != nil {
 			return err

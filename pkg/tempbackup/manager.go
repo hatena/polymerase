@@ -139,26 +139,19 @@ func (s *TempBackupState) closeFullBackup() error {
 	info := s.getBackupInfo()
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		if info != nil {
-			info.StoredHost = s.name
-			info.IsFailed = true
-			info.LastFullbackup = time.Now().Unix()
-			out, err := proto.Marshal(info)
-			if err == nil {
-				s.cli.Put(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db), string(out))
+			setFullAsFailed(info, s.name, s.start)
+			err := s.storeBackupInfo(info)
+			if err != nil {
+				return err
 			}
 		}
 		return err
 	}
 	if info != nil {
-		info.StoredHost = s.name
-		info.IsFailed = false
-		info.LastFullbackup = time.Now().Unix()
-		out, err := proto.Marshal(info)
-		if err == nil {
-			_, err := s.cli.Put(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db), string(out))
-			if err != nil {
-				return err
-			}
+		setFullAsSuccess(info, s.name, s.start)
+		err := s.storeBackupInfo(info)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -172,8 +165,23 @@ func (s *TempBackupState) closeIncBackup() error {
 	}
 	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
 	s.key = key
+	info := s.getBackupInfo()
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
+		if info != nil {
+			setIncAsFailed(info, s.name, s.start)
+			err := s.storeBackupInfo(info)
+			if err != nil {
+				return err
+			}
+		}
 		return err
+	}
+	if info != nil {
+		setIncAsSuccess(info, s.name, s.start)
+		err := s.storeBackupInfo(info)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -184,17 +192,20 @@ func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
 		return nil
 	}
 	if len(res.Kvs) == 0 {
-		return &storagepb.BackupInfo{
-			Db:             s.db,
-			LastFullbackup: 0,
-			LastIncbackup:  0,
-			IsFailed:       false,
-			StoredHost:     s.name,
-		}
+		return newBackupInfo(s.db, s.name)
 	}
 	info := &storagepb.BackupInfo{}
 	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
 		return nil
 	}
 	return info
+}
+
+func (s *TempBackupState) storeBackupInfo(i *storagepb.BackupInfo) error {
+	out, err := proto.Marshal(i)
+	if err != nil {
+		return err
+	}
+	_, err = s.cli.Put(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db), string(out))
+	return err
 }

@@ -1,5 +1,5 @@
-hash: b7c6e0c458586cc133a5969ae26401097503fc804a1fb85e7e164ff7953d9f75
-updated: 2017-06-13T17:12:41.946858262+09:00
+hash: 31776f44bbf68bea28f42e2bc046d07e3f79b3ad06cedb878323d7a6caf3a460
+updated: 2017-06-14T18:41:58.405163568+09:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -20,6 +20,8 @@ imports:
   - client
   - clientv3
   - clientv3/concurrency
+  - clientv3/namespace
+  - clientv3/naming
   - compactor
   - discovery
   - embed
@@ -42,6 +44,7 @@ imports:
   - etcdserver/etcdserverpb/gw
   - etcdserver/membership
   - etcdserver/stats
+  - integration
   - lease
   - lease/leasehttp
   - lease/leasepb
@@ -66,11 +69,14 @@ imports:
   - pkg/runtime
   - pkg/schedule
   - pkg/srv
+  - pkg/testutil
   - pkg/tlsutil
   - pkg/transport
   - pkg/types
   - pkg/wait
+  - proxy/grpcproxy
   - proxy/grpcproxy/adapter
+  - proxy/grpcproxy/cache
   - raft
   - raft/raftpb
   - rafthttp
@@ -98,16 +104,26 @@ imports:
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/elastic/gosigar
   version: 5a9ad8e33837b4e4c776d129142fcd5ccf41f639
+  subpackages:
+  - sys/windows
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
   version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+- name: github.com/go-ole/go-ole
+  version: 02d3668a0cf01f58411cc85cd37c174c257ec7c2
+  subpackages:
+  - oleutil
 - name: github.com/gogo/protobuf
   version: 909568be09de550ed094403c2bf8a261b5bb730a
   subpackages:
   - proto
+- name: github.com/golang/groupcache
+  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
+  subpackages:
+  - lru
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -136,6 +152,8 @@ imports:
   version: be4efa7ec0c38ab76d56037014c90d48d6b13037
 - name: github.com/jonboulle/clockwork
   version: 2eee05ed794112d45db504eb05aa693efd2b8b09
+- name: github.com/juju/ratelimit
+  version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/mattn/go-runewidth
   version: 97311d9f7767e3d6f422ea06661bc2c7a19e8a5d
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -174,6 +192,8 @@ imports:
   version: e606913c4ee45fec232e67e70105fb6c866b95d9
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- name: github.com/StackExchange/wmi
+  version: ea383cf3ba6ec950874b8486cd72356d007c768f
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -200,9 +220,10 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: b90f89a1e7a9c1f6b918820b3daa7f08488c8594
+  version: e48874b42435b4347fc52bdee0424a52abc974d7
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
   version: 4ee4af566555f5fbe026368b75596286a312663a
   subpackages:
@@ -210,6 +231,10 @@ imports:
   - transform
   - unicode/bidi
   - unicode/norm
+- name: golang.org/x/time
+  version: c06e80d9300e4443158a03817b8a8cb37d230320
+  subpackages:
+  - rate
 - name: google.golang.org/genproto
   version: d80a6e20e776b0b17a324d0ba1ab50a39c8e8944
   subpackages:

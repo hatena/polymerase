@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-ini/ini"
+	"github.com/juju/ratelimit"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
@@ -20,19 +21,23 @@ type LocalStorageConfig struct {
 	*base.Config
 
 	BackupsDir string
+
+	ServeRateLimit uint64
 }
 
 // LocalBackupStorage represents local directory backup.
 type LocalBackupStorage struct {
-	backupsDir string
-	timeFormat string
+	backupsDir     string
+	timeFormat     string
+	serveRateLimit uint64
 }
 
 // NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
 func NewLocalBackupStorage(cfg *LocalStorageConfig) (*LocalBackupStorage, error) {
 	s := &LocalBackupStorage{
-		backupsDir: cfg.BackupsDir,
-		timeFormat: cfg.TimeFormat,
+		backupsDir:     cfg.BackupsDir,
+		timeFormat:     cfg.TimeFormat,
+		serveRateLimit: cfg.ServeRateLimit,
 	}
 	if s.backupsDir == "" {
 		return nil, errors.New("Backups directory must be specified")
@@ -194,21 +199,24 @@ func (s *LocalBackupStorage) GetFileStream(key string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	rate := float64(s.serveRateLimit)
+	var r io.Reader
 	switch cp.BackupType {
 	case "full-backuped":
-		r, err := os.Open(filepath.Join(s.backupsDir, key, "base.tar.gz"))
+		r, err = os.Open(filepath.Join(s.backupsDir, key, "base.tar.gz"))
 		if err != nil {
 			return nil, err
 		}
-		return r, nil
 	case "incremental":
-		r, err := os.Open(filepath.Join(s.backupsDir, key, "inc.xb.gz"))
+		r, err = os.Open(filepath.Join(s.backupsDir, key, "inc.xb.gz"))
 		if err != nil {
 			return nil, err
 		}
-		return r, nil
+	default:
+		return nil, errors.New("Not found such backup type")
 	}
-	return nil, errors.New("Not found such backup type")
+	limiter := ratelimit.NewBucketWithRate(rate, 1<<40)
+	return ratelimit.Reader(r, limiter), nil
 }
 
 func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) error {

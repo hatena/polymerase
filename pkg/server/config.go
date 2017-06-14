@@ -16,6 +16,8 @@ const (
 	defaultName = "default"
 
 	defaultStatusSampleInterval = 10 * time.Second
+
+	defaultServeRateLimit = 20 * (1 << 10)
 )
 
 // Config is a configuration for polymerase server.
@@ -32,6 +34,8 @@ type Config struct {
 	Name string
 
 	StatusSampleInterval time.Duration
+
+	ServeRateLimit uint64
 }
 
 // MakeConfig creates a initial Config.
@@ -56,6 +60,8 @@ func MakeConfig() *Config {
 
 	// TODO: It can be changed by option
 	cfg.StatusSampleInterval = defaultStatusSampleInterval
+
+	cfg.ServeRateLimit = defaultServeRateLimit
 
 	return cfg
 }

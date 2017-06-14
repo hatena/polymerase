@@ -48,8 +48,9 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	// For now, local storage only
 	s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
-		Config:     cfg.Config,
-		BackupsDir: cfg.BackupsDir(),
+		Config:         cfg.Config,
+		BackupsDir:     cfg.BackupsDir(),
+		ServeRateLimit: cfg.ServeRateLimit,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "backup storage configuration is failed")

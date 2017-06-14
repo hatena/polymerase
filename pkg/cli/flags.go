@@ -53,6 +53,7 @@ func init() {
 	}
 
 	restoreCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		return initXtrabackupConfig()
 	}
 

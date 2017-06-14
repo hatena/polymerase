@@ -4,6 +4,8 @@ import "path"
 
 var (
 	diskInfoKey = "/diskinfo"
+
+	backupsKey = "/backups"
 )
 
 func DiskInfoTotalKey(n string) string {
@@ -12,4 +14,8 @@ func DiskInfoTotalKey(n string) string {
 
 func DiskInfoAvailKey(n string) string {
 	return path.Join(diskInfoKey, n, "avail")
+}
+
+func BackupDBKey(db string) string {
+	return path.Join(backupsKey, db)
 }

@@ -187,7 +187,7 @@ func (s *TempBackupState) closeIncBackup() error {
 }
 
 func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
-	res, err := s.cli.KV.Get(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db))
+	res, err := s.cli.KV.Get(s.cli.Ctx(), base.BackupDBKey(s.db))
 	if err != nil {
 		return nil
 	}
@@ -206,6 +206,6 @@ func (s *TempBackupState) storeBackupInfo(i *storagepb.BackupInfo) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.cli.Put(s.cli.Ctx(), fmt.Sprintf("/backups/%s", s.db), string(out))
+	_, err = s.cli.Put(s.cli.Ctx(), base.BackupDBKey(s.db), string(out))
 	return err
 }

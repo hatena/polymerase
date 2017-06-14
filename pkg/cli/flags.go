@@ -7,28 +7,29 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
-	"github.com/taku-k/polymerase/pkg/utils/exec"
 )
 
 var mysqlHost, mysqlPort, mysqlUser, mysqlPassword string
 var serverConnHost, serverConnPort string
 var clientConnHost, clientConnPort string
 var db string
+var useInnobackupex = false
 
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
 var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
-var xtrabackupCfg *exec.XtrabackupConfig
+var xtrabackupCfg *base.XtrabackupConfig
 
 func initXtrabackupConfig() error {
 	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "")
-	xtrabackupCfg = &exec.XtrabackupConfig{
-		BinPath:  xtrabackupPath,
-		Host:     mysqlHost,
-		Port:     mysqlPort,
-		User:     mysqlUser,
-		Password: mysqlPassword,
+	xtrabackupCfg = &base.XtrabackupConfig{
+		BinPath:         xtrabackupPath,
+		Host:            mysqlHost,
+		Port:            mysqlPort,
+		User:            mysqlUser,
+		Password:        mysqlPassword,
+		UseInnobackupex: useInnobackupex,
 	}
 	return xtrabackupCfg.InitDefaults()
 }
@@ -70,6 +71,7 @@ func init() {
 		f.StringVar(&clientConnHost, "host", "127.0.0.1", "Polymerase server hostname.")
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
 		f.StringVarP(&db, "db", "d", "", "DB name")
+		f.BoolVar(&useInnobackupex, "use-innobackupex", useInnobackupex, "Using innobackupex binary instead of xtrabackup.")
 	}
 
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {

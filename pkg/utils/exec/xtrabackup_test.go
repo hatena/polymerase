@@ -6,15 +6,17 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/taku-k/polymerase/pkg/base"
 )
 
 func TestBuildFullBackupCmd(t *testing.T) {
 	var tests = []struct {
-		cfg      *XtrabackupConfig
+		cfg      *base.XtrabackupConfig
 		expected []string
 	}{
 		{
-			&XtrabackupConfig{
+			&base.XtrabackupConfig{
 				BinPath:    "xtrabackup",
 				User:       "user",
 				Password:   "password",
@@ -32,7 +34,7 @@ xtrabackup \
   --stream=tar
   			`)},
 		}, {
-			&XtrabackupConfig{
+			&base.XtrabackupConfig{
 				BinPath:    "/usr/bin/xtrabackup",
 				User:       "user",
 				LsnTempDir: "/tmp/test",
@@ -66,7 +68,7 @@ xtrabackup \
 }
 
 func TestBuildIncBackupCmd(t *testing.T) {
-	cfg := &XtrabackupConfig{
+	cfg := &base.XtrabackupConfig{
 		BinPath:    "xtrabackup",
 		User:       "user",
 		Password:   "password",

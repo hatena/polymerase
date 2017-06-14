@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/taku-k/polymerase/pkg/base"
 )
 
 var fullBackupTmpl = strings.TrimSpace(`
@@ -40,26 +41,26 @@ var incBackupTmpl = strings.TrimSpace(`
   --incremental-lsn={{.ToLsn}}
 `)
 
-func BuildFullBackupCmd(ctx context.Context, cfg *XtrabackupConfig) (*exec.Cmd, error) {
+func BuildFullBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
 	return _buildBackupCmd(ctx, cfg, fullBackupTmpl)
 }
 
-func BuildIncBackupCmd(ctx context.Context, cfg *XtrabackupConfig) (*exec.Cmd, error) {
+func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
 	if cfg.ToLsn == "" {
 		return nil, errors.New("ToLSN cannot be empty")
 	}
 	return _buildBackupCmd(ctx, cfg, incBackupTmpl)
 }
 
-func PrepareBaseBackup(ctx context.Context, cfg *XtrabackupConfig) *exec.Cmd {
+func PrepareBaseBackup(ctx context.Context, cfg *base.XtrabackupConfig) *exec.Cmd {
 	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base")
 }
 
-func PrepareIncBackup(ctx context.Context, inc int, cfg *XtrabackupConfig) *exec.Cmd {
+func PrepareIncBackup(ctx context.Context, inc int, cfg *base.XtrabackupConfig) *exec.Cmd {
 	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base", fmt.Sprintf("--incremental-dir=inc%d", inc))
 }
 
-func _buildBackupCmd(ctx context.Context, cfg *XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
+func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
 	err := cfg.InitDefaults()
 	if err != nil {
 		return nil, err

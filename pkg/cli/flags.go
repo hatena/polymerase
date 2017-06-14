@@ -18,7 +18,7 @@ var db string
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: true}
+var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
 var xtrabackupCfg *exec.XtrabackupConfig
 
 func initXtrabackupConfig() error {

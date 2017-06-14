@@ -82,7 +82,6 @@ func runServer(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	case sig := <-signalCh:
 		log.Infof("received signal '%s'", sig)
-
 	}
 
 	shutdownSpan := tracer.StartSpan("shutdown start")

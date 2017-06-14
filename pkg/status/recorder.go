@@ -7,8 +7,8 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/elastic/gosigar"
-	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 type StatusRecorder struct {
@@ -41,7 +41,7 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
-	kvs := []struct{
+	kvs := []struct {
 		k string
 		v string
 	}{

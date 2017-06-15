@@ -103,7 +103,8 @@ func (s *TempBackupTransferService) TransferIncBackup(
 
 func (s *TempBackupTransferService) PostCheckpoints(
 	ctx context.Context,
-	req *tempbackuppb.PostCheckpointsRequest) (*tempbackuppb.PostCheckpointsResponse, error) {
+	req *tempbackuppb.PostCheckpointsRequest,
+) (*tempbackuppb.PostCheckpointsResponse, error) {
 	r := bytes.NewReader(req.Content)
 	if err := s.manager.storage.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
 		return &tempbackuppb.PostCheckpointsResponse{}, err

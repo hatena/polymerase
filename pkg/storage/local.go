@@ -260,6 +260,9 @@ func (s *LocalBackupStorage) TransferTempIncBackup(tempDir string, key string) e
 }
 
 func (s *LocalBackupStorage) transferTempBackup(tempPath string, key string) error {
+	if checkCompressedFileIsEmpty(tempPath) {
+		return errors.New("File which size is zero exists.")
+	}
 	p := path.Join(s.backupsDir, key)
 	if err := os.MkdirAll(p, 0777); err != nil {
 		return err
@@ -289,4 +292,18 @@ func getFileSize(key string, t base.BackupType) int64 {
 		return 0
 	}
 	return fi.Size()
+}
+
+func checkCompressedFileIsEmpty(tempPath string) bool {
+	fs, err := ioutil.ReadDir(tempPath)
+	if err != nil {
+		return true
+	}
+	for _, f := range fs {
+		// The size of header only file is 20 bytes
+		if f.Size() == 20 {
+			return true
+		}
+	}
+	return false
 }

@@ -6,7 +6,8 @@ import (
 
 const (
 	defaultXtrabackupBinPath = "xtrabackup"
-	defaultPolymeraseHost    = "127.0.0.1"
+	defaultMySQLHost         = "127.0.0.1"
+	defaultMySQLPort         = "3306"
 )
 
 type XtrabackupConfig struct {
@@ -25,10 +26,10 @@ func (cfg *XtrabackupConfig) InitDefaults() error {
 		cfg.BinPath = defaultXtrabackupBinPath
 	}
 	if cfg.Host == "" {
-		cfg.Host = defaultPolymeraseHost
+		cfg.Host = defaultMySQLHost
 	}
 	if cfg.Port == "" {
-		cfg.Port = DefaultPort
+		cfg.Port = defaultMySQLPort
 	}
 	if cfg.LsnTempDir == "" {
 		dir, err := ioutil.TempDir("", "polymerase_cp")

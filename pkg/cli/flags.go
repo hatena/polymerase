@@ -22,7 +22,12 @@ var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
 var xtrabackupCfg *base.XtrabackupConfig
 
 func initXtrabackupConfig() error {
-	xtrabackupPath := envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "")
+	var xtrabackupPath string
+	if useInnobackupex {
+		xtrabackupPath = envutil.EnvOrDefaultString("POLYMERASE_INNOBACKUPEX_PATH", "")
+	} else {
+		xtrabackupPath = envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "")
+	}
 	xtrabackupCfg = &base.XtrabackupConfig{
 		BinPath:         xtrabackupPath,
 		Host:            mysqlHost,

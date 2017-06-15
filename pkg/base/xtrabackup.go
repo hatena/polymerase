@@ -6,6 +6,7 @@ import (
 
 const (
 	defaultXtrabackupBinPath = "xtrabackup"
+	defaultInnobackupexBinPath = "innobackupex"
 	defaultMySQLHost         = "127.0.0.1"
 	defaultMySQLPort         = "3306"
 )
@@ -23,7 +24,11 @@ type XtrabackupConfig struct {
 
 func (cfg *XtrabackupConfig) InitDefaults() error {
 	if cfg.BinPath == "" {
-		cfg.BinPath = defaultXtrabackupBinPath
+		if cfg.UseInnobackupex {
+			cfg.BinPath = defaultInnobackupexBinPath
+		} else {
+			cfg.BinPath = defaultXtrabackupBinPath
+		}
 	}
 	if cfg.Host == "" {
 		cfg.Host = defaultMySQLHost

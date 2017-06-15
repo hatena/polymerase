@@ -57,7 +57,8 @@ var innobackupex = backupCmd{
   {{- end }}
   --slave-info \
   --extra-lsndir={{ .LsnTempDir }} \
-  --stream=tar
+  --stream=tar \
+  .
 `),
 	incTmpl: strings.TrimSpace(`
 {{ .BinPath }} \
@@ -69,7 +70,9 @@ var innobackupex = backupCmd{
   --slave-info \
   --extra-lsndir={{ .LsnTempDir }} \
   --stream=xbstream \
-  --incremental-lsn={{ .ToLsn }}
+  --incremental \
+  --incremental-lsn={{ .ToLsn }} \
+  .
 `),
 }
 

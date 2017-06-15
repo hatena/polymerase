@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	defaultXtrabackupBinPath = "xtrabackup"
+	defaultXtrabackupBinPath   = "xtrabackup"
 	defaultInnobackupexBinPath = "innobackupex"
-	defaultMySQLHost         = "127.0.0.1"
-	defaultMySQLPort         = "3306"
+	defaultMySQLHost           = "127.0.0.1"
+	defaultMySQLPort           = "3306"
 )
 
 type XtrabackupConfig struct {

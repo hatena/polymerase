@@ -22,14 +22,19 @@ type StatusRecorder struct {
 	storage storage.BackupStorage
 
 	name string
+
+	cfg *base.Config
 }
 
-func NewStatusRecorder(client *clientv3.Client, storeDir string, storage storage.BackupStorage, name string) *StatusRecorder {
+func NewStatusRecorder(
+	client *clientv3.Client, storeDir string, storage storage.BackupStorage, name string, cfg *base.Config,
+) *StatusRecorder {
 	return &StatusRecorder{
 		cli:      client,
 		storeDir: storeDir,
 		storage:  storage,
 		name:     name,
+		cfg:      cfg,
 	}
 }
 
@@ -43,6 +48,7 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 	}
 
 	info := &statuspb.NodeInfo{}
+	info.Addr = sr.cfg.Addr
 	info.DiskInfo = &statuspb.DiskInfo{}
 	info.DiskInfo.Total = fileSystemUsage.Total
 	info.DiskInfo.Avail = fileSystemUsage.Avail

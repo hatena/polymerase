@@ -30,6 +30,7 @@ type TempBackupManager struct {
 	tempDir    string
 	storage    storage.BackupStorage
 	name       string
+	cfg        *base.Config
 
 	// Injected after etcd launched
 	EtcdCli *clientv3.Client
@@ -48,6 +49,7 @@ type TempBackupState struct {
 	key        string
 	cli        *clientv3.Client
 	name       string
+	addr       string
 }
 
 func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
@@ -59,6 +61,7 @@ func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerC
 		tempDir:    cfg.TempDir,
 		storage:    storage,
 		name:       cfg.Name,
+		cfg:        cfg.Config,
 	}, nil
 }
 
@@ -102,6 +105,7 @@ func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBacku
 		storage:    m.storage,
 		cli:        m.EtcdCli,
 		name:       m.name,
+		addr:       m.cfg.Addr,
 	}
 	return s, nil
 }
@@ -139,7 +143,7 @@ func (s *TempBackupState) closeFullBackup() error {
 	info := s.getBackupInfo()
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		if info != nil {
-			setFullAsFailed(info, s.name, s.start)
+			setFullAsFailed(info, s.name, s.addr, s.start)
 			err := s.storeBackupInfo(info)
 			if err != nil {
 				return err
@@ -148,7 +152,7 @@ func (s *TempBackupState) closeFullBackup() error {
 		return err
 	}
 	if info != nil {
-		setFullAsSuccess(info, s.name, s.start)
+		setFullAsSuccess(info, s.name, s.addr, s.start)
 		err := s.storeBackupInfo(info)
 		if err != nil {
 			return err
@@ -168,7 +172,7 @@ func (s *TempBackupState) closeIncBackup() error {
 	info := s.getBackupInfo()
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		if info != nil {
-			setIncAsFailed(info, s.name, s.start)
+			setIncAsFailed(info, s.name, s.addr, s.start)
 			err := s.storeBackupInfo(info)
 			if err != nil {
 				return err
@@ -177,7 +181,7 @@ func (s *TempBackupState) closeIncBackup() error {
 		return err
 	}
 	if info != nil {
-		setIncAsSuccess(info, s.name, s.start)
+		setIncAsSuccess(info, s.name, s.addr, s.start)
 		err := s.storeBackupInfo(info)
 		if err != nil {
 			return err
@@ -192,7 +196,7 @@ func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
 		return nil
 	}
 	if len(res.Kvs) == 0 {
-		return newBackupInfo(s.db, s.name)
+		return newBackupInfo(s.db, s.name, s.addr)
 	}
 	info := &storagepb.BackupInfo{}
 	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {

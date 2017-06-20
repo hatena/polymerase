@@ -119,7 +119,8 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 }
 
 func (s *Server) startWriteStatus(freq time.Duration) {
-	recorder := status.NewStatusRecorder(s.manager.EtcdCli, s.cfg.StoreDir, s.storage, s.cfg.Name)
+	recorder := status.NewStatusRecorder(
+		s.manager.EtcdCli, s.cfg.StoreDir, s.storage, s.cfg.Name, s.cfg.Config)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

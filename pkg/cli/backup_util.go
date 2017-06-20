@@ -80,8 +80,9 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 	return r, nil
 }
 
-func connectGRPC(ctx context.Context) (*grpc.ClientConn, error) {
-	conn, err := grpc.DialContext(ctx, baseCfg.Addr, grpc.WithInsecure())
+func connectGRPC(ctx context.Context, addr string) (*grpc.ClientConn, error) {
+	// TODO: Add option for secure mode
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"google.golang.org/grpc"
 )
 
 var incBackupCmd = &cobra.Command{
@@ -34,14 +33,8 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 	errCh := make(chan error, 1)
 	finishCh := make(chan struct{})
 
-	// Connects to gRPC server
-	conn, err := connectGRPC(ctx)
-	if err != nil {
-		return errors.Wrap(err, "Failed to connect polymerase server with gRPC")
-	}
-
 	// Fetches latest to_lsn
-	scli, _ := getStorageClient(ctx, conn)
+	scli, _ := getStorageClient(ctx, db)
 	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: db})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get latest `to_lsn` with db=%s", db)
@@ -54,7 +47,7 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "Failed to build backup pipeline")
 	}
 
-	go transferIncBackup(ctx, r, conn, errCh, finishCh)
+	go transferIncBackup(ctx, r, db, errCh, finishCh)
 
 	select {
 	case err := <-errCh:
@@ -67,8 +60,8 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func transferIncBackup(ctx context.Context, r io.Reader, conn *grpc.ClientConn, errCh chan error, finishCh chan struct{}) {
-	bcli, _ := getTempBackupClient(ctx, conn)
+func transferIncBackup(ctx context.Context, r io.Reader, db string, errCh chan error, finishCh chan struct{}) {
+	bcli, _ := getTempBackupClient(ctx, db)
 	stream, err := bcli.TransferIncBackup(ctx)
 	if err != nil {
 		errCh <- err

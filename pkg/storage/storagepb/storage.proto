@@ -59,4 +59,5 @@ message BackupInfo {
   int64 last_incbackup = 3;
   bool is_failed = 4;
   string stored_host = 5;
+  string nodeName = 6;
 }

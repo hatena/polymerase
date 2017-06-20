@@ -2,12 +2,13 @@ package status
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/elastic/gosigar"
+	"github.com/golang/protobuf/proto"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage"
 )
 
@@ -41,18 +42,18 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
-	kvs := []struct {
-		k string
-		v string
-	}{
-		{k: base.DiskInfoTotalKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Total)},
-		{k: base.DiskInfoAvailKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Avail)},
+	info := &statuspb.NodeInfo{}
+	info.DiskInfo = &statuspb.DiskInfo{}
+	info.DiskInfo.Total = fileSystemUsage.Total
+	info.DiskInfo.Avail = fileSystemUsage.Avail
+
+	out, err := proto.Marshal(info)
+	if err != nil {
+		return err
 	}
-	for _, kv := range kvs {
-		_, err := sr.cli.KV.Put(sr.cli.Ctx(), kv.k, kv.v)
-		if err != nil {
-			return err
-		}
+	_, err = sr.cli.KV.Put(sr.cli.Ctx(), base.NodeInfo(sr.name), string(out))
+	if err != nil {
+		return err
 	}
 
 	return nil

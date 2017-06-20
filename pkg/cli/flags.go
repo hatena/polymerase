@@ -63,11 +63,17 @@ func init() {
 		return initXtrabackupConfig()
 	}
 
+	nodesCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
+		return nil
+	}
+
 	// Client Flags
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
+		nodesCmd,
 	}
 
 	for _, cmd := range clientCmds {
@@ -75,6 +81,18 @@ func init() {
 
 		f.StringVar(&clientConnHost, "host", "127.0.0.1", "Polymerase server hostname.")
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
+	}
+
+	// Backup and restore flags
+	backupRestoreCmds := []*cobra.Command{
+		fullBackupCmd,
+		incBackupCmd,
+		restoreCmd,
+	}
+
+	for _, cmd := range backupRestoreCmds {
+		f := cmd.Flags()
+
 		f.StringVarP(&db, "db", "d", "", "DB name")
 		f.BoolVar(&useInnobackupex, "use-innobackupex", useInnobackupex, "Using innobackupex binary instead of xtrabackup.")
 	}
@@ -116,5 +134,5 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd)
+	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, nodesCmd)
 }

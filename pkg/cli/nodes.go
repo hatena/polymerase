@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/dustin/go-humanize"
-	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
 )
 
@@ -31,19 +29,13 @@ func runNodes(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	res, err := cli.KV.Get(cli.Ctx(), base.NodeInfoKey, clientv3.WithPrefix())
-	if err != nil {
-		return err
-	}
-	for _, kv := range res.Kvs {
-		n := strings.Split(string(kv.Key), "/")[1]
-		info := &statuspb.NodeInfo{}
-		if err := proto.Unmarshal(kv.Value, info); err != nil {
-			continue
-		}
+	kv := status.GetNodesInfo(cli)
+
+	for n, info := range kv {
 		outputNodeInfo(n, info)
 		fmt.Fprintln(os.Stdout, "")
 	}
+
 	return nil
 }
 

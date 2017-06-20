@@ -13,6 +13,10 @@ import (
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"google.golang.org/grpc"
+	"github.com/taku-k/polymerase/pkg/allocator"
+	"github.com/coreos/etcd/clientv3"
+	"net"
+	"time"
 )
 
 type backupContext struct {
@@ -81,6 +85,19 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 }
 
 func connectGRPC(ctx context.Context) (*grpc.ClientConn, error) {
+	// Select best remote node
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{baseCfg.Addr},
+		DialTimeout: 5 * time.Second,
+		Context: ctx,
+	})
+	if err != nil {
+		return nil, err
+	}
+	alloc := allocator.Allocator{Cli: cli}
+	node, host, err := alloc.SelectAppropriateHost()
+
+	// TODO: Add option for secure mode
 	conn, err := grpc.DialContext(ctx, baseCfg.Addr, grpc.WithInsecure())
 	if err != nil {
 		return nil, err

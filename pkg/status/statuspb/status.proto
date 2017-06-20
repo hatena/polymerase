@@ -9,4 +9,5 @@ message DiskInfo {
 
 message NodeInfo {
     DiskInfo diskInfo = 1;
+    string addr = 2;
 }

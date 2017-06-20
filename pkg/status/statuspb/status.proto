@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package statuspb;
+
+message DiskInfo {
+    uint64 total = 1;
+    uint64 avail = 2;
+}
+
+message NodeInfo {
+    DiskInfo diskInfo = 1;
+}

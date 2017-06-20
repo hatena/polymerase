@@ -3,19 +3,15 @@ package base
 import "path"
 
 var (
-	diskInfoKey = "/diskinfo"
+	NodeInfoKey = "nodes"
 
-	backupsKey = "/backups"
+	BackupsKey = "backups"
 )
 
-func DiskInfoTotalKey(n string) string {
-	return path.Join(diskInfoKey, n, "total")
-}
-
-func DiskInfoAvailKey(n string) string {
-	return path.Join(diskInfoKey, n, "avail")
+func NodeInfo(n string) string {
+	return path.Join(NodeInfoKey, n)
 }
 
 func BackupDBKey(db string) string {
-	return path.Join(backupsKey, db)
+	return path.Join(BackupsKey, db)
 }

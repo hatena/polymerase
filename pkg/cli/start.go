@@ -19,15 +19,14 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
 )
 
-var serverCmd = &cobra.Command{
-	Use:   "server",
+var startCmd = &cobra.Command{
+	Use:   "start",
 	Short: "Runs server",
-	RunE:  runServer,
+	RunE:  startServer,
 }
 
-// runServer creates, configures and runs
-// main server.App
-func runServer(cmd *cobra.Command, args []string) error {
+// startServer creates, configures and runs server
+func startServer(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		return usageAndError(cmd)
 	}

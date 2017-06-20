@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 	"net"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 	"google.golang.org/grpc"
 )
 
@@ -87,10 +87,10 @@ func (s *Server) Start(ctx context.Context) error {
 	defer es.Server.Close()
 	select {
 	case <-es.Server.Server.ReadyNotify():
-		log.Info("Server is ready")
+		log.Println("Server is ready")
 	case <-time.After(60 * time.Second):
 		es.Server.Server.Stop()
-		log.Info("Server took too long to start")
+		log.Println("Server took too long to start")
 	}
 
 	// Create etcd client
@@ -106,7 +106,7 @@ func (s *Server) Start(ctx context.Context) error {
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
 
-	log.Info(<-es.Server.Err())
+	log.Println(<-es.Server.Err())
 
 	return nil
 }
@@ -126,7 +126,7 @@ func (s *Server) startWriteStatus(freq time.Duration) {
 		select {
 		case <-ticker.C:
 			if err := recorder.WriteStatus(context.Background()); err != nil {
-				log.Info(err)
+				log.Println(err)
 			}
 		}
 	}

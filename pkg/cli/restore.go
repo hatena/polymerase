@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/exec"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 	"go.uber.org/ratelimit"
 	"golang.org/x/sync/errgroup"
 )
@@ -90,7 +90,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
 			errCh <- err
 		}
-		log.Info("Restore data directory: ", restoreDir)
+		log.Printf("Restore data directory: %v\n", restoreDir)
 
 		pbs := make([]*pb.ProgressBar, len(res.Keys))
 		pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
@@ -239,7 +239,7 @@ func readFromStreamWithRateLimit(
 	if maxBandwidth == 0 {
 		rl = ratelimit.NewUnlimited()
 	} else {
-		log.Info("Set max bandwidth %s/sec", humanize.Bytes(maxBandwidth))
+		log.Printf("Set max bandwidth %s/sec\n", humanize.Bytes(maxBandwidth))
 		rl = ratelimit.New(int(maxBandwidth / uint64(len(fs.Content))))
 	}
 

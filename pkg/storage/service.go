@@ -3,9 +3,9 @@ package storage
 import (
 	"errors"
 	"io"
+	"log"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 )
@@ -27,7 +27,7 @@ func (s *StorageService) GetLatestToLSN(
 ) (*storagepb.GetLatestToLSNResponse, error) {
 	lsn, err := s.storage.GetLatestToLSN(req.Db)
 	if err != nil {
-		log.WithField("db", req.Db).Info("Not found")
+		log.Printf("Not found db=%s\n", req.Db)
 		return &storagepb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
 	}
 	return &storagepb.GetLatestToLSNResponse{
@@ -80,7 +80,7 @@ func (s *StorageService) PurgePrevBackup(
 			Message: "There is no backup to purge.",
 		}, nil
 	}
-	log.WithField("key", key).Info("Purge key")
+	log.Printf("Purge key=%s\n", key)
 	err = s.storage.RemoveBackups(key)
 	if err != nil {
 		return &storagepb.PurgePrevBackupResponse{}, err

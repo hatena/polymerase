@@ -40,7 +40,7 @@ func initXtrabackupConfig() error {
 }
 
 func init() {
-	serverCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+	startCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
 		baseCfg.Host = serverConnHost
 		baseCfg.Port = serverConnPort
 		baseCfg.Addr = net.JoinHostPort(serverConnHost, serverConnPort)
@@ -104,9 +104,9 @@ func init() {
 		f.StringVar(&restoreCtx.maxBandWidth, "max-bandwidth", "", "max bandwidth for download src archives (Bytes/sec)")
 	}
 
-	// Server Flags
+	// Start Flags
 	{
-		f := serverCmd.Flags()
+		f := startCmd.Flags()
 
 		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
@@ -116,5 +116,5 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	rootCmd.AddCommand(serverCmd, fullBackupCmd, incBackupCmd, restoreCmd)
+	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd)
 }

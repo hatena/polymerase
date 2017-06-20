@@ -25,4 +25,5 @@ import:
   version: ^1.0.15
 - package: github.com/elastic/gosigar
   version: ^0.4.0
-- package: github.com/fujiwara/shapeio
+- package: go.uber.org/ratelimit
+- package: github.com/dustin/go-humanize

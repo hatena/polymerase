@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/cheggaaa/pb"
+	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -18,6 +19,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/exec"
 	"github.com/taku-k/polymerase/pkg/utils/log"
+	"go.uber.org/ratelimit"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,6 +33,8 @@ type restoreContext struct {
 	from string
 
 	applyPrepare bool
+
+	maxBandWidth string
 }
 
 var restoreCmd = &cobra.Command{
@@ -49,6 +53,14 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	}
 	if db == "" {
 		return errors.New("You must specify `db`")
+	}
+	var maxBandWidth uint64
+	if restoreCtx.maxBandWidth != "" {
+		if bw, err := humanize.ParseBytes(restoreCtx.maxBandWidth); err != nil {
+			return errors.Wrap(err, "Cannot parse -max-bandwidth")
+		} else {
+			maxBandWidth = bw
+		}
 	}
 
 	// Signal
@@ -103,12 +115,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 			bar := pbs[idx]
 			inc := inc
 			g.Go(func() error {
-				return getIncBackup(scli, info, restoreDir, inc, bar)
+				return getIncBackup(scli, info, restoreDir, inc, bar, maxBandWidth)
 			})
 			idx += 1
 		}
 		g.Go(func() error {
-			return getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1])
+			return getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1], maxBandWidth)
 		})
 		if err := g.Wait(); err != nil {
 			pool.Stop()
@@ -143,9 +155,16 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string, inc int, bar *pb.ProgressBar) error {
+func getIncBackup(
+	cli storagepb.StorageServiceClient,
+	info *storagepb.BackupFileInfo,
+	restoreDir string,
+	inc int,
+	bar *pb.ProgressBar,
+	maxBandwidth uint64,
+) error {
 	fn := filepath.Join(restoreDir, fmt.Sprintf("inc%d.xb.gz", inc))
-	if err := getBackup(cli, info, fn, bar); err != nil {
+	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
 		return err
 	}
 	if err := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
@@ -154,9 +173,15 @@ func getIncBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFile
 	return nil
 }
 
-func getFullBackup(cli storagepb.StorageServiceClient, info *storagepb.BackupFileInfo, restoreDir string, bar *pb.ProgressBar) error {
+func getFullBackup(
+	cli storagepb.StorageServiceClient,
+	info *storagepb.BackupFileInfo,
+	restoreDir string,
+	bar *pb.ProgressBar,
+	maxBandwidth uint64,
+) error {
 	fn := filepath.Join(restoreDir, "base.tar.gz")
-	if err := getBackup(cli, info, fn, bar); err != nil {
+	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
 		return err
 	}
 	if err := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
@@ -170,6 +195,7 @@ func getBackup(
 	info *storagepb.BackupFileInfo,
 	fn string,
 	bar *pb.ProgressBar,
+	maxBandWitdh uint64,
 ) error {
 	stream, err := cli.GetFileByKey(context.Background(), &storagepb.GetFileByKeyRequest{
 		Key:         info.Key,
@@ -184,7 +210,41 @@ func getBackup(
 	}
 	bufw := bufio.NewWriter(f)
 	multiw := io.MultiWriter(bufw, bar)
+
+	if err := readFromStreamWithRateLimit(stream, multiw, maxBandWitdh); err != nil {
+		return err
+	}
+
+	bar.Finish()
+	return nil
+}
+
+func readFromStreamWithRateLimit(
+	stream storagepb.StorageService_GetFileByKeyClient,
+	writer io.Writer,
+	maxBandwidth uint64,
+) error {
+	fs, err := stream.Recv()
+	if err == io.EOF {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	writer.Write(fs.Content)
+
+	// Determine the number of operations to perform per second
+	// based on maxBandwidth.
+	var rl ratelimit.Limiter
+	if maxBandwidth == 0 {
+		rl = ratelimit.NewUnlimited()
+	} else {
+		log.Info("Set max bandwidth %s/sec", humanize.Bytes(maxBandwidth))
+		rl = ratelimit.New(int(maxBandwidth / uint64(len(fs.Content))))
+	}
+
 	for {
+		rl.Take()
 		fs, err := stream.Recv()
 		if err == io.EOF {
 			break
@@ -192,8 +252,8 @@ func getBackup(
 		if err != nil {
 			return err
 		}
-		multiw.Write(fs.Content)
+		writer.Write(fs.Content)
 	}
-	bar.Finish()
+
 	return nil
 }

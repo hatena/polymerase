@@ -23,11 +23,10 @@ import (
 )
 
 func init() {
-	addCmd.Flags().StringVarP(&packageName, "package", "t", "", "target package name (e.g. github.com/spf13/hugo)")
 	addCmd.Flags().StringVarP(&parentName, "parent", "p", "RootCmd", "name of parent command for this command")
 }
 
-var packageName, parentName string
+var parentName string
 
 var addCmd = &cobra.Command{
 	Use:     "add [command name]",
@@ -46,17 +45,11 @@ Example: cobra add server -> resulting in a new cmd/server.go`,
 		if len(args) < 1 {
 			er("add needs a name for the command")
 		}
-
-		var project *Project
-		if packageName != "" {
-			project = NewProject(packageName)
-		} else {
-			wd, err := os.Getwd()
-			if err != nil {
-				er(err)
-			}
-			project = NewProjectFromPath(wd)
+		wd, err := os.Getwd()
+		if err != nil {
+			er(err)
 		}
+		project := NewProjectFromPath(wd)
 
 		cmdName := validateCmdName(args[0])
 		cmdPath := filepath.Join(project.CmdPath(), cmdName+".go")

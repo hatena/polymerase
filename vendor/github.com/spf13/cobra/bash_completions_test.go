@@ -2,6 +2,7 @@ package cobra
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -180,12 +181,15 @@ func BenchmarkBashCompletion(b *testing.B) {
 	cmdEcho.AddCommand(cmdTimes)
 	c.AddCommand(cmdEcho, cmdPrint, cmdDeprecated, cmdColon)
 
-	buf := new(bytes.Buffer)
+	file, err := ioutil.TempFile("", "")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer os.Remove(file.Name())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		buf.Reset()
-		if err := c.GenBashCompletion(buf); err != nil {
+		if err := c.GenBashCompletion(file); err != nil {
 			b.Fatal(err)
 		}
 	}

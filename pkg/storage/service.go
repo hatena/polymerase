@@ -5,7 +5,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/fujiwara/shapeio"
 	log "github.com/sirupsen/logrus"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
@@ -57,11 +56,9 @@ func (s *StorageService) GetFileByKey(
 	if err != nil {
 		return err
 	}
-	sr := shapeio.NewReader(r)
-	sr.SetRateLimit(s.rateLimit)
 	chunk := make([]byte, 1<<20)
 	for {
-		n, err := sr.Read(chunk)
+		n, err := r.Read(chunk)
 		if err == io.EOF {
 			return nil
 		}

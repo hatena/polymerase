@@ -40,7 +40,7 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 	}
 
 	// Main backup work is following;
-	go transferFullBackup(ctx, r, errCh, finishCh)
+	go transferFullBackup(ctx, r, db, errCh, finishCh)
 
 	select {
 	case err := <-errCh:
@@ -56,8 +56,8 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, finishCh chan struct{}) {
-	cli, err := getTempBackupClient(ctx, nil)
+func transferFullBackup(ctx context.Context, r io.Reader, db string, errCh chan error, finishCh chan struct{}) {
+	cli, err := getTempBackupClient(ctx, db)
 	if err != nil {
 		errCh <- err
 		return
@@ -106,7 +106,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, fini
 }
 
 func purgePrevBackup(db string) error {
-	cli, err := getStorageClient(context.Background(), nil)
+	cli, err := getStorageClient(context.Background(), db)
 	if err != nil {
 		return err
 	}

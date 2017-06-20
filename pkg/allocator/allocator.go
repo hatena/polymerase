@@ -4,21 +4,17 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/golang/protobuf/proto"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
-type Allocator struct {
-	Cli *clientv3.Client
-}
-
-func (a *Allocator) SelectAppropriateHost(db string) (string, string, error) {
-	res, err := a.Cli.KV.Get(a.Cli.Ctx(), base.BackupDBKey(db))
+func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, error) {
+	res, err := cli.KV.Get(cli.Ctx(), base.BackupDBKey(db))
 	if err != nil {
 		return "", "", err
 	}
 	if len(res.Kvs) == 0 {
-		node, host := a.selectBasedDiskCap()
+		node, host := selectBasedDiskCap(cli)
 		return node, host, nil
 	}
 	info := &storagepb.BackupInfo{}
@@ -28,8 +24,8 @@ func (a *Allocator) SelectAppropriateHost(db string) (string, string, error) {
 	return info.NodeName, info.StoredHost, nil
 }
 
-func (a *Allocator) selectBasedDiskCap() (string, string) {
-	kv := status.GetNodesInfo(a.Cli)
+func selectBasedDiskCap(cli *clientv3.Client) (string, string) {
+	kv := status.GetNodesInfo(cli)
 	var maxAvail uint64
 	resultNode := ""
 	resultHost := ""

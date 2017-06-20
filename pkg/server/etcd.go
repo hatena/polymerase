@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 )
 
 type etcdServer struct {
@@ -58,7 +58,7 @@ func newEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "AddMember API is failed")
 		}
-		log.Info(cluster)
+		log.Println(cluster)
 		etcdCfg.ClusterState = embed.ClusterStateFlagExisting
 		etcdCfg.InitialCluster = cluster
 	}
@@ -90,15 +90,15 @@ func (e *etcdServer) close() {
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		log.Info("Hard shutdown")
+		log.Println("Hard shutdown")
 	} else {
 		res, err := cli.MemberRemove(context.Background(), uint64(e.Server.Server.ID()))
 		if err != nil {
-			log.Info("Failed to remove myself")
+			log.Println("Failed to remove myself")
 			e.Server.Server.TransferLeadership()
 		} else {
-			log.Info("Success to remove myself")
-			log.Info(res)
+			log.Println("Success to remove myself")
+			log.Println(res)
 		}
 	}
 	e.Server.Close()

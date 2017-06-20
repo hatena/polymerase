@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
@@ -78,10 +78,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	select {
 	case err := <-errCh:
-		log.Errorf("polymerase server is failed: %v", err)
+		log.Printf("polymerase server is failed: %v\n", err)
 		os.Exit(1)
 	case sig := <-signalCh:
-		log.Infof("received signal '%s'", sig)
+		log.Printf("received signal '%s'\n", sig)
 	}
 
 	shutdownSpan := tracer.StartSpan("shutdown start")
@@ -99,7 +99,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(os.Stdout, "time limit reached, initiating hard shutdown")
 		return errors.New("Server is failed")
 	case <-stopped:
-		log.Infof("server shutdown completed")
+		log.Println("server shutdown completed")
 		fmt.Fprintln(os.Stdout, "server shutdown completed")
 		break
 	}

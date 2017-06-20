@@ -3,11 +3,12 @@ package tempbackup
 import (
 	"bytes"
 	"io"
+	"log"
 
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/peer"
 )
 
 type TempBackupTransferService struct {
@@ -25,7 +26,9 @@ func (s *TempBackupTransferService) TransferFullBackup(
 ) error {
 	var state *TempBackupState
 
-	log.LogWithGRPC(stream.Context()).Info("Established peer")
+	if p, ok := peer.FromContext(stream.Context()); ok {
+		log.Printf("Established peer: %v\n", p.Addr)
+	}
 
 	for {
 		content, err := stream.Recv()
@@ -49,9 +52,7 @@ func (s *TempBackupTransferService) TransferFullBackup(
 			if err != nil {
 				return err
 			}
-			log.WithField("db", content.Db).
-				WithField("temp_path", state.tempDir).
-				Info("Start full-backup")
+			log.Printf("Start full-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
 		}
 		if err := state.Append(content.Content); err != nil {
 			return err
@@ -64,7 +65,9 @@ func (s *TempBackupTransferService) TransferIncBackup(
 ) error {
 	var state *TempBackupState
 
-	log.LogWithGRPC(stream.Context()).Info("Established peer")
+	if p, ok := peer.FromContext(stream.Context()); ok {
+		log.Printf("Established peer: %v\n", p.Addr)
+	}
 
 	for {
 		content, err := stream.Recv()
@@ -91,9 +94,7 @@ func (s *TempBackupTransferService) TransferIncBackup(
 			if err != nil {
 				return err
 			}
-			log.WithField("db", content.Db).
-				WithField("temp_path", state.tempDir).
-				Info("Start inc-backup")
+			log.Printf("Start inc-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
 		}
 		if err := state.Append(content.Content); err != nil {
 			return err

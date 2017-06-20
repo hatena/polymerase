@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/taku-k/polymerase/pkg/utils/log"
 )
 
 type EtcdContext struct {
@@ -43,7 +43,7 @@ func (c *EtcdContext) AddMember(peerUrl string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Info(res.Members)
+	log.Println(res.Members)
 	newID := res.Member.ID
 	var buf bytes.Buffer
 	for _, m := range res.Members {

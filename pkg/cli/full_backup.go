@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"log"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
@@ -48,7 +48,7 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 		<-ctx.Done()
 		return err
 	case <-finishCh:
-		log.Info("Full backup succeeded")
+		log.Println("Full backup succeeded")
 		if backupCtx.purgePrev {
 			return purgePrevBackup(db)
 		}
@@ -80,7 +80,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, fini
 				errCh <- err
 				return
 			}
-			log.Info(reply)
+			log.Println(reply)
 			key = reply.Key
 			break
 		}
@@ -100,7 +100,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, errCh chan error, fini
 		errCh <- err
 		return
 	}
-	log.Info(res)
+	log.Println(res)
 	finishCh <- struct{}{}
 	return
 }
@@ -116,6 +116,6 @@ func purgePrevBackup(db string) error {
 	if err != nil {
 		return err
 	}
-	log.Info(res)
+	log.Println(res)
 	return nil
 }

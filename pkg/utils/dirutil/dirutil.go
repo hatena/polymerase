@@ -1,9 +1,8 @@
 package dirutil
 
 import (
+	"log"
 	"os"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // MkdirAllWithLog creates path as a directory.
@@ -11,7 +10,7 @@ import (
 func MkdirAllWithLog(path string) error {
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
-		log.WithField("path", path).Error("Cannot create directory")
+		log.Printf("Cannot create directory: path=%s\n", path)
 	}
 	return err
 }

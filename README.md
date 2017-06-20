@@ -7,7 +7,7 @@ Polymerase is a server application that performs periodic MySQL physical backups
 Polymerase is now under development. Testing and development are carried out at [Hatena Co., Ltd.](http://hatenacorp.jp/)
 
 ## Documentation
-Documentation is here (For now, Japanese only!): [Docs](https://github.com/taku-k/polymerase/docs/docs_ja.md).
+Documentation is here (For now, Japanese only!): [Docs](/docs/docs_ja.md).
 
 
 ## TODO

@@ -101,6 +101,7 @@ func init() {
 
 		f.StringVar(&restoreCtx.from, "from", restoreCtx.from, "")
 		f.BoolVar(&restoreCtx.applyPrepare, "apply-prepare", restoreCtx.applyPrepare, "")
+		f.StringVar(&restoreCtx.maxBandWidth, "max-bandwidth", "", "max bandwidth for download src archives (Bytes/sec)")
 	}
 
 	// Server Flags

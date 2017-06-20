@@ -2,6 +2,6 @@
 
 ### User manual
 
-- [Server](https://github.com/taku-k/polymerase/docs/server_ja.md)
-- [Backup](https://github.com/taku-k/polymerase/docs/backup_ja.md)
-- [Restore](https://github.com/taku-k/polymerase/docs/restore_ja.md)
+- [Server](/docs/server_ja.md)
+- [Backup](/docs/backup_ja.md)
+- [Restore](/docs/restore_ja.md)

@@ -7,6 +7,7 @@ SRCS    := $(shell find . -type f -name '*.go')
 PROTOSRCS := $(shell find . -type f -name '*.proto' | grep -v -e vendor)
 MOCKS := pkg/storage/storage.go
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
+GLIDE := $(shell command -v glide 2> /dev/null)
 
 .DEFAULT_GOAL := bin/$(NAME)
 
@@ -24,7 +25,7 @@ linux: deps
 
 .PHONY: glide
 glide:
-ifeq ($(shell command -v glide 2> /dev/null),)
+ifndef GLIDE
     curl https://glide.sh/get | sh
 endif
 

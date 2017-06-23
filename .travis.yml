@@ -4,4 +4,4 @@ go:
   - 1.8
 
 script:
-  - make test-all
+  - make glide test-all

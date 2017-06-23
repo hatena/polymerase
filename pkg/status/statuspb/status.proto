@@ -13,9 +13,8 @@ message NodeInfo {
 }
 
 message BackupInfo {
-    string db = 1;
-    FullBackupInfo full_backup = 2;
-    repeated IncBackupInfo inc_backups = 3;
+    FullBackupInfo full_backup = 1;
+    repeated IncBackupInfo inc_backups = 2;
 }
 
 message FullBackupInfo {

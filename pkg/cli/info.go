@@ -28,6 +28,7 @@ func runNodesInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer cli.Close()
 
 	kv := status.GetNodesInfo(cli)
 
@@ -67,6 +68,7 @@ func runBackupsInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer cli.Close()
 
 	kv := status.GetBackupsInfo(cli)
 

@@ -48,7 +48,7 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 	}
 
 	info := &statuspb.NodeInfo{}
-	info.Addr = sr.cfg.Addr
+	info.Addr = sr.cfg.AdvertiseAddr
 	info.DiskInfo = &statuspb.DiskInfo{}
 	info.DiskInfo.Total = fileSystemUsage.Total
 	info.DiskInfo.Avail = fileSystemUsage.Avail

@@ -20,6 +20,8 @@ type Config struct {
 	Port string
 
 	Addr string
+
+	AdvertiseAddr string
 }
 
 func (cfg *Config) InitDefaults() {

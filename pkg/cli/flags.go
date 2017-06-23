@@ -64,7 +64,12 @@ func init() {
 		return initXtrabackupConfig()
 	}
 
-	nodesCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+	nodesInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
+		return nil
+	}
+
+	backupsInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		return nil
 	}
@@ -74,7 +79,8 @@ func init() {
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
-		nodesCmd,
+		nodesInfoCmd,
+		backupsInfoCmd,
 	}
 
 	for _, cmd := range clientCmds {
@@ -136,5 +142,5 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, nodesCmd)
+	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, infoCmd)
 }

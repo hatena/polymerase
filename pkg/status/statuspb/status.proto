@@ -14,23 +14,22 @@ message NodeInfo {
 
 message BackupInfo {
     string db = 1;
-    int64 last_fullbackup = 2;
-    int64 last_incbackup = 3;
-    bool is_failed = 4;
-    string stored_host = 5;
-    string nodeName = 6;
+    BaseBackupInfo base_backup = 2;
+    repeated IncBackupInfo inc_backups = 3;
 }
 
 message BaseBackupInfo {
     int64 stored_time = 1;
     string node_name = 2;
     string host = 3;
+    StoredType stored_type = 4;
 }
 
 message IncBackupInfo {
     int64 stored_time = 1;
     string node_name = 2;
     string host = 3;
+    StoredType stored_type = 4;
 }
 
 enum StoredType {

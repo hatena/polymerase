@@ -85,7 +85,7 @@ func outputBackupInfo(db string, info *statuspb.BackupInfo) {
 	fmt.Fprintln(tw, "===============")
 	fmt.Fprintf(tw, "FullBackup:\n\tNode:%s\n\tHost:%s\n", info.FullBackup.NodeName, info.FullBackup.Host)
 	if len(info.IncBackups) != 0 {
-		fmt.Fprintln(tw, "IncBackup:")
+		fmt.Fprintln(tw, "\tIncBackup:")
 		for _, i := range info.IncBackups {
 			fmt.Fprintf(tw, "\t\tNode:%s\n\t\tHost:%s\n", i.NodeName, i.Host)
 		}

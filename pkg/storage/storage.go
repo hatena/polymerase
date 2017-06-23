@@ -4,6 +4,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -27,4 +28,6 @@ type BackupStorage interface {
 	RemoveBackups(key string) error
 
 	GetKPastBackupKey(db string, k int) (string, error)
+
+	RestoreBackupInfo(cli *clientv3.Client) error
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 )
 
 func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, error) {
@@ -17,11 +17,11 @@ func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, err
 		node, host := selectBasedDiskCap(cli)
 		return node, host, nil
 	}
-	info := &storagepb.BackupInfo{}
+	info := &statuspb.BackupInfo{}
 	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
 		return "", "", err
 	}
-	return info.NodeName, info.StoredHost, nil
+	return info.FullBackup.NodeName, info.FullBackup.Host, nil
 }
 
 func selectBasedDiskCap(cli *clientv3.Client) (string, string) {

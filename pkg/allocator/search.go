@@ -5,7 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 )
 
 func SearchStoredAddr(cli *clientv3.Client, db string) (string, error) {
@@ -16,9 +16,9 @@ func SearchStoredAddr(cli *clientv3.Client, db string) (string, error) {
 	if len(res.Kvs) == 0 {
 		return "", errors.New("DB not found.")
 	}
-	info := &storagepb.BackupInfo{}
+	info := &statuspb.BackupInfo{}
 	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
 		return "", err
 	}
-	return info.StoredHost, nil
+	return info.FullBackup.Host, nil
 }

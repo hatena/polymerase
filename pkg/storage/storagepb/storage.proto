@@ -52,12 +52,3 @@ message PurgePrevBackupRequest {
 message PurgePrevBackupResponse {
   string message = 1;
 }
-
-message BackupInfo {
-  string db = 1;
-  int64 last_fullbackup = 2;
-  int64 last_incbackup = 3;
-  bool is_failed = 4;
-  string stored_host = 5;
-  string nodeName = 6;
-}

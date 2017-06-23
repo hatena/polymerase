@@ -51,6 +51,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		Config:         cfg.Config,
 		BackupsDir:     cfg.BackupsDir(),
 		ServeRateLimit: cfg.ServeRateLimit,
+		NodeName:       cfg.Name,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "backup storage configuration is failed")
@@ -105,6 +106,9 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
+	if err := s.storage.RestoreBackupInfo(s.manager.EtcdCli); err != nil {
+		return err
+	}
 
 	log.Println(<-es.Server.Err())
 
@@ -120,7 +124,7 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := status.NewStatusRecorder(
-		s.manager.EtcdCli, s.cfg.StoreDir, s.storage, s.cfg.Name, s.cfg.Config)
+		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg.Config)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

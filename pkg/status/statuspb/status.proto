@@ -11,3 +11,26 @@ message NodeInfo {
     DiskInfo diskInfo = 1;
     string addr = 2;
 }
+
+message BackupInfo {
+    FullBackupInfo full_backup = 1;
+    repeated IncBackupInfo inc_backups = 2;
+}
+
+message FullBackupInfo {
+    int64 stored_time = 1;
+    string node_name = 2;
+    string host = 3;
+    StoredType stored_type = 4;
+}
+
+message IncBackupInfo {
+    int64 stored_time = 1;
+    string node_name = 2;
+    string host = 3;
+    StoredType stored_type = 4;
+}
+
+enum StoredType {
+    LOCAL = 0;
+}

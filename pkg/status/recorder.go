@@ -9,7 +9,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
-	"github.com/taku-k/polymerase/pkg/storage"
 )
 
 type StatusRecorder struct {
@@ -19,20 +18,17 @@ type StatusRecorder struct {
 
 	cli *clientv3.Client
 
-	storage storage.BackupStorage
-
 	name string
 
 	cfg *base.Config
 }
 
 func NewStatusRecorder(
-	client *clientv3.Client, storeDir string, storage storage.BackupStorage, name string, cfg *base.Config,
+	client *clientv3.Client, storeDir string, name string, cfg *base.Config,
 ) *StatusRecorder {
 	return &StatusRecorder{
 		cli:      client,
 		storeDir: storeDir,
-		storage:  storage,
 		name:     name,
 		cfg:      cfg,
 	}

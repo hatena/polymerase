@@ -117,6 +117,9 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
+	if s.manager.EtcdCli != nil {
+		s.manager.EtcdCli.Close()
+	}
 	if s.etcdServer != nil {
 		s.etcdServer.close()
 	}

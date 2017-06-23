@@ -32,14 +32,18 @@ func getStorageClient(ctx context.Context, db string) (storagepb.StorageServiceC
 	if err != nil {
 		return nil, err
 	}
+	defer cli.Close()
+
 	addr, err := allocator.SearchStoredAddr(cli, db)
 	if err != nil {
 		return nil, err
 	}
+
 	c, err := connectGRPC(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
+
 	return storagepb.NewStorageServiceClient(c), nil
 }
 
@@ -52,14 +56,18 @@ func getTempBackupClient(ctx context.Context, db string) (tempbackuppb.BackupTra
 	if err != nil {
 		return nil, err
 	}
+	defer cli.Close()
+
 	node, addr, err := allocator.SelectAppropriateHost(cli, db)
 	if err != nil {
 		return nil, err
 	}
+
 	c, err := connectGRPC(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
+
 	log.Printf("Select node as backup: %s\n", node)
 	return tempbackuppb.NewBackupTransferServiceClient(c), nil
 }

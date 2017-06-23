@@ -39,6 +39,7 @@ func (c *EtcdContext) AddMember(peerUrl string) (string, error) {
 		return "", err
 	}
 	defer cli.Close()
+
 	res, err := cli.MemberAdd(context.Background(), []string{peerUrl})
 	if err != nil {
 		return "", err

@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
-
-	"log"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"

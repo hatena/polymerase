@@ -143,13 +143,12 @@ func (s *TempBackupState) closeFullBackup() error {
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	return status.StoreFullBackupInfo(s.cli, key, &statuspb.FullBackupInfo{
+	return status.StoreFullBackupInfo(s.cli, base.BackupDBKey(s.db), &statuspb.FullBackupInfo{
 		StoredTime: s.start.Unix(),
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,
 	})
-	return nil
 }
 
 func (s *TempBackupState) closeIncBackup() error {
@@ -163,7 +162,7 @@ func (s *TempBackupState) closeIncBackup() error {
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	return status.StoreIncBackupInfo(s.cli, key, &statuspb.IncBackupInfo{
+	return status.StoreIncBackupInfo(s.cli, base.BackupDBKey(s.db), &statuspb.IncBackupInfo{
 		StoredTime: s.start.Unix(),
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,

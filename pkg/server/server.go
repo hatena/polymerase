@@ -141,5 +141,5 @@ func (s *Server) startWriteStatus(freq time.Duration) {
 }
 
 func (s *Server) restoreBackupInfo() error {
-
+	return nil
 }

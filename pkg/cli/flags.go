@@ -10,7 +10,7 @@ import (
 )
 
 var mysqlHost, mysqlPort, mysqlUser, mysqlPassword string
-var serverConnHost, serverConnPort string
+var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
 var db string
 var useInnobackupex = false
@@ -44,6 +44,7 @@ func init() {
 		baseCfg.Host = serverConnHost
 		baseCfg.Port = serverConnPort
 		baseCfg.Addr = net.JoinHostPort(serverConnHost, serverConnPort)
+		baseCfg.AdvertiseAddr = net.JoinHostPort(serverAdvertiseHost, serverConnPort)
 	}
 
 	fullBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
@@ -127,6 +128,7 @@ func init() {
 		f := startCmd.Flags()
 
 		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
+		f.StringVar(&serverAdvertiseHost, "advertise-host", serverCfg.Name, "The hostname to advertise to other nodes and clients.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.StringVar(&serverCfg.StoreDir, "store-dir", serverCfg.StoreDir, "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")

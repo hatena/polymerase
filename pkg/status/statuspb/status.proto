@@ -14,11 +14,11 @@ message NodeInfo {
 
 message BackupInfo {
     string db = 1;
-    BaseBackupInfo base_backup = 2;
+    FullBackupInfo full_backup = 2;
     repeated IncBackupInfo inc_backups = 3;
 }
 
-message BaseBackupInfo {
+message FullBackupInfo {
     int64 stored_time = 1;
     string node_name = 2;
     string host = 3;

@@ -1,0 +1,3 @@
+package status
+
+func StoreBackupInfo

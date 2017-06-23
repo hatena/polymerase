@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 )
 
@@ -105,7 +105,7 @@ func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBacku
 		storage:    m.storage,
 		cli:        m.EtcdCli,
 		name:       m.name,
-		addr:       m.cfg.Addr,
+		addr:       m.cfg.AdvertiseAddr,
 	}
 	return s, nil
 }
@@ -140,24 +140,15 @@ func (s *TempBackupState) closeFullBackup() error {
 	key := fmt.Sprintf("%s/%s/%s", s.db,
 		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
 	s.key = key
-	info := s.getBackupInfo()
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
-		if info != nil {
-			setFullAsFailed(info, s.name, s.addr, s.start)
-			err := s.storeBackupInfo(info)
-			if err != nil {
-				return err
-			}
-		}
 		return err
 	}
-	if info != nil {
-		setFullAsSuccess(info, s.name, s.addr, s.start)
-		err := s.storeBackupInfo(info)
-		if err != nil {
-			return err
-		}
-	}
+	return status.StoreFullBackupInfo(s.cli, key, &statuspb.FullBackupInfo{
+		StoredTime: s.start.Unix(),
+		StoredType: statuspb.StoredType_LOCAL,
+		NodeName:   s.name,
+		Host:       s.addr,
+	})
 	return nil
 }
 
@@ -169,47 +160,13 @@ func (s *TempBackupState) closeIncBackup() error {
 	}
 	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
 	s.key = key
-	info := s.getBackupInfo()
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
-		if info != nil {
-			setIncAsFailed(info, s.name, s.addr, s.start)
-			err := s.storeBackupInfo(info)
-			if err != nil {
-				return err
-			}
-		}
 		return err
 	}
-	if info != nil {
-		setIncAsSuccess(info, s.name, s.addr, s.start)
-		err := s.storeBackupInfo(info)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
-	res, err := s.cli.KV.Get(s.cli.Ctx(), base.BackupDBKey(s.db))
-	if err != nil {
-		return nil
-	}
-	if len(res.Kvs) == 0 {
-		return newBackupInfo(s.db, s.name, s.addr)
-	}
-	info := &storagepb.BackupInfo{}
-	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
-		return nil
-	}
-	return info
-}
-
-func (s *TempBackupState) storeBackupInfo(i *storagepb.BackupInfo) error {
-	out, err := proto.Marshal(i)
-	if err != nil {
-		return err
-	}
-	_, err = s.cli.Put(s.cli.Ctx(), base.BackupDBKey(s.db), string(out))
-	return err
+	return status.StoreIncBackupInfo(s.cli, key, &statuspb.IncBackupInfo{
+		StoredTime: s.start.Unix(),
+		StoredType: statuspb.StoredType_LOCAL,
+		NodeName:   s.name,
+		Host:       s.addr,
+	})
 }

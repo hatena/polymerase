@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"log"
+
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -143,12 +145,16 @@ func (s *TempBackupState) closeFullBackup() error {
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	return status.StoreFullBackupInfo(s.cli, base.BackupDBKey(s.db), &statuspb.FullBackupInfo{
+	if err := status.StoreFullBackupInfo(s.cli, base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
 		StoredTime: s.start.Unix(),
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,
-	})
+	}); err != nil {
+		return err
+	}
+	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)))
+	return nil
 }
 
 func (s *TempBackupState) closeIncBackup() error {
@@ -162,10 +168,15 @@ func (s *TempBackupState) closeIncBackup() error {
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		return err
 	}
-	return status.StoreIncBackupInfo(s.cli, base.BackupDBKey(s.db), &statuspb.IncBackupInfo{
+	fromTime, _ := time.Parse(s.timeFormat, from)
+	if err := status.StoreIncBackupInfo(s.cli, base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)), &statuspb.IncBackupInfo{
 		StoredTime: s.start.Unix(),
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,
-	})
+	}); err != nil {
+		return err
+	}
+	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)))
+	return nil
 }

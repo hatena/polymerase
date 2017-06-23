@@ -1,6 +1,8 @@
 package base
 
-import "path"
+import (
+	"path"
+)
 
 var (
 	NodeInfoKey = "nodes"
@@ -14,4 +16,8 @@ func NodeInfo(n string) string {
 
 func BackupDBKey(db string) string {
 	return path.Join(BackupsKey, db)
+}
+
+func BackupBaseDBKey(db string, start string) string {
+	return path.Join(BackupDBKey(db), start)
 }

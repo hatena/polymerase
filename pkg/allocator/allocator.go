@@ -9,7 +9,7 @@ import (
 )
 
 func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, error) {
-	res, err := cli.KV.Get(cli.Ctx(), base.BackupDBKey(db))
+	res, err := cli.KV.Get(cli.Ctx(), base.BackupDBKey(db), clientv3.WithPrefix())
 	if err != nil {
 		return "", "", err
 	}

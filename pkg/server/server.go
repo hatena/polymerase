@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -120,6 +121,10 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 		s.etcdServer.close()
 	}
 	stopped <- struct{}{}
+}
+
+func (s *Server) CleanupEtcdDir() {
+	os.RemoveAll(s.etcdCfg.Dir)
 }
 
 func (s *Server) startWriteStatus(freq time.Duration) {

@@ -265,26 +265,26 @@ func (s *LocalBackupStorage) GetKPastBackupKey(db string, k int) (string, error)
 func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 	return filepath.Walk(s.backupsDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, "base.tar.gz") {
-			db, start, err := s.pickDbAndStartTime(path)
+			db, start, stored, err := s.pickDbAndTime(path)
 			if err != nil {
 				return err
 			}
-			if err := status.StoreFullBackupInfo(cli, base.BackupDBKey(db), &statuspb.FullBackupInfo{
+			if err := status.StoreFullBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: start.Unix(),
+				StoredTime: stored.Unix(),
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {
 				return err
 			}
 		} else if strings.HasSuffix(path, "inc.xb.gz") {
-			db, start, err := s.pickDbAndStartTime(path)
+			db, start, stored, err := s.pickDbAndTime(path)
 			if err != nil {
 				return err
 			}
-			if err := status.StoreIncBackupInfo(cli, base.BackupDBKey(db), &statuspb.IncBackupInfo{
+			if err := status.StoreIncBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.IncBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: start.Unix(),
+				StoredTime: stored.Unix(),
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {
@@ -352,13 +352,16 @@ func checkCompressedFileIsEmpty(tempPath string) bool {
 	return false
 }
 
-func (s *LocalBackupStorage) pickDbAndStartTime(path string) (string, time.Time, error) {
+func (s *LocalBackupStorage) pickDbAndTime(path string) (string, time.Time, time.Time, error) {
 	split := strings.Split(path, "/")
-	db := split[len(split)-4]
-	start := split[len(split)-2]
-	t, err := time.Parse(s.timeFormat, start)
-	if err != nil {
-		return "", time.Now(), errors.New("Time format is wrong.")
+	if len(split)-4 < 0 {
+		return "", time.Now(), time.Now(), errors.New("Not supprted path")
 	}
-	return db, t, nil
+	db := split[len(split)-4]
+	start, err := time.Parse(s.timeFormat, split[len(split)-3])
+	if err != nil {
+		return "", time.Now(), time.Now(), errors.New("Time format is wrong.")
+	}
+	stored, _ := time.Parse(s.timeFormat, split[len(split)-2])
+	return db, start, stored, nil
 }

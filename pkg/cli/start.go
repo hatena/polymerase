@@ -96,6 +96,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 	select {
 	case <-shutdownCtx.Done():
 		fmt.Fprintln(os.Stdout, "time limit reached, initiating hard shutdown")
+		s.CleanupEtcdDir()
 		return errors.New("Server is failed")
 	case <-stopped:
 		log.Println("server shutdown completed")

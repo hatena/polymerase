@@ -1,8 +1,6 @@
 package status
 
 import (
-	"strings"
-
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/golang/protobuf/proto"
@@ -54,7 +52,7 @@ func GetBackupsInfo(cli *clientv3.Client) map[string]*statuspb.BackupInfo {
 	}
 	result := make(map[string]*statuspb.BackupInfo)
 	for _, kv := range res.Kvs {
-		n := strings.Split(string(kv.Key), "/")[1]
+		n := string(kv.Key)
 		info := &statuspb.BackupInfo{}
 		if err := proto.Unmarshal(kv.Value, info); err != nil {
 			continue

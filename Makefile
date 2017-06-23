@@ -58,7 +58,7 @@ test-race:
 	go test -v -race $$(glide nv)
 
 .PHONY: test-all
-test-all: vet test-race
+test-all: glide vet test-race
 
 .PHONY: fmt
 fmt:

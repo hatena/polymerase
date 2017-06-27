@@ -58,8 +58,12 @@ test:
 test-race:
 	go test -v -race ./pkg/...
 
+.PHONY: test-integration
+test-integration:
+	./integration-test/test.sh
+
 .PHONY: test-all
-test-all: glide vet test-race
+test-all: vet test-race test-integration
 
 .PHONY: fmt
 fmt:

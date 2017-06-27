@@ -5,7 +5,12 @@ MAINTAINER Takuya Kuwahara <taakuu19@gmail.com>
 # Make sure apt-get is up to date and dependent packages are installed
 RUN \
   apt-get update && \
-  apt-get install -y make libaio1 \
+  apt-get install -y make libaio1 software-properties-common \
+    --no-install-recommends
+RUN \
+  add-apt-repository -y ppa:openjdk-r/ppa && \
+  apt-get update && \
+  apt-get install -y openjdk-8-jdk \
     --no-install-recommends
 
 # Setup MySQL Sandbox
@@ -18,7 +23,7 @@ RUN \
   mkdir /sandbox && cd /sandbox && \
   wget -q https://downloads.mysql.com/archives/get/file/mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
   make_replication_sandbox --how_many_nodes=1 mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
-  rm mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz
+  rm mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz /MySQL-Sandbox-3.2.10.tar.gz
 
 # Install go 1.8.3
 RUN \
@@ -36,6 +41,21 @@ RUN \
   apt-get update && \
   apt-get install -y percona-xtrabackup=2.3.8-1.xenial
 
+# Setup ycsb
+RUN \
+  wget -q https://github.com/brianfrankcooper/YCSB/releases/download/0.12.0/ycsb-0.12.0.tar.gz && \
+  tar zxvf ycsb-0.12.0.tar.gz && \
+  rm ycsb-0.12.0.tar.gz && \
+  cd ycsb-0.12.0 && \
+  wget -q https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.42.tar.gz && \
+  tar zxvf mysql-connector-java-5.1.42.tar.gz && \
+  mv mysql-connector-java-5.1.42/mysql-connector-java-5.1.42-bin.jar jdbc-binding/lib/ && \
+  mkdir /ycsb && \
+  mv LICENSE.txt bin jdbc-binding lib workloads /ycsb && \
+  cd /ycsb && \
+  rm -rf /ycsb-0.12.0*
+
+# Setup polymerase
 ENV PKG github.com/taku-k/polymerase
 WORKDIR /go/src/$PKG
 ADD pkg /go/src/$PKG/pkg

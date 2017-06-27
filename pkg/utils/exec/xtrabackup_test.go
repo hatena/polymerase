@@ -17,10 +17,11 @@ func TestBuildFullBackupCmd(t *testing.T) {
 	}{
 		{
 			&base.XtrabackupConfig{
-				BinPath:    "xtrabackup",
-				User:       "user",
-				Password:   "password",
-				LsnTempDir: "/tmp/test",
+				BinPath:      "xtrabackup",
+				User:         "user",
+				Password:     "password",
+				LsnTempDir:   "/tmp/test",
+				InsecureAuth: true,
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
@@ -31,6 +32,7 @@ xtrabackup \
   --slave-info \
   --backup \
   --extra-lsndir=/tmp/test \
+  --skip-secure-auth \
   --stream=tar
   			`)},
 		}, {

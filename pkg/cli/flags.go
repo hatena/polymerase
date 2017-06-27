@@ -13,7 +13,7 @@ var mysqlHost, mysqlPort, mysqlUser, mysqlPassword string
 var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
 var db string
-var useInnobackupex = false
+var useInnobackupex, insecureAuth bool
 
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
@@ -35,6 +35,7 @@ func initXtrabackupConfig() error {
 		User:            mysqlUser,
 		Password:        mysqlPassword,
 		UseInnobackupex: useInnobackupex,
+		InsecureAuth:    insecureAuth,
 	}
 	return xtrabackupCfg.InitDefaults()
 }
@@ -90,20 +91,19 @@ func init() {
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
 	}
 
-	// Backup and restore flags
-	backupRestoreCmds := []*cobra.Command{
+	// Backup and restore commands flags
+	for _, cmd := range []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
-	}
-
-	for _, cmd := range backupRestoreCmds {
+	} {
 		f := cmd.Flags()
 
 		f.StringVarP(&db, "db", "d", "", "DB name")
-		f.BoolVar(&useInnobackupex, "use-innobackupex", useInnobackupex, "Using innobackupex binary instead of xtrabackup.")
+		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
 	}
 
+	// Backup commands flags
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {
 		f := cmd.PersistentFlags()
 
@@ -111,6 +111,7 @@ func init() {
 		f.StringVarP(&mysqlPort, "mysql-port", "p", "3306", "The MySQL port to connect with.")
 		f.StringVarP(&mysqlUser, "mysql-user", "u", "", "The MySQL username to connect with.")
 		f.StringVarP(&mysqlPassword, "mysql-password", "P", "", "The MySQL password to connect with.")
+		f.BoolVar(&insecureAuth, "insecure-auth", false, "Connect with insecure auth. It is useful when server uses old protocol.")
 	}
 
 	// Full-backup command specific

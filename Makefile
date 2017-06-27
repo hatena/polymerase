@@ -52,11 +52,11 @@ vet:
 
 .PHONY: test
 test:
-	go test -cover -v $$(glide nv)
+	go test -cover -v ./pkg/...
 
 .PHONY: test-race
 test-race:
-	go test -v -race $$(glide nv)
+	go test -v -race ./pkg/...
 
 .PHONY: test-all
 test-all: glide vet test-race

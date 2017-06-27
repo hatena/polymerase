@@ -28,6 +28,8 @@ var xtrabackup = backupCmd{
   --slave-info \
   --backup \{{ if .LsnTempDir }}
   --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}{{ if .InsecureAuth }}
+  --skip-secure-auth \
   {{- end }}
   --stream=tar
 `),
@@ -41,6 +43,8 @@ var xtrabackup = backupCmd{
   --slave-info \
   --backup \{{ if .LsnTempDir }}
   --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}{{ if .InsecureAuth }}
+  --skip-secure-auth \
   {{- end }}
   --stream=xbstream \
   --incremental-lsn={{ .ToLsn }}

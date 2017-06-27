@@ -20,6 +20,7 @@ type XtrabackupConfig struct {
 	LsnTempDir      string
 	ToLsn           string
 	UseInnobackupex bool
+	InsecureAuth    bool
 }
 
 func (cfg *XtrabackupConfig) InitDefaults() error {

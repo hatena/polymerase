@@ -4,10 +4,13 @@ MAINTAINER Takuya Kuwahara <taakuu19@gmail.com>
 
 # Make sure apt-get is up to date and dependent packages are installed
 RUN \
+  apt-get update && \
+  apt-get install -y software-properties-common && \
+  add-apt-repository 'deb http://archive.ubuntu.com/ubuntu trusty universe' && \
   echo "mysql-server mysql-server/root_password password root" | debconf-set-selections && \
   echo "mysql-server mysql-server/root_password_again password root" | debconf-set-selections && \
   apt-get update && \
-  apt-get install -y mysql-server \
+  apt-get install -y mysql-server-5.6 \
     --no-install-recommends
 
 # Install go 1.8.3

@@ -31,3 +31,6 @@ ADD pkg /go/src/$PKG/pkg
 ADD vendor /go/src/$PKG/vendor
 ADD Makefile main.go /go/src/$PKG/
 RUN go install
+
+ADD integration-test/my.cnf /etc/mysql/my.cnf
+ADD test.sh /

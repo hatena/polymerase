@@ -2,10 +2,14 @@ version: '3'
 
 services:
   sut:
-    build: .
-    dockerfile: Dockerfile.test
-    linkes:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: bash /test.sh
+    external_links:
       - server
   server:
-    build: .
-    dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: polymerase start --host 0.0.0.0 --name server

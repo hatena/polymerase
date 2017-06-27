@@ -4,8 +4,8 @@ services:
   sut:
     build:
       context: .
-      dockerfile: Dockerfile.test
-    command: bash /test.sh
+      dockerfile: integration-test/sut/Dockerfile.test
+    command: bash /run.sh
     external_links:
       - server
   server:

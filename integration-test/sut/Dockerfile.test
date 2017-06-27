@@ -43,4 +43,4 @@ ADD vendor /go/src/$PKG/vendor
 ADD Makefile main.go /go/src/$PKG/
 RUN go install
 
-ADD test.sh /
+ADD integration-test/sut/run.sh /

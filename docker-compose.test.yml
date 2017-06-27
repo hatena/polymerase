@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  sut:
+    build: .
+    dockerfile: Dockerfile.test
+    linkes:
+      - server
+  server:
+    build: .
+    dockerfile: Dockerfile

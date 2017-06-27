@@ -13,7 +13,7 @@ cleanup () {
 # TODO: Change project root dir
 
 # catch unexpected failures, do cleanup and output an error message
-trap 'cleanup ; printf "${RED}Tests Failed For Unexpected Reasons${NC}\n"' \
+trap 'cleanup ; echo -e "${RED}Tests Failed For Unexpected Reasons${NC}"' \
   HUP INT QUIT PIPE TERM
 
 # build and run the composed services

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -51,6 +52,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		Config:         cfg.Config,
 		BackupsDir:     cfg.BackupsDir(),
 		ServeRateLimit: cfg.ServeRateLimit,
+		NodeName:       cfg.Name,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "backup storage configuration is failed")
@@ -105,6 +107,9 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
+	if err := s.storage.RestoreBackupInfo(s.manager.EtcdCli); err != nil {
+		return err
+	}
 
 	log.Println(<-es.Server.Err())
 
@@ -112,14 +117,29 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
+	if s.manager.EtcdCli != nil {
+		s.manager.EtcdCli.Close()
+	}
 	if s.etcdServer != nil {
 		s.etcdServer.close()
 	}
 	stopped <- struct{}{}
 }
 
+func (s *Server) CleanupEtcdDir() {
+	os.RemoveAll(s.etcdCfg.Dir)
+}
+
 func (s *Server) startWriteStatus(freq time.Duration) {
-	recorder := status.NewStatusRecorder(s.manager.EtcdCli, s.cfg.StoreDir, s.storage, s.cfg.Name)
+	recorder := status.NewStatusRecorder(
+		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg.Config)
+
+	// Do WriteStatus before ticker starts
+	if err := recorder.WriteStatus(context.Background()); err != nil {
+		log.Println(err)
+		return
+	}
+
 	ticker := time.NewTicker(freq)
 	defer ticker.Stop()
 	for {

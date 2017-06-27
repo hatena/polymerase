@@ -8,11 +8,15 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/go-ini/ini"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -22,6 +26,8 @@ type LocalStorageConfig struct {
 	BackupsDir string
 
 	ServeRateLimit uint64
+
+	NodeName string
 }
 
 // LocalBackupStorage represents local directory backup.
@@ -29,6 +35,9 @@ type LocalBackupStorage struct {
 	backupsDir     string
 	timeFormat     string
 	serveRateLimit uint64
+	nodeName       string
+
+	*base.Config
 }
 
 // NewLocalBackupStorage returns LocalBackupStorage based on the configuration.
@@ -37,6 +46,8 @@ func NewLocalBackupStorage(cfg *LocalStorageConfig) (*LocalBackupStorage, error)
 		backupsDir:     cfg.BackupsDir,
 		timeFormat:     cfg.TimeFormat,
 		serveRateLimit: cfg.ServeRateLimit,
+		nodeName:       cfg.NodeName,
+		Config:         cfg.Config,
 	}
 	if s.backupsDir == "" {
 		return nil, errors.New("Backups directory must be specified")
@@ -251,6 +262,39 @@ func (s *LocalBackupStorage) GetKPastBackupKey(db string, k int) (string, error)
 	return path.Join(db, spd[len(spd)-k].Name()), nil
 }
 
+func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
+	return filepath.Walk(s.backupsDir, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, "base.tar.gz") {
+			db, start, stored, err := s.pickDbAndTime(path)
+			if err != nil {
+				return err
+			}
+			if err := status.StoreFullBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
+				StoredType: statuspb.StoredType_LOCAL,
+				StoredTime: stored.Unix(),
+				Host:       s.AdvertiseAddr,
+				NodeName:   s.nodeName,
+			}); err != nil {
+				return err
+			}
+		} else if strings.HasSuffix(path, "inc.xb.gz") {
+			db, start, stored, err := s.pickDbAndTime(path)
+			if err != nil {
+				return err
+			}
+			if err := status.StoreIncBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.IncBackupInfo{
+				StoredType: statuspb.StoredType_LOCAL,
+				StoredTime: stored.Unix(),
+				Host:       s.AdvertiseAddr,
+				NodeName:   s.nodeName,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (s *LocalBackupStorage) TransferTempFullBackup(tempDir string, key string) error {
 	return s.transferTempBackup(tempDir, key)
 }
@@ -306,4 +350,18 @@ func checkCompressedFileIsEmpty(tempPath string) bool {
 		}
 	}
 	return false
+}
+
+func (s *LocalBackupStorage) pickDbAndTime(path string) (string, time.Time, time.Time, error) {
+	split := strings.Split(path, "/")
+	if len(split)-4 < 0 {
+		return "", time.Now(), time.Now(), errors.New("Not supprted path")
+	}
+	db := split[len(split)-4]
+	start, err := time.Parse(s.timeFormat, split[len(split)-3])
+	if err != nil {
+		return "", time.Now(), time.Now(), errors.New("Time format is wrong.")
+	}
+	stored, _ := time.Parse(s.timeFormat, split[len(split)-2])
+	return db, start, stored, nil
 }

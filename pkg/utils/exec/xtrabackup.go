@@ -28,6 +28,8 @@ var xtrabackup = backupCmd{
   --slave-info \
   --backup \{{ if .LsnTempDir }}
   --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}{{ if .InsecureAuth }}
+  --skip-secure-auth \
   {{- end }}
   --stream=tar
 `),
@@ -41,6 +43,8 @@ var xtrabackup = backupCmd{
   --slave-info \
   --backup \{{ if .LsnTempDir }}
   --extra-lsndir={{ .LsnTempDir }} \
+  {{- end }}{{ if .InsecureAuth }}
+  --skip-secure-auth \
   {{- end }}
   --stream=xbstream \
   --incremental-lsn={{ .ToLsn }}
@@ -99,12 +103,38 @@ func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.C
 	return _buildBackupCmd(ctx, cfg, tmpl)
 }
 
-func PrepareBaseBackup(ctx context.Context, cfg *base.XtrabackupConfig) *exec.Cmd {
-	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base")
+func PrepareBaseBackup(ctx context.Context, isLast bool, cfg *base.XtrabackupConfig) *exec.Cmd {
+	if cfg.UseInnobackupex {
+		if isLast {
+			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "base")
+		} else {
+			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "--redo-only", "base")
+		}
+	} else {
+		if isLast {
+			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--target-dir=base")
+		} else {
+			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base")
+		}
+	}
 }
 
-func PrepareIncBackup(ctx context.Context, inc int, cfg *base.XtrabackupConfig) *exec.Cmd {
-	return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base", fmt.Sprintf("--incremental-dir=inc%d", inc))
+func PrepareIncBackup(ctx context.Context, inc int, isLast bool, cfg *base.XtrabackupConfig) *exec.Cmd {
+	incDir := fmt.Sprintf("--incremental-dir=inc%d", inc)
+	if cfg.UseInnobackupex {
+		if isLast {
+			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "base", incDir)
+		} else {
+			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "--redo-only", "base", incDir)
+		}
+	} else {
+		if isLast {
+			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--target-dir=base", incDir)
+		} else {
+			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base", incDir)
+		}
+	}
+
 }
 
 func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {

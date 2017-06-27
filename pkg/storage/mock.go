@@ -7,6 +7,7 @@ import (
 	io "io"
 	time "time"
 
+	clientv3 "github.com/coreos/etcd/clientv3"
 	gomock "github.com/golang/mock/gomock"
 	storagepb "github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
@@ -135,4 +136,14 @@ func (_m *MockBackupStorage) GetKPastBackupKey(db string, k int) (string, error)
 
 func (_mr *_MockBackupStorageRecorder) GetKPastBackupKey(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetKPastBackupKey", arg0, arg1)
+}
+
+func (_m *MockBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
+	ret := _m.ctrl.Call(_m, "RestoreBackupInfo", cli)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockBackupStorageRecorder) RestoreBackupInfo(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RestoreBackupInfo", arg0)
 }

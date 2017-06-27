@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 )
 
@@ -30,6 +31,7 @@ type TempBackupManager struct {
 	tempDir    string
 	storage    storage.BackupStorage
 	name       string
+	cfg        *base.Config
 
 	// Injected after etcd launched
 	EtcdCli *clientv3.Client
@@ -48,6 +50,7 @@ type TempBackupState struct {
 	key        string
 	cli        *clientv3.Client
 	name       string
+	addr       string
 }
 
 func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
@@ -59,6 +62,7 @@ func NewTempBackupManager(storage storage.BackupStorage, cfg *TempBackupManagerC
 		tempDir:    cfg.TempDir,
 		storage:    storage,
 		name:       cfg.Name,
+		cfg:        cfg.Config,
 	}, nil
 }
 
@@ -102,6 +106,7 @@ func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBacku
 		storage:    m.storage,
 		cli:        m.EtcdCli,
 		name:       m.name,
+		addr:       m.cfg.AdvertiseAddr,
 	}
 	return s, nil
 }
@@ -136,24 +141,18 @@ func (s *TempBackupState) closeFullBackup() error {
 	key := fmt.Sprintf("%s/%s/%s", s.db,
 		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
 	s.key = key
-	info := s.getBackupInfo()
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
-		if info != nil {
-			setFullAsFailed(info, s.name, s.start)
-			err := s.storeBackupInfo(info)
-			if err != nil {
-				return err
-			}
-		}
 		return err
 	}
-	if info != nil {
-		setFullAsSuccess(info, s.name, s.start)
-		err := s.storeBackupInfo(info)
-		if err != nil {
-			return err
-		}
+	if err := status.StoreFullBackupInfo(s.cli, base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
+		StoredTime: s.start.Unix(),
+		StoredType: statuspb.StoredType_LOCAL,
+		NodeName:   s.name,
+		Host:       s.addr,
+	}); err != nil {
+		return err
 	}
+	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)))
 	return nil
 }
 
@@ -165,47 +164,18 @@ func (s *TempBackupState) closeIncBackup() error {
 	}
 	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
 	s.key = key
-	info := s.getBackupInfo()
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
-		if info != nil {
-			setIncAsFailed(info, s.name, s.start)
-			err := s.storeBackupInfo(info)
-			if err != nil {
-				return err
-			}
-		}
 		return err
 	}
-	if info != nil {
-		setIncAsSuccess(info, s.name, s.start)
-		err := s.storeBackupInfo(info)
-		if err != nil {
-			return err
-		}
+	fromTime, _ := time.Parse(s.timeFormat, from)
+	if err := status.StoreIncBackupInfo(s.cli, base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)), &statuspb.IncBackupInfo{
+		StoredTime: s.start.Unix(),
+		StoredType: statuspb.StoredType_LOCAL,
+		NodeName:   s.name,
+		Host:       s.addr,
+	}); err != nil {
+		return err
 	}
+	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)))
 	return nil
-}
-
-func (s *TempBackupState) getBackupInfo() *storagepb.BackupInfo {
-	res, err := s.cli.KV.Get(s.cli.Ctx(), base.BackupDBKey(s.db))
-	if err != nil {
-		return nil
-	}
-	if len(res.Kvs) == 0 {
-		return newBackupInfo(s.db, s.name)
-	}
-	info := &storagepb.BackupInfo{}
-	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
-		return nil
-	}
-	return info
-}
-
-func (s *TempBackupState) storeBackupInfo(i *storagepb.BackupInfo) error {
-	out, err := proto.Marshal(i)
-	if err != nil {
-		return err
-	}
-	_, err = s.cli.Put(s.cli.Ctx(), base.BackupDBKey(s.db), string(out))
-	return err
 }

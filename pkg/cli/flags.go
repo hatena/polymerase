@@ -10,10 +10,10 @@ import (
 )
 
 var mysqlHost, mysqlPort, mysqlUser, mysqlPassword string
-var serverConnHost, serverConnPort string
+var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
 var db string
-var useInnobackupex = false
+var useInnobackupex, insecureAuth bool
 
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
@@ -35,15 +35,17 @@ func initXtrabackupConfig() error {
 		User:            mysqlUser,
 		Password:        mysqlPassword,
 		UseInnobackupex: useInnobackupex,
+		InsecureAuth:    insecureAuth,
 	}
 	return xtrabackupCfg.InitDefaults()
 }
 
 func init() {
-	serverCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+	startCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
 		baseCfg.Host = serverConnHost
 		baseCfg.Port = serverConnPort
 		baseCfg.Addr = net.JoinHostPort(serverConnHost, serverConnPort)
+		baseCfg.AdvertiseAddr = net.JoinHostPort(serverAdvertiseHost, serverConnPort)
 	}
 
 	fullBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
@@ -63,11 +65,23 @@ func init() {
 		return initXtrabackupConfig()
 	}
 
+	nodesInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
+		return nil
+	}
+
+	backupsInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
+		return nil
+	}
+
 	// Client Flags
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
+		nodesInfoCmd,
+		backupsInfoCmd,
 	}
 
 	for _, cmd := range clientCmds {
@@ -75,10 +89,21 @@ func init() {
 
 		f.StringVar(&clientConnHost, "host", "127.0.0.1", "Polymerase server hostname.")
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
-		f.StringVarP(&db, "db", "d", "", "DB name")
-		f.BoolVar(&useInnobackupex, "use-innobackupex", useInnobackupex, "Using innobackupex binary instead of xtrabackup.")
 	}
 
+	// Backup and restore commands flags
+	for _, cmd := range []*cobra.Command{
+		fullBackupCmd,
+		incBackupCmd,
+		restoreCmd,
+	} {
+		f := cmd.Flags()
+
+		f.StringVarP(&db, "db", "d", "", "DB name")
+		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
+	}
+
+	// Backup commands flags
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {
 		f := cmd.PersistentFlags()
 
@@ -86,6 +111,7 @@ func init() {
 		f.StringVarP(&mysqlPort, "mysql-port", "p", "3306", "The MySQL port to connect with.")
 		f.StringVarP(&mysqlUser, "mysql-user", "u", "", "The MySQL username to connect with.")
 		f.StringVarP(&mysqlPassword, "mysql-password", "P", "", "The MySQL password to connect with.")
+		f.BoolVar(&insecureAuth, "insecure-auth", false, "Connect with insecure auth. It is useful when server uses old protocol.")
 	}
 
 	// Full-backup command specific
@@ -102,13 +128,15 @@ func init() {
 		f.StringVar(&restoreCtx.from, "from", restoreCtx.from, "")
 		f.BoolVar(&restoreCtx.applyPrepare, "apply-prepare", restoreCtx.applyPrepare, "")
 		f.StringVar(&restoreCtx.maxBandWidth, "max-bandwidth", "", "max bandwidth for download src archives (Bytes/sec)")
+		f.BoolVar(&restoreCtx.latest, "latest", false, "Fetch the latest backups.")
 	}
 
-	// Server Flags
+	// Start Flags
 	{
-		f := serverCmd.Flags()
+		f := startCmd.Flags()
 
 		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
+		f.StringVar(&serverAdvertiseHost, "advertise-host", serverCfg.Name, "The hostname to advertise to other nodes and clients.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.StringVar(&serverCfg.StoreDir, "store-dir", serverCfg.StoreDir, "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")
@@ -116,5 +144,5 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	rootCmd.AddCommand(serverCmd, fullBackupCmd, incBackupCmd, restoreCmd)
+	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, infoCmd)
 }

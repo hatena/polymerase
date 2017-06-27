@@ -2,13 +2,13 @@ package status
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/elastic/gosigar"
+	"github.com/golang/protobuf/proto"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/storage"
+	"github.com/taku-k/polymerase/pkg/status/statuspb"
 )
 
 type StatusRecorder struct {
@@ -18,17 +18,19 @@ type StatusRecorder struct {
 
 	cli *clientv3.Client
 
-	storage storage.BackupStorage
-
 	name string
+
+	cfg *base.Config
 }
 
-func NewStatusRecorder(client *clientv3.Client, storeDir string, storage storage.BackupStorage, name string) *StatusRecorder {
+func NewStatusRecorder(
+	client *clientv3.Client, storeDir string, name string, cfg *base.Config,
+) *StatusRecorder {
 	return &StatusRecorder{
 		cli:      client,
 		storeDir: storeDir,
-		storage:  storage,
 		name:     name,
+		cfg:      cfg,
 	}
 }
 
@@ -41,18 +43,19 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
-	kvs := []struct {
-		k string
-		v string
-	}{
-		{k: base.DiskInfoTotalKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Total)},
-		{k: base.DiskInfoAvailKey(sr.name), v: fmt.Sprintf("%v", fileSystemUsage.Avail)},
+	info := &statuspb.NodeInfo{}
+	info.Addr = sr.cfg.AdvertiseAddr
+	info.DiskInfo = &statuspb.DiskInfo{}
+	info.DiskInfo.Total = fileSystemUsage.Total
+	info.DiskInfo.Avail = fileSystemUsage.Avail
+
+	out, err := proto.Marshal(info)
+	if err != nil {
+		return err
 	}
-	for _, kv := range kvs {
-		_, err := sr.cli.KV.Put(sr.cli.Ctx(), kv.k, kv.v)
-		if err != nil {
-			return err
-		}
+	_, err = sr.cli.KV.Put(sr.cli.Ctx(), base.NodeInfo(sr.name), string(out))
+	if err != nil {
+		return err
 	}
 
 	return nil

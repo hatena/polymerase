@@ -92,6 +92,7 @@ func (e *etcdServer) close() {
 	if err != nil {
 		log.Println("Hard shutdown")
 	} else {
+		defer cli.Close()
 		res, err := cli.MemberRemove(context.Background(), uint64(e.Server.Server.ID()))
 		if err != nil {
 			log.Println("Failed to remove myself")

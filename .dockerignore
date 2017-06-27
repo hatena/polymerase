@@ -1,7 +1,6 @@
-bin
-.idea
-test-root
-dist
+.git
+.gitignore
 polymerase-data*
 polymerase-restore
-*.iml
+bin
+dist

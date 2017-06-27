@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  sut:
+    build:
+      context: .
+      dockerfile: integration-test/sut/Dockerfile.test
+    command: bash /run.sh
+    external_links:
+      - server
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: polymerase start --host 0.0.0.0 --name server

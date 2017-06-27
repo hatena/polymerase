@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/cheggaaa/pb"
 	"github.com/dustin/go-humanize"
@@ -35,6 +36,8 @@ type restoreContext struct {
 	applyPrepare bool
 
 	maxBandWidth string
+
+	latest bool
 }
 
 var restoreCmd = &cobra.Command{
@@ -48,8 +51,8 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return usageAndError(cmd)
 	}
 
-	if restoreCtx.from == "" {
-		return errors.New("You must specify `from`")
+	if restoreCtx.from == "" && !restoreCtx.latest {
+		return errors.New("You must specify `from` option or `latest` flag.")
 	}
 	if db == "" {
 		return errors.New("You must specify `db`")
@@ -63,6 +66,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// If `from` is not specified and `latest` option is added,
+	// restoreCtx.from is set as tomorrow.
+	if restoreCtx.from == "" && restoreCtx.latest {
+		restoreCtx.from = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	}
+
 	// Signal
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -74,7 +83,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	go func() {
-		scli, err := getStorageClient(ctx, nil)
+		scli, err := getStorageClient(ctx, db)
 		if err != nil {
 			errCh <- err
 		}
@@ -131,12 +140,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		// Automatically preparing backups only when applyPrepare flag is true.
 		if restoreCtx.applyPrepare {
 			os.Chdir(restoreDir)
-			c := exec.PrepareBaseBackup(ctx, xtrabackupCfg)
+			c := exec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
 			}
 			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c := exec.PrepareIncBackup(ctx, inc, xtrabackupCfg)
+				c := exec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
 				}

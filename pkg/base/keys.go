@@ -1,21 +1,23 @@
 package base
 
-import "path"
-
-var (
-	diskInfoKey = "/diskinfo"
-
-	backupsKey = "/backups"
+import (
+	"path"
 )
 
-func DiskInfoTotalKey(n string) string {
-	return path.Join(diskInfoKey, n, "total")
-}
+var (
+	NodeInfoKey = "nodes"
 
-func DiskInfoAvailKey(n string) string {
-	return path.Join(diskInfoKey, n, "avail")
+	BackupsKey = "backups"
+)
+
+func NodeInfo(n string) string {
+	return path.Join(NodeInfoKey, n)
 }
 
 func BackupDBKey(db string) string {
-	return path.Join(backupsKey, db)
+	return path.Join(BackupsKey, db)
+}
+
+func BackupBaseDBKey(db string, start string) string {
+	return path.Join(BackupDBKey(db), start)
 }

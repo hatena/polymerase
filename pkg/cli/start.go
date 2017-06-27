@@ -19,15 +19,14 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
 )
 
-var serverCmd = &cobra.Command{
-	Use:   "server",
+var startCmd = &cobra.Command{
+	Use:   "start",
 	Short: "Runs server",
-	RunE:  runServer,
+	RunE:  startServer,
 }
 
-// runServer creates, configures and runs
-// main server.App
-func runServer(cmd *cobra.Command, args []string) error {
+// startServer creates, configures and runs server
+func startServer(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		return usageAndError(cmd)
 	}
@@ -88,7 +87,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	defer shutdownSpan.Finish()
 	shutdownCtx, cancel := context.WithTimeout(
 		opentracing.ContextWithSpan(context.Background(), shutdownSpan),
-		3*time.Second,
+		10*time.Second,
 	)
 	defer cancel()
 
@@ -97,6 +96,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	select {
 	case <-shutdownCtx.Done():
 		fmt.Fprintln(os.Stdout, "time limit reached, initiating hard shutdown")
+		s.CleanupEtcdDir()
 		return errors.New("Server is failed")
 	case <-stopped:
 		log.Println("server shutdown completed")

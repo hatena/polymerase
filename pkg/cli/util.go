@@ -4,11 +4,15 @@ import (
 	"context"
 	"os"
 
+	"log"
+	"time"
+
+	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/taku-k/polymerase/pkg/allocator"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"google.golang.org/grpc"
 )
 
 func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
@@ -19,27 +23,52 @@ func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobr
 	}
 }
 
-func getStorageClient(ctx context.Context, conn *grpc.ClientConn) (storagepb.StorageServiceClient, error) {
-	c := conn
-	var err error
-	if c == nil {
-		c, err = connectGRPC(ctx)
-		if err != nil {
-			return nil, err
-		}
+func getStorageClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{baseCfg.Addr},
+		Context:     ctx,
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		return nil, err
 	}
+	defer cli.Close()
+
+	addr, err := allocator.SearchStoredAddr(cli, db)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := connectGRPC(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
 	return storagepb.NewStorageServiceClient(c), nil
 }
 
-func getTempBackupClient(ctx context.Context, conn *grpc.ClientConn) (tempbackuppb.BackupTransferServiceClient, error) {
-	c := conn
-	var err error
-	if c == nil {
-		c, err = connectGRPC(ctx)
-		if err != nil {
-			return nil, err
-		}
+func getTempBackupClient(ctx context.Context, db string) (tempbackuppb.BackupTransferServiceClient, error) {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{baseCfg.Addr},
+		Context:     ctx,
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		return nil, err
 	}
+	defer cli.Close()
+
+	node, addr, err := allocator.SelectAppropriateHost(cli, db)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := connectGRPC(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("Select node as backup: %s\n", node)
 	return tempbackuppb.NewBackupTransferServiceClient(c), nil
 }
 

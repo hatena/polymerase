@@ -41,7 +41,7 @@ docker logs ci_sut_1
 if [ -z "${TEST_EXIT_CODE+x}" ] || [ "$TEST_EXIT_CODE" -ne 0 ] ; then
   echo -e "${RED}Tests Failed${NC} - Exit Code: $TEST_EXIT_CODE"
 else
-  printf "${GREEN}Tests Passed${NC}"
+  echo -e "${GREEN}Tests Passed${NC}"
 fi
 
 # call the cleanup function

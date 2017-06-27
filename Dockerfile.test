@@ -5,18 +5,26 @@ MAINTAINER Takuya Kuwahara <taakuu19@gmail.com>
 # Make sure apt-get is up to date and dependent packages are installed
 RUN \
   apt-get update && \
-  apt-get install -y software-properties-common && \
-  add-apt-repository 'deb http://archive.ubuntu.com/ubuntu trusty universe' && \
-  echo "mysql-server mysql-server/root_password password root" | debconf-set-selections && \
-  echo "mysql-server mysql-server/root_password_again password root" | debconf-set-selections && \
-  apt-get update && \
-  apt-get install -y mysql-server-5.6 \
+  apt-get install -y make libaio1 \
     --no-install-recommends
+
+# Setup MySQL Sandbox
+ENV SANDBOX_AS_ROOT 1
+RUN \
+  wget -q http://search.cpan.org/CPAN/authors/id/G/GM/GMAX/MySQL-Sandbox-3.2.10.tar.gz && \
+  tar zxf MySQL-Sandbox-3.2.10.tar.gz && \
+  cd MySQL-Sandbox-3.2.10 && \
+  perl Makefile.PL && make && make install && \
+  mkdir /sandbox && cd /sandbox && \
+  wget -q https://downloads.mysql.com/archives/get/file/mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
+  make_replication_sandbox --how_many_nodes=1 mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
+  rm mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz
 
 # Install go 1.8.3
 RUN \
   wget -q https://golang.org/dl/go1.8.3.linux-amd64.tar.gz && \
-  tar -C /usr/local -xzf `basename https://golang.org/dl/go1.8.3.linux-amd64.tar.gz`
+  tar -C /usr/local -xzf `basename https://golang.org/dl/go1.8.3.linux-amd64.tar.gz` && \
+  rm /go1.8.3.linux-amd64.tar.gz
 ENV PATH   /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
@@ -35,5 +43,4 @@ ADD vendor /go/src/$PKG/vendor
 ADD Makefile main.go /go/src/$PKG/
 RUN go install
 
-ADD integration-test/my.cnf /etc/mysql/my.cnf
 ADD test.sh /

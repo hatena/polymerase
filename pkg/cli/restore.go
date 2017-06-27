@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/cheggaaa/pb"
 	"github.com/dustin/go-humanize"
@@ -35,6 +36,8 @@ type restoreContext struct {
 	applyPrepare bool
 
 	maxBandWidth string
+
+	latest bool
 }
 
 var restoreCmd = &cobra.Command{
@@ -48,8 +51,8 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return usageAndError(cmd)
 	}
 
-	if restoreCtx.from == "" {
-		return errors.New("You must specify `from`")
+	if restoreCtx.from == "" && !restoreCtx.latest {
+		return errors.New("You must specify `from` option or `latest` flag.")
 	}
 	if db == "" {
 		return errors.New("You must specify `db`")
@@ -61,6 +64,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		} else {
 			maxBandWidth = bw
 		}
+	}
+
+	// If `from` is not specified and `latest` option is added,
+	// restoreCtx.from is set as tomorrow.
+	if restoreCtx.from == "" && restoreCtx.latest {
+		restoreCtx.from = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 	}
 
 	// Signal

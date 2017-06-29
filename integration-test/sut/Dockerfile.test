@@ -54,6 +54,7 @@ RUN \
   mv LICENSE.txt bin jdbc-binding lib workloads /ycsb && \
   cd /ycsb && \
   rm -rf /ycsb-0.12.0*
+ENV PATH /ycsb/bin:$PATH
 
 # Setup polymerase
 ENV PKG github.com/taku-k/polymerase

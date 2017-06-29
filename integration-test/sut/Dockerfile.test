@@ -44,11 +44,11 @@ RUN \
 # Setup ycsb
 RUN \
   wget -q https://github.com/brianfrankcooper/YCSB/releases/download/0.12.0/ycsb-0.12.0.tar.gz && \
-  tar zxvf ycsb-0.12.0.tar.gz && \
+  tar zxf ycsb-0.12.0.tar.gz && \
   rm ycsb-0.12.0.tar.gz && \
   cd ycsb-0.12.0 && \
   wget -q https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.42.tar.gz && \
-  tar zxvf mysql-connector-java-5.1.42.tar.gz && \
+  tar zxf mysql-connector-java-5.1.42.tar.gz && \
   mv mysql-connector-java-5.1.42/mysql-connector-java-5.1.42-bin.jar jdbc-binding/lib/ && \
   mkdir /ycsb && \
   mv LICENSE.txt bin jdbc-binding lib workloads /ycsb && \
@@ -64,4 +64,4 @@ ADD vendor /go/src/$PKG/vendor
 ADD Makefile main.go /go/src/$PKG/
 RUN go install
 
-ADD integration-test/sut/run.sh /
+ADD integration-test/sut/ /

@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: integration-test/sut/Dockerfile.test
     command: bash /run.sh
+    tty: true
     external_links:
       - server
   server:

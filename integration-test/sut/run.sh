@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 MASTER_PORT=23700
 SLAVE_PORT=23701
@@ -8,7 +9,7 @@ DATABASE_NAME=testdb
 /root/sandboxes/start_all
 
 # Start benchmark
-/root/sandboxes/rsandbox_mysql-5_6_35/m < /create_table.sql
+/root/sandboxes/rsandbox_5_6_35/m < /create_table.sql
 
 ycsb load jdbc \
   -P /ycsb/workloads/workloadf \

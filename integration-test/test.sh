@@ -7,7 +7,7 @@ NC="\033[0m"
 # kill and remove any running containers
 cleanup () {
   docker-compose -f docker-compose.test.yml -p ci kill
-  docker-compose -f docker-compose.test.yml -p ci rm -f --all
+  docker-compose -f docker-compose.test.yml -p ci rm -f
 }
 
 # TODO: Change project root dir

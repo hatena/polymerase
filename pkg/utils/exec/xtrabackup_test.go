@@ -33,6 +33,7 @@ xtrabackup \
   --backup \
   --extra-lsndir=/tmp/test \
   --skip-secure-auth \
+  --safe-slave-backup \
   --stream=tar
   			`)},
 		}, {
@@ -49,6 +50,7 @@ xtrabackup \
   --slave-info \
   --backup \
   --extra-lsndir=/tmp/test \
+  --safe-slave-backup \
   --stream=tar
 			`)},
 		},
@@ -92,6 +94,7 @@ xtrabackup \
   --backup \
   --extra-lsndir=/tmp/test \
   --stream=xbstream \
+  --safe-slave-backup \
   --incremental-lsn=100`)}
 
 	if err != nil {

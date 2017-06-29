@@ -31,6 +31,7 @@ var xtrabackup = backupCmd{
   {{- end }}{{ if .InsecureAuth }}
   --skip-secure-auth \
   {{- end }}
+  --safe-slave-backup \
   --stream=tar
 `),
 	incTmpl: strings.TrimSpace(`
@@ -47,6 +48,7 @@ var xtrabackup = backupCmd{
   --skip-secure-auth \
   {{- end }}
   --stream=xbstream \
+  --safe-slave-backup \
   --incremental-lsn={{ .ToLsn }}
 `),
 }

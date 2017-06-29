@@ -11,13 +11,18 @@ DATABASE_NAME=testdb
 /root/sandboxes/rsandbox_mysql-5_6_35/m < /create_table.sql
 
 ycsb load jdbc \
-  -P /ycsb/workloads/workloada \
+  -P /ycsb/workloads/workloadf \
   -p db.driver=com.mysql.jdbc.Driver \
   -p db.url=jdbc:mysql://127.0.0.1:${MASTER_PORT}/${DATABASE_NAME} \
   -p db.user=msandbox \
   -p db.passwd=msandbox
 
-# ycsb run jdbc -P workloads/workloada -p db.driver=com.mysql.jdbc.Driver -p db.url=jdbc:mysql://127.0.0.1:23700/testdb -p db.user=msandbox -p db.passwd=msandbox -target 10 &
+ycsb run jdbc -target 10 \
+  -P /ycsb/workloads/workloadf \
+  -p db.driver=com.mysql.jdbc.Driver \
+  -p db.url=jdbc:mysql://127.0.0.1:${MASTER_PORT}/${DATABASE_NAME} \
+  -p db.user=msandbox \
+  -p db.passwd=msandbox &
 
 sleep 5
 
@@ -29,6 +34,8 @@ polymerase \
   --mysql-password msandbox \
   --db test-db \
   --host server
+
+sleep 30
 
 # Do inc-backup
 polymerase \

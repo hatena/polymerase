@@ -76,7 +76,7 @@ func outputBackupInfo(db string, info *statuspb.BackupInfo) {
 	fmt.Fprintf(tw, "FullBackup:\nNode:\t%s\nHost:\t%s\nStored Time:\t%v\n",
 		info.FullBackup.NodeName,
 		info.FullBackup.Host,
-		time.Unix(info.FullBackup.StoredTime, 0).Format(baseCfg.TimeFormat))
+		info.FullBackup.StoredTime.String())
 	if len(info.IncBackups) != 0 {
 		fmt.Fprintln(tw, "\tIncBackup:")
 		for _, i := range info.IncBackups {

@@ -16,6 +16,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
+	tspb "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 type TempBackupManagerConfig struct {
@@ -145,7 +146,7 @@ func (s *TempBackupState) closeFullBackup() error {
 		return err
 	}
 	if err := status.StoreFullBackupInfo(s.cli, base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
-		StoredTime: s.start.Unix(),
+		StoredTime: &tspb.Timestamp{Seconds: s.start.UTC().Unix()},
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,
@@ -169,7 +170,7 @@ func (s *TempBackupState) closeIncBackup() error {
 	}
 	fromTime, _ := time.Parse(s.timeFormat, from)
 	if err := status.StoreIncBackupInfo(s.cli, base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)), &statuspb.IncBackupInfo{
-		StoredTime: s.start.Unix(),
+		StoredTime: &tspb.Timestamp{Seconds: s.start.UTC().Unix()},
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,

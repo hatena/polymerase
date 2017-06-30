@@ -13,7 +13,9 @@ import (
 
 func NewLocalBackupStorageForTest() *LocalBackupStorage {
 	dir, _ := os.Getwd()
-	cfg := &base.Config{}
+	cfg := &base.Config{
+		TimeFormat: "2006-01-02_15-04-05",
+	}
 	cfg.InitDefaults()
 	return &LocalBackupStorage{
 		backupsDir: path.Join(dir, "testdata"),

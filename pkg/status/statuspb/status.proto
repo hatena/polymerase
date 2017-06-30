@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package statuspb;
 
 message DiskInfo {
@@ -22,17 +24,21 @@ message BackupInfo {
 }
 
 message FullBackupInfo {
-  int64 stored_time = 1;
+  google.protobuf.Timestamp stored_time = 1;
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
 }
 
 message IncBackupInfo {
-  int64 stored_time = 1;
+  google.protobuf.Timestamp stored_time = 1;
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
+}
+
+message AllBackups {
+  map<string, BackupInfo> db_to_backups = 1;
 }
 
 enum StoredType {

@@ -3,34 +3,38 @@ syntax = "proto3";
 package statuspb;
 
 message DiskInfo {
-    uint64 total = 1;
-    uint64 avail = 2;
+  uint64 total = 1;
+  uint64 avail = 2;
 }
 
 message NodeInfo {
-    DiskInfo diskInfo = 1;
-    string addr = 2;
+  DiskInfo diskInfo = 1;
+  string addr = 2;
+}
+
+message NodeInfoMap {
+  map<string, NodeInfo> nodes = 1;
 }
 
 message BackupInfo {
-    FullBackupInfo full_backup = 1;
-    repeated IncBackupInfo inc_backups = 2;
+  FullBackupInfo full_backup = 1;
+  repeated IncBackupInfo inc_backups = 2;
 }
 
 message FullBackupInfo {
-    int64 stored_time = 1;
-    string node_name = 2;
-    string host = 3;
-    StoredType stored_type = 4;
+  int64 stored_time = 1;
+  string node_name = 2;
+  string host = 3;
+  StoredType stored_type = 4;
 }
 
 message IncBackupInfo {
-    int64 stored_time = 1;
-    string node_name = 2;
-    string host = 3;
-    StoredType stored_type = 4;
+  int64 stored_time = 1;
+  string node_name = 2;
+  string host = 3;
+  StoredType stored_type = 4;
 }
 
 enum StoredType {
-    LOCAL = 0;
+  LOCAL = 0;
 }

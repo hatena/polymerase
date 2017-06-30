@@ -1,4 +1,6 @@
 NAME     := polymerase
+VERSION  := v0.3.2-SNAPSHOT
+REVISION := $(shell git rev-parse HEAD)
 
 PROTO := protoc
 MOCKGEN := mockgen
@@ -6,31 +8,31 @@ MOCKGEN := mockgen
 SRCS    := $(shell find . -type f -name '*.go')
 PROTOSRCS := $(shell find . -type f -name '*.proto' | grep -v -e vendor)
 MOCKS := pkg/storage/storage.go
-LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
-GLIDE := $(shell command -v glide 2> /dev/null)
+LINUX_LDFLAGS := -s -w -extldflags "-static"
+DARWIN_LDFLAGS := -s -w
+LINKFLAGS := \
+	-X "github.com/taku-k/polymerase/pkg/build.tag=$(VERSION)" \
+	-X "github.com/taku-k/polymerase/pkg/build.rev=$(REVISION)"
+override LINUX_LDFLAGS += $(LINKFLAGS)
+override DARWIN_LDFLAGS += $(LINKFLAGS)
+
 
 .DEFAULT_GOAL := bin/$(NAME)
 
 bin/$(NAME): $(SRCS)
-	go build -o bin/$(NAME)
+	go build -ldflags '$(DARWIN_LDFLAGS)' -o bin/$(NAME)
 
 .PHONY: cross-build
 cross-build: deps
-	GOOS=darwin GOARCH=amd64 go build -o dist/$(NAME)_darwin_amd64
-	GOOS=linux GOARCH=amd64 go build -o dist/$(NAME)_linux_amd64
+	GOOS=darwin GOARCH=amd64 go build -ldflags '$(DARWIN_LDFLAGS)' -o dist/$(NAME)_darwin_amd64
+	GOOS=linux GOARCH=amd64 go build -a -tags netgo -installsuffix netgo -ldflags '$(LINUX_LDFLAGS)' -o dist/$(NAME)_linux_amd64
 
 .PHONY: linux
 linux: deps
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o dist/$(NAME)_linux_amd64
-
-.PHONY: glide
-glide:
-ifndef GLIDE
-    curl https://glide.sh/get | sh
-endif
+	GOOS=linux GOARCH=amd64 go build -a -tags netgo -installsuffix netgo -ldflags '$(LINUX_LDFLAGS)' -o dist/$(NAME)_linux_amd64
 
 .PHONY: deps
-deps: glide
+deps:
 	go get github.com/golang/mock/mockgen
 
 .PHONY: proto

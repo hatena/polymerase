@@ -144,5 +144,5 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, infoCmd)
+	rootCmd.AddCommand(startCmd, fullBackupCmd, incBackupCmd, restoreCmd, infoCmd, versionCmd)
 }

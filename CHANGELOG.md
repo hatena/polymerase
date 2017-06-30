@@ -1,3 +1,11 @@
+## [v0.4.0](https://github.com/taku-k/polymerase/compare/v0.3.1...v0.4.0) (2017-07-01)
+
+* Changed default time format to include time zone [#32](https://github.com/taku-k/polymerase/pull/32) ([taku-k](https://github.com/taku-k))
+* `info backups` command outputs as json [#31](https://github.com/taku-k/polymerase/pull/31) ([taku-k](https://github.com/taku-k))
+* `info nodes` commands output as json [#30](https://github.com/taku-k/polymerase/pull/30) ([taku-k](https://github.com/taku-k))
+* Add CHANGELOG.md [#29](https://github.com/taku-k/polymerase/pull/29) ([taku-k](https://github.com/taku-k))
+* Add version command [#28](https://github.com/taku-k/polymerase/pull/28) ([taku-k](https://github.com/taku-k))
+
 ## [v0.3.1](https://github.com/taku-k/polymerase/compare/v0.3.0...v0.3.1) (2017-06-29)
 
 * Stop travis-ci email notification on success [#27](https://github.com/taku-k/polymerase/pull/27) ([taku-k](https://github.com/taku-k))

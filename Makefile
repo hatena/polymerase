@@ -1,5 +1,5 @@
 NAME     := polymerase
-VERSION  := v0.3.2-SNAPSHOT
+VERSION  := v0.4.0
 REVISION := $(shell git rev-parse HEAD)
 
 PROTO := protoc

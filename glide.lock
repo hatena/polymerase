@@ -1,5 +1,5 @@
-hash: 2a95797dc33d94e8d58828f8f1924bbdfb626c9a2b891626c5c93554a8669a32
-updated: 2017-06-20T12:58:35.175206231+09:00
+hash: 5ab01e482252a5f635e7cd145a6554753c34ac765d1c4f413989ae054538cc8c
+updated: 2017-06-30T22:42:45.368432503+09:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -12,7 +12,7 @@ imports:
 - name: github.com/cockroachdb/cmux
   version: 112f0506e7743d64a6eb8fedbcff13d9979bbf92
 - name: github.com/coreos/etcd
-  version: 66722b1ada68fcd5227db853ee92003169a975c8
+  version: 61fc123e7a8b14a0a258aa3f5c4159861b1ec2e7
   subpackages:
   - alarm
   - auth
@@ -121,21 +121,23 @@ imports:
 - name: github.com/gogo/protobuf
   version: 909568be09de550ed094403c2bf8a261b5bb730a
   subpackages:
+  - jsonpb
   - proto
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
   - lru
 - name: github.com/golang/mock
-  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  version: 93f6609a15b7de76bd49259f1f9a6b58df358936
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 4bd1920723d7b7c925de087aa32e2187708897f7
+  version: 6a1fa9404c0aebf36c879bc50152edcc953910d2
   subpackages:
   - jsonpb
   - proto
   - ptypes/any
+  - ptypes/timestamp
 - name: github.com/google/btree
   version: 925471ac9e2131377a91e1595defec898166fe49
 - name: github.com/grpc-ecosystem/go-grpc-prometheus
@@ -155,7 +157,9 @@ imports:
 - name: github.com/jonboulle/clockwork
   version: 2eee05ed794112d45db504eb05aa693efd2b8b09
 - name: github.com/mattn/go-runewidth
-  version: 97311d9f7767e3d6f422ea06661bc2c7a19e8a5d
+  version: 9e777a8366cce605130a531d2cd6363d07ad7317
+  subpackages:
+  - runewidth.go
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -229,7 +233,7 @@ imports:
   - unix
   - windows
 - name: golang.org/x/text
-  version: 4ee4af566555f5fbe026368b75596286a312663a
+  version: 2bf8f2a19ec09c670e931282edfe6567f6be21c9
   subpackages:
   - secure/bidirule
   - transform
@@ -240,11 +244,11 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/genproto
-  version: d80a6e20e776b0b17a324d0ba1ab50a39c8e8944
+  version: aa2eb687b4d3e17154372564ad8d6bf11c3cf21f
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 42c095b6c9bdd80d4435b064508c398afdb0ec99
+  version: b15215fb911b24a5d61d57feec4233d610530464
   subpackages:
   - codes
   - credentials

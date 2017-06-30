@@ -37,6 +37,10 @@ message IncBackupInfo {
   StoredType stored_type = 4;
 }
 
+message AllBackups {
+  map<string, BackupInfo> db_to_backups = 1;
+}
+
 enum StoredType {
   LOCAL = 0;
 }

@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	tspb "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 type TempBackupManagerConfig struct {
@@ -145,8 +145,12 @@ func (s *TempBackupState) closeFullBackup() error {
 	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
 		return err
 	}
+	storedTime, err := ptypes.TimestampProto(s.start)
+	if err != nil {
+		return err
+	}
 	if err := status.StoreFullBackupInfo(s.cli, base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
-		StoredTime: &tspb.Timestamp{Seconds: s.start.UTC().Unix()},
+		StoredTime: storedTime,
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,
@@ -168,9 +172,13 @@ func (s *TempBackupState) closeIncBackup() error {
 	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
 		return err
 	}
+	storedTime, err := ptypes.TimestampProto(s.start)
+	if err != nil {
+		return err
+	}
 	fromTime, _ := time.Parse(s.timeFormat, from)
 	if err := status.StoreIncBackupInfo(s.cli, base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)), &statuspb.IncBackupInfo{
-		StoredTime: &tspb.Timestamp{Seconds: s.start.UTC().Unix()},
+		StoredTime: storedTime,
 		StoredType: statuspb.StoredType_LOCAL,
 		NodeName:   s.name,
 		Host:       s.addr,

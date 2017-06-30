@@ -13,12 +13,12 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/go-ini/ini"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	tspb "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 type LocalStorageConfig struct {
@@ -270,9 +270,13 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if err != nil {
 				return err
 			}
+			storedTime, err := ptypes.TimestampProto(stored)
+			if err != nil {
+				return err
+			}
 			if err := status.StoreFullBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: &tspb.Timestamp{Seconds: stored.UTC().Unix()},
+				StoredTime: storedTime,
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {
@@ -283,9 +287,13 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if err != nil {
 				return err
 			}
+			storedTime, err := ptypes.TimestampProto(stored)
+			if err != nil {
+				return err
+			}
 			if err := status.StoreIncBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.IncBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: &tspb.Timestamp{Seconds: stored.UTC().Unix()},
+				StoredTime: storedTime,
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {

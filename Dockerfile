@@ -8,4 +8,5 @@ ADD Makefile main.go /go/src/$PKG/
 RUN go install
 
 FROM busybox
+ENV PATH /go/bin:$PATH
 COPY --from=build-env /go/bin/polymerase /go/bin/polymerase

@@ -133,7 +133,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := status.NewStatusRecorder(
-		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg.Config)
+		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

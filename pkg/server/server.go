@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
@@ -19,7 +20,7 @@ import (
 )
 
 type Server struct {
-	cfg           *Config
+	cfg           *base.ServerConfig
 	grpc          *grpc.Server
 	storage       storage.BackupStorage
 	manager       *tempbackup.TempBackupManager
@@ -29,7 +30,7 @@ type Server struct {
 	etcdCfg       *embed.Config
 }
 
-func NewServer(cfg *Config) (*Server, error) {
+func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
@@ -132,7 +133,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := status.NewStatusRecorder(
-		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg.Config)
+		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

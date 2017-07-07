@@ -14,6 +14,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
@@ -107,7 +108,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 }
 
 func setupAndInitializing() error {
-	ss, err := server.NewStoreDir(serverCfg.StoreDir)
+	ss, err := base.NewStoreDir(serverCfg.StoreDir)
 	if err != nil {
 		return err
 	}

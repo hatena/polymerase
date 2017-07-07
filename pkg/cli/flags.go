@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 )
 
@@ -15,7 +14,7 @@ var clientConnHost, clientConnPort string
 var db string
 var useInnobackupex, insecureAuth bool
 
-var serverCfg = server.MakeConfig()
+var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
 var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}

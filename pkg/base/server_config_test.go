@@ -1,4 +1,4 @@
-package server
+package base
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestReturnProperDirs(t *testing.T) {
-	cfg := MakeConfig()
+	cfg := MakeServerConfig()
 	wd, _ := os.Getwd()
 	if act := cfg.TempDir(); act != filepath.Join(wd, defaultStoraPath, "temp") {
 		t.Errorf("got wrong %s", act)

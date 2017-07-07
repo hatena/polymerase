@@ -12,6 +12,7 @@ message DiskInfo {
 message NodeInfo {
   DiskInfo diskInfo = 1;
   string addr = 2;
+  string store_dir = 3;
 }
 
 message NodeInfoMap {

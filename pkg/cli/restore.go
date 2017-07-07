@@ -89,6 +89,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		scli, err := getStorageClient(ctx, db)
 		if err != nil {
 			errCh <- err
+			return
 		}
 		res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
 			Db:   db,
@@ -98,17 +99,20 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		restoreDir, err := filepath.Abs("polymerase-restore")
 		if err != nil {
 			errCh <- err
+			return
 		}
 		if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
 			errCh <- err
+			return
 		}
 		log.Printf("Restore data directory: %v\n", restoreDir)
 
 		pbs := make([]*pb.ProgressBar, len(res.Keys))
 		pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
-		for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
-			info := res.Keys[idx]
-			pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
+		for i := 0; i < len(res.Keys)-1; i += 1 {
+			inc := len(res.Keys) - i - 1
+			info := res.Keys[i]
+			pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
 		}
 		for _, bar := range pbs {
 			bar.SetWidth(progressBarWidth)
@@ -118,6 +122,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		pool, err := pb.StartPool(pbs...)
 		if err != nil {
 			errCh <- err
+			return
 		}
 
 		g, _ := errgroup.WithContext(ctx)
@@ -137,6 +142,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		if err := g.Wait(); err != nil {
 			pool.Stop()
 			errCh <- err
+			return
 		}
 		pool.Stop()
 

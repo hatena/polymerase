@@ -2,9 +2,8 @@ package cli
 
 import (
 	"context"
-	"os"
-
 	"log"
+	"os"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -38,6 +37,8 @@ func getStorageClient(ctx context.Context, db string) (storagepb.StorageServiceC
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Located Address is %s", addr)
 
 	c, err := connectGRPC(ctx, addr)
 	if err != nil {

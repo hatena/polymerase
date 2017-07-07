@@ -1,4 +1,4 @@
-package server
+package base
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/taku-k/polymerase/pkg/base"
 )
 
 const (
@@ -21,8 +20,8 @@ const (
 )
 
 // Config is a configuration for polymerase server.
-type Config struct {
-	*base.Config
+type ServerConfig struct {
+	*Config
 
 	// StoreDir
 	StoreDir string
@@ -39,9 +38,9 @@ type Config struct {
 }
 
 // MakeConfig creates a initial Config.
-func MakeConfig() *Config {
-	cfg := &Config{
-		Config: new(base.Config),
+func MakeServerConfig() *ServerConfig {
+	cfg := &ServerConfig{
+		Config: new(Config),
 	}
 	cfg.Config.InitDefaults()
 
@@ -67,22 +66,22 @@ func MakeConfig() *Config {
 }
 
 // TempDir returns a directory path for temporary.
-func (cfg *Config) TempDir() string {
+func (cfg *ServerConfig) TempDir() string {
 	return filepath.Join(cfg.StoreDir, "temp")
 }
 
 // LogsDir returns a directory path for log.
-func (cfg *Config) LogsDir() string {
+func (cfg *ServerConfig) LogsDir() string {
 	return filepath.Join(cfg.StoreDir, "logs")
 }
 
 // BackupsDir returns a directory path for backup data.
-func (cfg *Config) BackupsDir() string {
+func (cfg *ServerConfig) BackupsDir() string {
 	return filepath.Join(cfg.StoreDir, "backups")
 }
 
 // EtcdDataDir returns a directory path for etcd data dir.
-func (cfg *Config) EtcdDataDir() string {
+func (cfg *ServerConfig) EtcdDataDir() string {
 	return filepath.Join(cfg.StoreDir, "etcd")
 }
 

@@ -109,9 +109,10 @@ func runRestore(cmd *cobra.Command, args []string) error {
 
 		pbs := make([]*pb.ProgressBar, len(res.Keys))
 		pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
-		for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
-			info := res.Keys[idx]
-			pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
+		for i := 0; i < len(res.Keys)-1; i += 1 {
+			inc := len(res.Keys) - i - 1
+			info := res.Keys[i]
+			pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
 		}
 		for _, bar := range pbs {
 			bar.SetWidth(progressBarWidth)

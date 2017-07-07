@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -19,7 +20,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	"github.com/taku-k/polymerase/pkg/utils/exec"
+	pexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"go.uber.org/ratelimit"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,6 +39,8 @@ type restoreContext struct {
 	maxBandWidth string
 
 	latest bool
+
+	decompressCmd string
 }
 
 var restoreCmd = &cobra.Command{
@@ -140,12 +143,12 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		// Automatically preparing backups only when applyPrepare flag is true.
 		if restoreCtx.applyPrepare {
 			os.Chdir(restoreDir)
-			c := exec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			c := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
 			}
 			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c := exec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				c := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
 				}
@@ -176,7 +179,7 @@ func getIncBackup(
 	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
 		return err
 	}
-	if err := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
+	if err := unzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
 		return err
 	}
 	return nil
@@ -193,7 +196,7 @@ func getFullBackup(
 	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
 		return err
 	}
-	if err := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
+	if err := unzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
 		return err
 	}
 	return nil
@@ -262,6 +265,48 @@ func readFromStreamWithRateLimit(
 			return err
 		}
 		writer.Write(fs.Content)
+	}
+
+	return nil
+}
+
+func unzipIncBackupCmd(ctx context.Context, name, dir string, inc int) error {
+	if dir == "" {
+		return errors.New("directory path cannot be empty")
+	}
+
+	odir := filepath.Join(dir, fmt.Sprintf("inc%d", inc))
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"sh", "-c", fmt.Sprintf("%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed `%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
+	}
+
+	if err := os.Remove(name); err != nil {
+		return errors.Wrap(err, "failed to remove "+name)
+	}
+
+	return nil
+}
+
+func unzipFullBackupCmd(ctx context.Context, name, dir string) error {
+	odir := filepath.Join(dir, "base")
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
+	}
+
+	cl := fmt.Sprintf("%s < %s | tar -xC %s", restoreCtx.decompressCmd, name, odir)
+	if err := exec.CommandContext(ctx, "sh", "-c", cl).Run(); err != nil {
+		return errors.Wrap(err, "Failed unzip")
+	}
+
+	if err := os.Remove(name); err != nil {
+		return err
 	}
 
 	return nil

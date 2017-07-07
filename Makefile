@@ -1,5 +1,5 @@
 NAME     := polymerase
-VERSION  := v0.4.0
+VERSION  := $(shell git describe --tags --exact-match 2> /dev/null || git rev-parse --short HEAD || echo "unknown")
 REVISION := $(shell git rev-parse HEAD)
 
 PROTO := protoc

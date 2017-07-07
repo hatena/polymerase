@@ -18,7 +18,7 @@ var useInnobackupex, insecureAuth bool
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
+var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false, decompressProgram: "gunzip"}
 var xtrabackupCfg *base.XtrabackupConfig
 
 func initXtrabackupConfig() error {

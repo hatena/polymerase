@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -282,6 +283,7 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			}); err != nil {
 				return err
 			}
+			log.Printf("Restore full backup: %s", path)
 		} else if strings.HasSuffix(path, "inc.xb.gz") {
 			db, start, stored, err := s.pickDbAndTime(path)
 			if err != nil {
@@ -299,6 +301,7 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			}); err != nil {
 				return err
 			}
+			log.Printf("Restore inc backup: %s", path)
 		}
 		return nil
 	})

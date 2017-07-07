@@ -121,6 +121,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		pool, err := pb.StartPool(pbs...)
 		if err != nil {
 			errCh <- err
+			return
 		}
 
 		g, _ := errgroup.WithContext(ctx)
@@ -140,6 +141,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		if err := g.Wait(); err != nil {
 			pool.Stop()
 			errCh <- err
+			return
 		}
 		pool.Stop()
 

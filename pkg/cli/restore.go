@@ -89,6 +89,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		scli, err := getStorageClient(ctx, db)
 		if err != nil {
 			errCh <- err
+			return
 		}
 		res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
 			Db:   db,
@@ -98,9 +99,11 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		restoreDir, err := filepath.Abs("polymerase-restore")
 		if err != nil {
 			errCh <- err
+			return
 		}
 		if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
 			errCh <- err
+			return
 		}
 		log.Printf("Restore data directory: %v\n", restoreDir)
 

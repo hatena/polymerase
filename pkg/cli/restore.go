@@ -40,7 +40,7 @@ type restoreContext struct {
 
 	latest bool
 
-	decompressProgram string
+	decompressCmd string
 }
 
 var restoreCmd = &cobra.Command{
@@ -282,9 +282,9 @@ func unzipIncBackupCmd(ctx context.Context, name, dir string, inc int) error {
 
 	cmd := exec.CommandContext(
 		ctx,
-		"sh", "-c", fmt.Sprintf("%s -c %s | xbstream -x -C %s", restoreCtx.decompressProgram, name, odir))
+		"sh", "-c", fmt.Sprintf("%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed `%s -c %s | xbstream -x -C %s", restoreCtx.decompressProgram, name, odir))
+		return errors.Wrap(err, fmt.Sprintf("failed `%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
 	}
 
 	if err := os.Remove(name); err != nil {
@@ -300,7 +300,7 @@ func unzipFullBackupCmd(ctx context.Context, name, dir string) error {
 		return errors.Wrap(err, odir+" dir cannot be created")
 	}
 
-	cl := fmt.Sprintf("%s < %s | tar -xC %s", restoreCtx.decompressProgram, name, odir)
+	cl := fmt.Sprintf("%s < %s | tar -xC %s", restoreCtx.decompressCmd, name, odir)
 	if err := exec.CommandContext(ctx, "sh", "-c", cl).Run(); err != nil {
 		return errors.Wrap(err, "Failed unzip")
 	}

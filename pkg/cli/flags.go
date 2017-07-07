@@ -18,7 +18,7 @@ var useInnobackupex, insecureAuth bool
 var serverCfg = server.MakeConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false, decompressProgram: "gunzip"}
+var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
 var xtrabackupCfg *base.XtrabackupConfig
 
 func initXtrabackupConfig() error {
@@ -129,6 +129,7 @@ func init() {
 		f.BoolVar(&restoreCtx.applyPrepare, "apply-prepare", restoreCtx.applyPrepare, "")
 		f.StringVar(&restoreCtx.maxBandWidth, "max-bandwidth", "", "max bandwidth for download src archives (Bytes/sec)")
 		f.BoolVar(&restoreCtx.latest, "latest", false, "Fetch the latest backups.")
+		f.StringVar(&restoreCtx.decompressCmd, "decompress-cmd", "gunzip", "Use external decompression program command")
 	}
 
 	// Start Flags

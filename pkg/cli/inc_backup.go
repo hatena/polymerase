@@ -34,7 +34,10 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 	finishCh := make(chan struct{})
 
 	// Fetches latest to_lsn
-	scli, _ := getStorageClient(ctx, db)
+	scli, err := getStorageClient(ctx, db)
+	if err != nil {
+		return err
+	}
 	res, err := scli.GetLatestToLSN(context.Background(), &storagepb.GetLatestToLSNRequest{Db: db})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get latest `to_lsn` with db=%s", db)

@@ -73,6 +73,12 @@
   version = "v0.4.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/fortytw2/leaktest"
+  packages = ["."]
+  revision = "3677f62bb30dbf3b042c4c211245d072aa9ee075"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -169,12 +175,6 @@
   name = "github.com/petar/GoLLRB"
   packages = ["llrb"]
   revision = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/petermattis/goid"
-  packages = ["."]
-  revision = "0ded85884ba5c4c9267fcd5a149061f7c3455eee"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -283,6 +283,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8af4903139afcfe0d33e95b397911d385744663474ee041c83be0d6aabc47103"
+  inputs-digest = "7430e722f4044efe896d7f70455b1c51422df1ef19b9ac56a9b1959c0cc74d08"
   solver-name = "gps-cdcl"
   solver-version = 1

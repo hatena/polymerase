@@ -181,11 +181,15 @@ func getIncBackup(
 	bar *pb.ProgressBar,
 	maxBandwidth uint64,
 ) error {
-	fn := filepath.Join(restoreDir, fmt.Sprintf("inc%d.xb.gz", inc))
-	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
-		return err
+	odir := filepath.Join(restoreDir, fmt.Sprintf("inc%d", inc))
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
 	}
-	if err := unzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
+	extractCmd := exec.Command(
+		"sh",
+		"-c",
+		fmt.Sprintf("%s -c -d | xbstream -x -C %s", restoreCtx.decompressCmd, odir))
+	if err := getBackup(cli, info, bar, maxBandwidth, extractCmd); err != nil {
 		return err
 	}
 	return nil
@@ -198,11 +202,15 @@ func getFullBackup(
 	bar *pb.ProgressBar,
 	maxBandwidth uint64,
 ) error {
-	fn := filepath.Join(restoreDir, "base.tar.gz")
-	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
-		return err
+	odir := filepath.Join(restoreDir, "base")
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
 	}
-	if err := unzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
+	extractCmd := exec.Command(
+		"sh",
+		"-c",
+		fmt.Sprintf("%s -c -d | tar -xC %s", restoreCtx.decompressCmd, odir))
+	if err := getBackup(cli, info, bar, maxBandwidth, extractCmd); err != nil {
 		return err
 	}
 	return nil
@@ -211,9 +219,9 @@ func getFullBackup(
 func getBackup(
 	cli storagepb.StorageServiceClient,
 	info *storagepb.BackupFileInfo,
-	fn string,
 	bar *pb.ProgressBar,
 	maxBandWitdh uint64,
+	extractCmd *exec.Cmd,
 ) error {
 	stream, err := cli.GetFileByKey(context.Background(), &storagepb.GetFileByKeyRequest{
 		Key:         info.Key,
@@ -222,32 +230,57 @@ func getBackup(
 	if err != nil {
 		return err
 	}
-	f, err := os.Create(fn)
+	extractCmd.Stderr = os.Stderr
+	extractCmdStdin, err := extractCmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	bufw := bufio.NewWriter(f)
+	bufw := bufio.NewWriter(extractCmdStdin)
 	multiw := io.MultiWriter(bufw, bar)
 
-	if err := readFromStreamWithRateLimit(stream, multiw, maxBandWitdh); err != nil {
+	finishCh := make(chan struct{})
+	errCh := make(chan error)
+
+	go func() {
+		err := extractCmd.Start()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		extractCmd.Wait()
+		finishCh <- struct{}{}
+	}()
+
+	go writeOutFromStreamWithRateLimit(stream, multiw, maxBandWitdh, errCh, extractCmdStdin)
+
+	// Wait
+	select {
+	case err := <-errCh:
 		return err
+	case <-finishCh:
+		break
 	}
 
 	bar.Finish()
 	return nil
 }
 
-func readFromStreamWithRateLimit(
+func writeOutFromStreamWithRateLimit(
 	stream storagepb.StorageService_GetFileByKeyClient,
 	writer io.Writer,
 	maxBandwidth uint64,
-) error {
+	errCh chan error,
+	toCloseW io.WriteCloser,
+) {
+	defer toCloseW.Close()
+
 	fs, err := stream.Recv()
 	if err == io.EOF {
-		return nil
+		return
 	}
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 	writer.Write(fs.Content)
 
@@ -268,52 +301,10 @@ func readFromStreamWithRateLimit(
 			break
 		}
 		if err != nil {
-			return err
+			errCh <- err
+			return
 		}
 		writer.Write(fs.Content)
 	}
-
-	return nil
-}
-
-func unzipIncBackupCmd(ctx context.Context, name, dir string, inc int) error {
-	if dir == "" {
-		return errors.New("directory path cannot be empty")
-	}
-
-	odir := filepath.Join(dir, fmt.Sprintf("inc%d", inc))
-	if err := os.MkdirAll(odir, 0755); err != nil {
-		return errors.Wrap(err, odir+" dir cannot be created")
-	}
-
-	cmd := exec.CommandContext(
-		ctx,
-		"sh", "-c", fmt.Sprintf("%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed `%s -c %s | xbstream -x -C %s", restoreCtx.decompressCmd, name, odir))
-	}
-
-	if err := os.Remove(name); err != nil {
-		return errors.Wrap(err, "failed to remove "+name)
-	}
-
-	return nil
-}
-
-func unzipFullBackupCmd(ctx context.Context, name, dir string) error {
-	odir := filepath.Join(dir, "base")
-	if err := os.MkdirAll(odir, 0755); err != nil {
-		return errors.Wrap(err, odir+" dir cannot be created")
-	}
-
-	cl := fmt.Sprintf("%s < %s | tar -xC %s", restoreCtx.decompressCmd, name, odir)
-	if err := exec.CommandContext(ctx, "sh", "-c", cl).Run(); err != nil {
-		return errors.Wrap(err, "Failed unzip")
-	}
-
-	if err := os.Remove(name); err != nil {
-		return err
-	}
-
-	return nil
+	return
 }

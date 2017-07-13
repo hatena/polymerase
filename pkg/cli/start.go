@@ -14,7 +14,6 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/server"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	"github.com/taku-k/polymerase/pkg/utils/tracing"
@@ -58,7 +57,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 			tw := tabwriter.NewWriter(&buf, 2, 1, 2, ' ', 0)
 			fmt.Fprintf(tw, "Polymerase server starting at %s\n", time.Now())
 			fmt.Fprintf(tw, "port:\t%s\n", serverCfg.Port)
-			fmt.Fprintf(tw, "store_dir:\t%s\n", serverCfg.StoreDir)
+			fmt.Fprintf(tw, "store_dir:\t%s\n", serverCfg.StoreDir.Path)
 			if err := tw.Flush(); err != nil {
 				return err
 			}
@@ -108,12 +107,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 }
 
 func setupAndInitializing() error {
-	ss, err := base.NewStoreDir(serverCfg.StoreDir)
-	if err != nil {
-		return err
-	}
-	serverCfg.StoreDir = ss
-	if err := dirutil.MkdirAllWithLog(serverCfg.StoreDir); err != nil {
+	if err := dirutil.MkdirAllWithLog(serverCfg.StoreDir.Path); err != nil {
 		return err
 	}
 

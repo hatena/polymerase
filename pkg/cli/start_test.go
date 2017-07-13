@@ -3,12 +3,12 @@ package cli
 import (
 	"testing"
 
-	"github.com/taku-k/polymerase/pkg/utils/leaktest"
+	"github.com/fortytw2/leaktest"
 	"github.com/taku-k/polymerase/pkg/utils/testutil"
 )
 
 func TestStartArgsChecking(t *testing.T) {
-	defer leaktest.AfterTest(t)()
+	defer leaktest.Check(t)()
 
 	f := startCmd.Flags()
 

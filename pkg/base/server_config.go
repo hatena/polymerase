@@ -24,7 +24,7 @@ type ServerConfig struct {
 	*Config
 
 	// StoreDir
-	StoreDir string
+	StoreDir *StoreSpec
 
 	JoinAddr string
 
@@ -45,11 +45,11 @@ func MakeServerConfig() *ServerConfig {
 	cfg.Config.InitDefaults()
 
 	// Store default configuration
-	ss, err := NewStoreDir(defaultStoraPath)
+	p, err := NewStoreDir(defaultStoraPath)
 	if err != nil {
 		panic(err)
 	}
-	cfg.StoreDir = ss
+	cfg.StoreDir = &StoreSpec{p}
 
 	// Name configuration
 	cfg.Name, err = os.Hostname()
@@ -67,22 +67,43 @@ func MakeServerConfig() *ServerConfig {
 
 // TempDir returns a directory path for temporary.
 func (cfg *ServerConfig) TempDir() string {
-	return filepath.Join(cfg.StoreDir, "temp")
+	return filepath.Join(cfg.StoreDir.Path, "temp")
 }
 
 // LogsDir returns a directory path for log.
 func (cfg *ServerConfig) LogsDir() string {
-	return filepath.Join(cfg.StoreDir, "logs")
+	return filepath.Join(cfg.StoreDir.Path, "logs")
 }
 
 // BackupsDir returns a directory path for backup data.
 func (cfg *ServerConfig) BackupsDir() string {
-	return filepath.Join(cfg.StoreDir, "backups")
+	return filepath.Join(cfg.StoreDir.Path, "backups")
 }
 
 // EtcdDataDir returns a directory path for etcd data dir.
 func (cfg *ServerConfig) EtcdDataDir() string {
-	return filepath.Join(cfg.StoreDir, "etcd")
+	return filepath.Join(cfg.StoreDir.Path, "etcd")
+}
+
+type StoreSpec struct {
+	Path string
+}
+
+func (ss *StoreSpec) String() string {
+	return fmt.Sprintf("--store-dir=%s", ss.Path)
+}
+
+func (ss *StoreSpec) Type() string {
+	return "StoreSpec"
+}
+
+func (ss *StoreSpec) Set(value string) error {
+	p, err := NewStoreDir(value)
+	if err != nil {
+		return err
+	}
+	ss.Path = p
+	return nil
 }
 
 // NewStoreDir returns an absolute path for value.

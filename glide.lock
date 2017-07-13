@@ -168,6 +168,8 @@ imports:
   version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
   - log
+- name: github.com/petermattis/goid
+  version: 0ded85884ba5c4c9267fcd5a149061f7c3455eee
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/prometheus/client_golang

@@ -28,6 +28,7 @@ type Server struct {
 	storageSvc    *storage.StorageService
 	etcdServer    *etcdServer
 	etcdCfg       *embed.Config
+	aggregator    *status.WeeklyBackupAggregator
 }
 
 func NewServer(cfg *base.ServerConfig) (*Server, error) {

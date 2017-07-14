@@ -155,9 +155,9 @@ func init() {
 	{
 		f := cronCmd.Flags()
 
-		f.StringVar(&cronCtx.fullBackupCmd, "full-cmd", "", "Full backup command to render to cron.")
-		f.StringVar(&cronCtx.incBackupCmd, "inc-cmd", "", "Incremental backup command to render to cron.")
-
+		f.StringVar(&cronCtx.FullBackupCmd, "full-cmd", "", "Full backup command to render to cron.")
+		f.StringVar(&cronCtx.IncBackupCmd, "inc-cmd", "", "Incremental backup command to render to cron.")
+		f.StringVar(&cronCtx.cronPath, "out", "-", "path to generate cron file (default: stdout)")
 	}
 
 	rootCmd.AddCommand(

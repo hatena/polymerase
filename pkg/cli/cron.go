@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"html/template"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
-	"context"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 var cronCmd = &cobra.Command{
@@ -16,16 +18,16 @@ var cronCmd = &cobra.Command{
 }
 
 type cronContext struct {
-	fullBackupCmd string
-	incBackupCmd  string
+	FullBackupCmd string
+	IncBackupCmd  string
 	cronPath      string
 
-	fullMinute int
-	fullHour int
-	fullWeekDay string
-	incMinute int
-	incHour int
-	incWeekDays string
+	FullMinute  int32
+	FullHour    int32
+	FullWeekDay string
+	IncMinute   int32
+	IncHour     int32
+	IncWeekDays string
 }
 
 func runGenCron(cmd *cobra.Command, args []string) error {
@@ -34,11 +36,23 @@ func runGenCron(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	scli, err := getStorageClient(context.Background(), baseCfg.Addr)
+	ctx := context.Background()
+
+	scli, err := getStorageClient(ctx, baseCfg.Addr)
 	if err != nil {
 		return err
 	}
-	minute, hour := scli.
+	res, err := scli.GetBestStartTime(ctx, &storagepb.GetBestStartTimeRequest{})
+	if err != nil {
+		return err
+	}
+
+	cronCtx.FullMinute = res.Minute
+	cronCtx.FullHour = res.Hour
+	cronCtx.IncMinute = res.Minute
+	cronCtx.IncHour = res.Hour
+	cronCtx.FullWeekDay = "0"
+	cronCtx.IncWeekDays = "1,2,3,4,5,6"
 
 	var w io.Writer
 	var f *os.File
@@ -63,7 +77,6 @@ func runGenCron(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-const cronTemplate = `
-{{.fullMinute}} {{.fullHour}} * * {{.fullWeekDay}} {{.fullBackupCmd}}
-{{.incMinute}} {{.incHour}} * * {{.incWeekDays}} {{.incBackupCmd}}
+const cronTemplate = `{{.FullMinute}} {{.FullHour}} * * {{.FullWeekDay}} {{.FullBackupCmd}}
+{{.IncMinute}} {{.IncHour}} * * {{.IncWeekDays}} {{.IncBackupCmd}}
 `

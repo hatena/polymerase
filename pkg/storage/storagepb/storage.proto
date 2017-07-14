@@ -11,7 +11,7 @@ service StorageService {
 
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 
-  rpc GetBestStartTime(GetBestStartTimeRequest) returns (GetBestStartTimeRequest) {};
+  rpc GetBestStartTime(GetBestStartTimeRequest) returns (GetBestStartTimeResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -60,5 +60,6 @@ message GetBestStartTimeRequest {
 }
 
 message GetBestStartTimeResponse {
-
+  int32 minute = 1;
+  int32 hour = 2;
 }

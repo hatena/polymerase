@@ -65,7 +65,7 @@ func (a *WeeklyBackupAggregator) AddFullBackupInfo(i *statuspb.FullBackupInfo) e
 
 func (a *WeeklyBackupAggregator) BestStartTime(w time.Weekday) (int, int) {
 	a.mu.Lock()
-	_ := a.current.backupByWeek[w]
+	_ = a.current.backupByWeek[w]
 	a.mu.Unlock()
 	// TODO: Implement optimization method
 	return rand.Intn(24), rand.Intn(60)

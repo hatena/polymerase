@@ -36,7 +36,7 @@ type restoreContext struct {
 
 	applyPrepare bool
 
-	maxBandWidth string
+	maxBandWidth MaxBandWidthType
 
 	latest bool
 
@@ -60,14 +60,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	if db == "" {
 		return errors.New("You must specify `db`")
 	}
-	var maxBandWidth uint64
-	if restoreCtx.maxBandWidth != "" {
-		if bw, err := humanize.ParseBytes(restoreCtx.maxBandWidth); err != nil {
-			return errors.Wrap(err, "Cannot parse -max-bandwidth")
-		} else {
-			maxBandWidth = bw
-		}
-	}
+	maxBandWidth := uint64(restoreCtx.maxBandWidth)
 
 	// If `from` is not specified and `latest` option is added,
 	// restoreCtx.from is set as tomorrow.

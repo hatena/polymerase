@@ -1,6 +1,7 @@
 package status
 
 import (
+	"math/rand"
 	"sort"
 	"sync"
 	"time"
@@ -60,6 +61,14 @@ func (a *WeeklyBackupAggregator) AddFullBackupInfo(i *statuspb.FullBackupInfo) e
 	a.mu.Unlock()
 
 	return nil
+}
+
+func (a *WeeklyBackupAggregator) BestStartTime(w time.Weekday) (int, int) {
+	a.mu.Lock()
+	_ := a.current.backupByWeek[w]
+	a.mu.Unlock()
+	// TODO: Implement optimization method
+	return rand.Intn(24), rand.Intn(60)
 }
 
 // Switch replace next with new weekly information store.

@@ -66,7 +66,9 @@ func (a *WeeklyBackupAggregator) AddFullBackupInfo(i *statuspb.FullBackupInfo) e
 func (a *WeeklyBackupAggregator) Switch() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.current = a.next
+	if a.next != nil {
+		a.current = a.next
+	}
 	a.next = initWeeklyInfo()
 }
 

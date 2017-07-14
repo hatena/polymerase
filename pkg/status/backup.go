@@ -45,6 +45,19 @@ func StoreIncBackupInfo(cli *clientv3.Client, key string, info *statuspb.IncBack
 	return storeBackupInfo(cli, key, backupInfo)
 }
 
+func RemoveBackupInfo(cli *clientv3.Client, key string) error {
+	sess, err := concurrency.NewSession(cli)
+	if err != nil {
+		return err
+	}
+	lock := concurrency.NewLocker(sess, key)
+	lock.Lock()
+	defer lock.Unlock()
+
+	_, err = cli.Delete(cli.Ctx(), key)
+	return err
+}
+
 func GetBackupsInfo(cli *clientv3.Client) map[string]*statuspb.BackupInfo {
 	res, err := cli.KV.Get(cli.Ctx(), base.BackupsKey, clientv3.WithPrefix())
 	if err != nil {

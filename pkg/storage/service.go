@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 )
@@ -13,9 +14,13 @@ import (
 type StorageService struct {
 	storage   BackupStorage
 	rateLimit float64
+	EtcdCli   *clientv3.Client
 }
 
-func NewStorageService(storage BackupStorage, rateLimit uint64) *StorageService {
+func NewStorageService(
+	storage BackupStorage,
+	rateLimit uint64,
+) *StorageService {
 	return &StorageService{
 		storage:   storage,
 		rateLimit: float64(rateLimit),
@@ -81,7 +86,7 @@ func (s *StorageService) PurgePrevBackup(
 		}, nil
 	}
 	log.Printf("Purge key=%s\n", key)
-	err = s.storage.RemoveBackups(key)
+	err = s.storage.RemoveBackups(s.EtcdCli, key)
 	if err != nil {
 		return &storagepb.PurgePrevBackupResponse{}, err
 	}

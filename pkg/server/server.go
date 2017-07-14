@@ -104,7 +104,10 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Inject etcd client after launching embedded etcd server
 	s.manager.EtcdCli = cli
+	s.storageSvc.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)

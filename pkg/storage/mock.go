@@ -117,14 +117,14 @@ func (_mr *_MockBackupStorageRecorder) PostFile(arg0, arg1, arg2 interface{}) *g
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostFile", arg0, arg1, arg2)
 }
 
-func (_m *MockBackupStorage) RemoveBackups(key string) error {
-	ret := _m.ctrl.Call(_m, "RemoveBackups", key)
+func (_m *MockBackupStorage) RemoveBackups(cli *clientv3.Client, key string) error {
+	ret := _m.ctrl.Call(_m, "RemoveBackups", cli, key)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockBackupStorageRecorder) RemoveBackups(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveBackups", arg0)
+func (_mr *_MockBackupStorageRecorder) RemoveBackups(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "RemoveBackups", arg0, arg1)
 }
 
 func (_m *MockBackupStorage) GetKPastBackupKey(db string, k int) (string, error) {

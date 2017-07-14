@@ -249,7 +249,16 @@ func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) erro
 	return nil
 }
 
-func (s *LocalBackupStorage) RemoveBackups(key string) error {
+func (s *LocalBackupStorage) RemoveBackups(cli *clientv3.Client, key string) error {
+	sub := strings.Split(key, "/")
+	if len(sub) != 2 {
+		return errors.New("Not matched backup key")
+	}
+	skey := base.BackupBaseDBKey(sub[0], sub[1])
+	err := status.RemoveBackupInfo(cli, skey)
+	if err != nil {
+		return err
+	}
 	return os.RemoveAll(filepath.Join(s.backupsDir, key))
 }
 

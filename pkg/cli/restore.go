@@ -79,7 +79,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	go func() {
-		scli, err := getStorageClient(ctx, db)
+		scli, err := getSuitableStorageClient(ctx, db)
 		if err != nil {
 			errCh <- err
 			return

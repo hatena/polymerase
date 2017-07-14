@@ -29,6 +29,8 @@ message FullBackupInfo {
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
+  google.protobuf.Timestamp end_time = 5;
+  uint64 file_size = 6;
 }
 
 message IncBackupInfo {
@@ -36,6 +38,8 @@ message IncBackupInfo {
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
+  google.protobuf.Timestamp end_time = 5;
+  uint64 file_size = 6;
 }
 
 message AllBackups {

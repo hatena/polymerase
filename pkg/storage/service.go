@@ -7,23 +7,27 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 )
 
 type StorageService struct {
-	storage   BackupStorage
-	rateLimit float64
-	EtcdCli   *clientv3.Client
+	storage    BackupStorage
+	rateLimit  float64
+	EtcdCli    *clientv3.Client
+	aggregator *status.WeeklyBackupAggregator
 }
 
 func NewStorageService(
 	storage BackupStorage,
 	rateLimit uint64,
+	aggregator *status.WeeklyBackupAggregator,
 ) *StorageService {
 	return &StorageService{
-		storage:   storage,
-		rateLimit: float64(rateLimit),
+		storage:    storage,
+		rateLimit:  float64(rateLimit),
+		aggregator: aggregator,
 	}
 }
 
@@ -92,5 +96,15 @@ func (s *StorageService) PurgePrevBackup(
 	}
 	return &storagepb.PurgePrevBackupResponse{
 		Message: "Purge succeeds",
+	}, nil
+}
+
+func (s *StorageService) GetBestStartTime(
+	ctx context.Context, req *storagepb.GetBestStartTimeRequest,
+) (*storagepb.GetBestStartTimeResponse, error) {
+	m, h := s.aggregator.BestStartTime(time.Weekday(0))
+	return &storagepb.GetBestStartTimeResponse{
+		Minute: int32(m),
+		Hour:   int32(h),
 	}, nil
 }

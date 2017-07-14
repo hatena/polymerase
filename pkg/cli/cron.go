@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"

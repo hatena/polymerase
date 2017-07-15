@@ -17,16 +17,16 @@ var cronCmd = &cobra.Command{
 }
 
 type cronContext struct {
+	cronPath string
+
 	FullBackupCmd string
 	IncBackupCmd  string
-	cronPath      string
-
-	FullMinute  int32
-	FullHour    int32
-	FullWeekDay string
-	IncMinute   int32
-	IncHour     int32
-	IncWeekDays string
+	FullMinute    int32
+	FullHour      int32
+	FullWeekDay   string
+	IncMinute     int32
+	IncHour       int32
+	IncWeekDays   string
 }
 
 func runGenCron(cmd *cobra.Command, args []string) error {

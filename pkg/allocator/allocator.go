@@ -25,11 +25,11 @@ func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, err
 }
 
 func selectBasedDiskCap(cli *clientv3.Client) (string, string) {
-	kv := status.GetNodesInfo(cli)
+	nodes := status.GetNodesInfo(cli)
 	var maxAvail uint64
 	resultNode := ""
 	resultHost := ""
-	for node, info := range kv {
+	for node, info := range nodes.Nodes {
 		if info.DiskInfo.Avail > maxAvail {
 			maxAvail = info.DiskInfo.Avail
 			resultHost = info.Addr

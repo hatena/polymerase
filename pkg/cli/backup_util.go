@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +22,8 @@ type backupContext struct {
 	backupType base.BackupType
 
 	purgePrev bool
+
+	compressCmd string
 }
 
 func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Reader, error) {
@@ -42,7 +45,9 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 		return nil, errors.New("Not found such a backup type")
 	}
 
-	gzipCmd := exec.Command("gzip", "-c")
+	log.Println(cmdexec.StringWithMaskPassword(xtrabackupCmd))
+
+	gzipCmd := exec.Command("sh", "-c", backupCtx.compressCmd)
 
 	xtrabackupCmdStdout, err := xtrabackupCmd.StdoutPipe()
 	if err != nil {

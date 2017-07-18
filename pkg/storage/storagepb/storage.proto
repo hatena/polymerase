@@ -10,6 +10,8 @@ service StorageService {
   rpc GetFileByKey(GetFileByKeyRequest) returns (stream FileStream) {};
 
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
+
+  rpc GetBestStartTime(GetBestStartTimeRequest) returns (GetBestStartTimeResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -51,4 +53,13 @@ message PurgePrevBackupRequest {
 
 message PurgePrevBackupResponse {
   string message = 1;
+}
+
+message GetBestStartTimeRequest {
+
+}
+
+message GetBestStartTimeResponse {
+  int32 minute = 1;
+  int32 hour = 2;
 }

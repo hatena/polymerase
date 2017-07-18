@@ -6,26 +6,34 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/cheggaaa/pb"
 	"github.com/dustin/go-humanize"
+	"github.com/elastic/gosigar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	"github.com/taku-k/polymerase/pkg/utils/exec"
+	pexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"go.uber.org/ratelimit"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
 	progressBarWidth = 80
+
+	defaultApplyPrepare = false
+	defaultUseMemory    = "100MB"
 )
 
 type restoreContext struct {
@@ -35,9 +43,34 @@ type restoreContext struct {
 
 	applyPrepare bool
 
-	maxBandWidth string
+	maxBandWidth MaxBandWidthType
 
 	latest bool
+
+	decompressCmd string
+
+	useMemory UseMemoryType
+}
+
+func MakeRestoreContext(cfg *base.Config) *restoreContext {
+	// Use half the total memory
+	mem := gosigar.Mem{}
+	um := defaultUseMemory
+	if err := mem.Get(); err == nil {
+		ss := strings.Split(humanize.Bytes(mem.Total/2), " ")
+		hm, err := strconv.ParseFloat(ss[0], 64)
+		if err != nil {
+			panic(err)
+		}
+		// Round off to the nearest whole number
+		um = fmt.Sprintf("%d%s", int(math.Floor(hm+0.5)), ss[1])
+	}
+
+	return &restoreContext{
+		Config:       cfg,
+		applyPrepare: defaultApplyPrepare,
+		useMemory:    UseMemoryType(um),
+	}
 }
 
 var restoreCmd = &cobra.Command{
@@ -57,14 +90,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	if db == "" {
 		return errors.New("You must specify `db`")
 	}
-	var maxBandWidth uint64
-	if restoreCtx.maxBandWidth != "" {
-		if bw, err := humanize.ParseBytes(restoreCtx.maxBandWidth); err != nil {
-			return errors.Wrap(err, "Cannot parse -max-bandwidth")
-		} else {
-			maxBandWidth = bw
-		}
-	}
+	maxBandWidth := uint64(restoreCtx.maxBandWidth)
 
 	// If `from` is not specified and `latest` option is added,
 	// restoreCtx.from is set as tomorrow.
@@ -83,9 +109,10 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	go func() {
-		scli, err := getStorageClient(ctx, db)
+		scli, err := getSuitableStorageClient(ctx, db)
 		if err != nil {
 			errCh <- err
+			return
 		}
 		res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
 			Db:   db,
@@ -95,17 +122,20 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		restoreDir, err := filepath.Abs("polymerase-restore")
 		if err != nil {
 			errCh <- err
+			return
 		}
 		if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
 			errCh <- err
+			return
 		}
 		log.Printf("Restore data directory: %v\n", restoreDir)
 
 		pbs := make([]*pb.ProgressBar, len(res.Keys))
 		pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
-		for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
-			info := res.Keys[idx]
-			pbs[idx] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
+		for i := 0; i < len(res.Keys)-1; i += 1 {
+			inc := len(res.Keys) - i - 1
+			info := res.Keys[i]
+			pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
 		}
 		for _, bar := range pbs {
 			bar.SetWidth(progressBarWidth)
@@ -115,6 +145,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		pool, err := pb.StartPool(pbs...)
 		if err != nil {
 			errCh <- err
+			return
 		}
 
 		g, _ := errgroup.WithContext(ctx)
@@ -134,20 +165,37 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		if err := g.Wait(); err != nil {
 			pool.Stop()
 			errCh <- err
+			return
 		}
 		pool.Stop()
 
 		// Automatically preparing backups only when applyPrepare flag is true.
 		if restoreCtx.applyPrepare {
 			os.Chdir(restoreDir)
-			c := exec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			log.Println(pexec.StringWithMaskPassword(c))
+			c.Stdout = os.Stderr
+			c.Stderr = os.Stderr
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+				return
 			}
 			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c := exec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				log.Println(pexec.StringWithMaskPassword(c))
+				c.Stdout = os.Stderr
+				c.Stderr = os.Stderr
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+					return
 				}
 			}
 		}
@@ -172,11 +220,15 @@ func getIncBackup(
 	bar *pb.ProgressBar,
 	maxBandwidth uint64,
 ) error {
-	fn := filepath.Join(restoreDir, fmt.Sprintf("inc%d.xb.gz", inc))
-	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
-		return err
+	odir := filepath.Join(restoreDir, fmt.Sprintf("inc%d", inc))
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
 	}
-	if err := exec.UnzipIncBackupCmd(context.TODO(), fn, restoreDir, inc); err != nil {
+	extractCmd := exec.Command(
+		"sh",
+		"-c",
+		fmt.Sprintf("%s -c -d | xbstream -x -C %s", restoreCtx.decompressCmd, odir))
+	if err := getBackup(cli, info, bar, maxBandwidth, extractCmd); err != nil {
 		return err
 	}
 	return nil
@@ -189,11 +241,15 @@ func getFullBackup(
 	bar *pb.ProgressBar,
 	maxBandwidth uint64,
 ) error {
-	fn := filepath.Join(restoreDir, "base.tar.gz")
-	if err := getBackup(cli, info, fn, bar, maxBandwidth); err != nil {
-		return err
+	odir := filepath.Join(restoreDir, "base")
+	if err := os.MkdirAll(odir, 0755); err != nil {
+		return errors.Wrap(err, odir+" dir cannot be created")
 	}
-	if err := exec.UnzipFullBackupCmd(context.TODO(), fn, restoreDir); err != nil {
+	extractCmd := exec.Command(
+		"sh",
+		"-c",
+		fmt.Sprintf("%s -c -d | tar -xC %s", restoreCtx.decompressCmd, odir))
+	if err := getBackup(cli, info, bar, maxBandwidth, extractCmd); err != nil {
 		return err
 	}
 	return nil
@@ -202,9 +258,9 @@ func getFullBackup(
 func getBackup(
 	cli storagepb.StorageServiceClient,
 	info *storagepb.BackupFileInfo,
-	fn string,
 	bar *pb.ProgressBar,
 	maxBandWitdh uint64,
+	extractCmd *exec.Cmd,
 ) error {
 	stream, err := cli.GetFileByKey(context.Background(), &storagepb.GetFileByKeyRequest{
 		Key:         info.Key,
@@ -213,32 +269,57 @@ func getBackup(
 	if err != nil {
 		return err
 	}
-	f, err := os.Create(fn)
+	extractCmd.Stderr = os.Stderr
+	extractCmdStdin, err := extractCmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	bufw := bufio.NewWriter(f)
+	bufw := bufio.NewWriter(extractCmdStdin)
 	multiw := io.MultiWriter(bufw, bar)
 
-	if err := readFromStreamWithRateLimit(stream, multiw, maxBandWitdh); err != nil {
+	finishCh := make(chan struct{})
+	errCh := make(chan error)
+
+	go func() {
+		err := extractCmd.Start()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		extractCmd.Wait()
+		finishCh <- struct{}{}
+	}()
+
+	go writeOutFromStreamWithRateLimit(stream, multiw, maxBandWitdh, errCh, extractCmdStdin)
+
+	// Wait
+	select {
+	case err := <-errCh:
 		return err
+	case <-finishCh:
+		break
 	}
 
 	bar.Finish()
 	return nil
 }
 
-func readFromStreamWithRateLimit(
+func writeOutFromStreamWithRateLimit(
 	stream storagepb.StorageService_GetFileByKeyClient,
 	writer io.Writer,
 	maxBandwidth uint64,
-) error {
+	errCh chan error,
+	toCloseW io.WriteCloser,
+) {
+	defer toCloseW.Close()
+
 	fs, err := stream.Recv()
 	if err == io.EOF {
-		return nil
+		return
 	}
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 	writer.Write(fs.Content)
 
@@ -259,10 +340,10 @@ func readFromStreamWithRateLimit(
 			break
 		}
 		if err != nil {
-			return err
+			errCh <- err
+			return
 		}
 		writer.Write(fs.Content)
 	}
-
-	return nil
+	return
 }

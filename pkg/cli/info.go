@@ -1,14 +1,12 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/dustin/go-humanize"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
@@ -30,28 +28,16 @@ func runNodesInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	kv := status.GetNodesInfo(cli)
-
-	for n, info := range kv {
-		outputNodeInfo(n, info)
-		fmt.Fprintln(os.Stdout, "")
+	nodes := status.GetNodesInfo(cli)
+	marshaler := jsonpb.Marshaler{
+		Indent: "  ",
 	}
-
+	json, err := marshaler.MarshalToString(nodes)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(os.Stdout, json)
 	return nil
-}
-
-func outputNodeInfo(node string, info *statuspb.NodeInfo) {
-	var buf bytes.Buffer
-	tw := tabwriter.NewWriter(&buf, 2, 1, 2, ' ', 0)
-	fmt.Fprintf(tw, "Node:\t%s\n", node)
-	fmt.Fprintln(tw, "===============")
-	fmt.Fprintf(tw, "Total:\t%s\n", humanize.Bytes(info.DiskInfo.Total))
-	fmt.Fprintf(tw, "Avail:\t%s\n", humanize.Bytes(info.DiskInfo.Avail))
-	if err := tw.Flush(); err != nil {
-		return
-	}
-	msg := buf.String()
-	fmt.Fprint(os.Stdout, msg)
 }
 
 var backupsInfoCmd = &cobra.Command{
@@ -71,31 +57,23 @@ func runBackupsInfo(cmd *cobra.Command, args []string) error {
 	defer cli.Close()
 
 	kv := status.GetBackupsInfo(cli)
-
-	for db, info := range kv {
-		outputBackupInfo(db, info)
-		fmt.Fprintln(os.Stdout, "")
+	all := &statuspb.AllBackups{
+		DbToBackups: make(map[string]*statuspb.BackupInfo),
 	}
+	for db, info := range kv {
+		all.DbToBackups[db] = info
+	}
+	marshaler := jsonpb.Marshaler{
+		Indent: "  ",
+	}
+	json, err := marshaler.MarshalToString(all)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(os.Stdout, json)
 
 	return nil
-}
-
-func outputBackupInfo(db string, info *statuspb.BackupInfo) {
-	var buf bytes.Buffer
-	tw := tabwriter.NewWriter(&buf, 2, 1, 2, ' ', 0)
-	fmt.Fprintf(tw, "DB:\t%s\n", db)
-	fmt.Fprintln(tw, "===============")
-	fmt.Fprintf(tw, "FullBackup:\n\tNode:%s\n\tHost:%s\n", info.FullBackup.NodeName, info.FullBackup.Host)
-	if len(info.IncBackups) != 0 {
-		fmt.Fprintln(tw, "\tIncBackup:")
-		for _, i := range info.IncBackups {
-			fmt.Fprintf(tw, "\t\tNode:%s\n\t\tHost:%s\n", i.NodeName, i.Host)
-		}
-	}
-	if err := tw.Flush(); err != nil {
-		return
-	}
-	fmt.Fprint(os.Stdout, buf.String())
 }
 
 var infoCmds = []*cobra.Command{

@@ -2,7 +2,6 @@ package exec
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -17,11 +16,14 @@ func TestBuildFullBackupCmd(t *testing.T) {
 	}{
 		{
 			&base.XtrabackupConfig{
-				BinPath:      "xtrabackup",
-				User:         "user",
-				Password:     "password",
-				LsnTempDir:   "/tmp/test",
-				InsecureAuth: true,
+				XtrabackupBinPath: "xtrabackup",
+				Host:              "127.0.0.1",
+				Port:              "3306",
+				User:              "user",
+				Password:          "password",
+				LsnTempDir:        "/tmp/test",
+				InsecureAuth:      true,
+				Parallel:          1,
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
@@ -31,16 +33,20 @@ xtrabackup \
   --password password \
   --slave-info \
   --backup \
-  --extra-lsndir=/tmp/test \
+  --extra-lsndir /tmp/test \
   --skip-secure-auth \
   --safe-slave-backup \
-  --stream=tar
+  --stream tar \
+  --parallel 1
   			`)},
 		}, {
 			&base.XtrabackupConfig{
-				BinPath:    "/usr/bin/xtrabackup",
-				User:       "user",
-				LsnTempDir: "/tmp/test",
+				XtrabackupBinPath: "/usr/bin/xtrabackup",
+				Host:              "127.0.0.1",
+				Port:              "3306",
+				User:              "user",
+				LsnTempDir:        "/tmp/test",
+				Parallel:          1,
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 /usr/bin/xtrabackup \
@@ -49,17 +55,15 @@ xtrabackup \
   --user user \
   --slave-info \
   --backup \
-  --extra-lsndir=/tmp/test \
+  --extra-lsndir /tmp/test \
   --safe-slave-backup \
-  --stream=tar
+  --stream tar \
+  --parallel 1
 			`)},
 		},
 	}
 
 	for _, tt := range tests {
-		tt.cfg.InitDefaults()
-		defer os.RemoveAll(tt.cfg.LsnTempDir)
-
 		cmd, err := BuildFullBackupCmd(context.Background(), tt.cfg)
 
 		if err != nil {
@@ -73,15 +77,15 @@ xtrabackup \
 
 func TestBuildIncBackupCmd(t *testing.T) {
 	cfg := &base.XtrabackupConfig{
-		BinPath:    "xtrabackup",
-		User:       "user",
-		Password:   "password",
-		LsnTempDir: "/tmp/test",
-		ToLsn:      "100",
+		XtrabackupBinPath: "xtrabackup",
+		Host:              "127.0.0.1",
+		Port:              "3306",
+		User:              "user",
+		Password:          "password",
+		LsnTempDir:        "/tmp/test",
+		ToLsn:             "100",
+		Parallel:          1,
 	}
-	cfg.InitDefaults()
-	defer os.RemoveAll(cfg.LsnTempDir)
-
 	cmd, err := BuildIncBackupCmd(context.Background(), cfg)
 
 	expected := []string{"sh", "-c", strings.TrimSpace(`
@@ -92,15 +96,81 @@ xtrabackup \
   --password password \
   --slave-info \
   --backup \
-  --extra-lsndir=/tmp/test \
-  --stream=xbstream \
+  --extra-lsndir /tmp/test \
+  --stream xbstream \
   --safe-slave-backup \
-  --incremental-lsn=100`)}
+  --incremental-lsn 100 \
+  --parallel 1`)}
 
 	if err != nil {
 		t.Errorf("Not failed: %v", err)
 	}
 	if !reflect.DeepEqual(cmd.Args, expected) {
 		t.Errorf("Command does not equal to expected command: actual=(%v) expected=(%v)", cmd.Args, expected)
+	}
+}
+
+func TestPrepareBackupCmd(t *testing.T) {
+	testCases := []struct {
+		cfg      *base.RestoreXtrabackupConfig
+		expected []string
+	}{
+		{
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            true,
+				Parallel:          4,
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --parallel 4 \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            false,
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --apply-log-only \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            true,
+				IncDir:            "inc1",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --incremental-dir inc1 \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            false,
+				IncDir:            "inc1",
+				UseMemory:         "2GB",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --apply-log-only \
+  --incremental-dir inc1 \
+  --use-memory 2GB \
+  --prepare`)},
+		},
+	}
+
+	for i, c := range testCases {
+		cmd, err := _prepareBackup(context.Background(), c.cfg)
+		if err != nil {
+			t.Errorf("%d: expected %v, but error %v", i, c.expected, err)
+		}
+		if !reflect.DeepEqual(cmd.Args, c.expected) {
+			t.Errorf("%d: expected %v, but found %v", i, c.expected, cmd.Args)
+		}
 	}
 }

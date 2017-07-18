@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/go-ini/ini"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
@@ -247,7 +249,16 @@ func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) erro
 	return nil
 }
 
-func (s *LocalBackupStorage) RemoveBackups(key string) error {
+func (s *LocalBackupStorage) RemoveBackups(cli *clientv3.Client, key string) error {
+	sub := strings.Split(key, "/")
+	if len(sub) != 2 {
+		return errors.New("Not matched backup key")
+	}
+	skey := base.BackupBaseDBKey(sub[0], sub[1])
+	err := status.RemoveBackupInfo(cli, skey)
+	if err != nil {
+		return err
+	}
 	return os.RemoveAll(filepath.Join(s.backupsDir, key))
 }
 
@@ -269,27 +280,37 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if err != nil {
 				return err
 			}
+			storedTime, err := ptypes.TimestampProto(stored)
+			if err != nil {
+				return err
+			}
 			if err := status.StoreFullBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: stored.Unix(),
+				StoredTime: storedTime,
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {
 				return err
 			}
+			log.Printf("Restore full backup: %s", path)
 		} else if strings.HasSuffix(path, "inc.xb.gz") {
 			db, start, stored, err := s.pickDbAndTime(path)
 			if err != nil {
 				return err
 			}
+			storedTime, err := ptypes.TimestampProto(stored)
+			if err != nil {
+				return err
+			}
 			if err := status.StoreIncBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.IncBackupInfo{
 				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: stored.Unix(),
+				StoredTime: storedTime,
 				Host:       s.AdvertiseAddr,
 				NodeName:   s.nodeName,
 			}); err != nil {
 				return err
 			}
+			log.Printf("Restore inc backup: %s", path)
 		}
 		return nil
 	})

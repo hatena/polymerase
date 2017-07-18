@@ -9,7 +9,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:          "polymerase",
-	Short:        "MySQL backup management API integreted with Percona Xtrabackup",
+	Short:        "MySQL backup management API integrated with Percona Xtrabackup",
 	SilenceUsage: true,
 }
 

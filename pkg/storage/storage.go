@@ -25,7 +25,7 @@ type BackupStorage interface {
 
 	PostFile(key string, name string, r io.Reader) error
 
-	RemoveBackups(key string) error
+	RemoveBackups(cli *clientv3.Client, key string) error
 
 	GetKPastBackupKey(db string, k int) (string, error)
 

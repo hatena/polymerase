@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
@@ -19,7 +20,7 @@ import (
 )
 
 type Server struct {
-	cfg           *Config
+	cfg           *base.ServerConfig
 	grpc          *grpc.Server
 	storage       storage.BackupStorage
 	manager       *tempbackup.TempBackupManager
@@ -27,9 +28,10 @@ type Server struct {
 	storageSvc    *storage.StorageService
 	etcdServer    *etcdServer
 	etcdCfg       *embed.Config
+	aggregator    *status.WeeklyBackupAggregator
 }
 
-func NewServer(cfg *Config) (*Server, error) {
+func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	s := &Server{
 		cfg: cfg,
 	}
@@ -70,7 +72,9 @@ func NewServer(cfg *Config) (*Server, error) {
 
 	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
 
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit)
+	s.aggregator = status.NewWeeklyBackupAggregator()
+
+	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.aggregator)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		tempbackuppb.RegisterBackupTransferServiceServer(gs, s.tempBackupSvc)
@@ -103,7 +107,10 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Inject etcd client after launching embedded etcd server
 	s.manager.EtcdCli = cli
+	s.storageSvc.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
@@ -132,7 +139,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := status.NewStatusRecorder(
-		s.manager.EtcdCli, s.cfg.StoreDir, s.cfg.Name, s.cfg.Config)
+		s.manager.EtcdCli, s.cfg.StoreDir.Path, s.cfg.Name, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

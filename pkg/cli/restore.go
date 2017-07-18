@@ -15,6 +15,7 @@ import (
 
 	"github.com/cheggaaa/pb"
 	"github.com/dustin/go-humanize"
+	"github.com/elastic/gosigar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -27,6 +28,9 @@ import (
 
 const (
 	progressBarWidth = 80
+
+	defaultApplyPrepare = false
+	defaultUseMemory    = "100MB"
 )
 
 type restoreContext struct {
@@ -41,6 +45,23 @@ type restoreContext struct {
 	latest bool
 
 	decompressCmd string
+
+	useMemory UseMemoryType
+}
+
+func MakeRestoreContext(cfg *base.Config) *restoreContext {
+	// Use half the total memory
+	mem := gosigar.Mem{}
+	um := defaultUseMemory
+	if err := mem.Get(); err == nil {
+		um = humanize.Bytes(mem.Total / 2)
+	}
+
+	return &restoreContext{
+		Config:       cfg,
+		applyPrepare: defaultApplyPrepare,
+		useMemory:    UseMemoryType(um),
+	}
 }
 
 var restoreCmd = &cobra.Command{

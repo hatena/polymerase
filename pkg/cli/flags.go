@@ -16,7 +16,7 @@ var useInnobackupex bool
 var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
+var restoreCtx = MakeRestoreContext(baseCfg)
 var cronCtx = cronContext{}
 var xtrabackupCfg = base.MakeXtrabackupConfig()
 
@@ -55,6 +55,7 @@ func init() {
 	restoreCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		initXtrabackupConfig()
+		xtrabackupCfg.UseMemory = restoreCtx.useMemory.String()
 		return nil
 	}
 
@@ -131,6 +132,7 @@ func init() {
 		f.Var(&restoreCtx.maxBandWidth, "max-bandwidth", "max bandwidth for download src archives (Bytes/sec)")
 		f.BoolVar(&restoreCtx.latest, "latest", false, "Fetch the latest backups.")
 		f.StringVar(&restoreCtx.decompressCmd, "decompress-cmd", "gzip", "Use external decompression program command")
+		f.Var(&restoreCtx.useMemory, "use-memory", "How much memory is allocated for preparing a backup.")
 	}
 
 	// Start Flags

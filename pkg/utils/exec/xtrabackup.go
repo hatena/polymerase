@@ -63,6 +63,8 @@ var xtrabackup = backupCmd{
   --incremental-dir {{ .IncDir }} \
   {{- end }}{{ if .Parallel }}
   --parallel {{ .Parallel }} \
+  {{- end }}{{ if .UseMemory }}
+  --use-memory {{ .UseMemory }} \
   {{- end }}
   --prepare
 `),
@@ -142,6 +144,7 @@ func PrepareBaseBackup(
 		InnobackupexBinPath: cfg.InnobackupexBinPath,
 		UseInnobackupex:     cfg.UseInnobackupex,
 		IsLast:              isLast,
+		UseMemory:           cfg.UseMemory,
 	}
 	return _prepareBackup(ctx, rcfg)
 }
@@ -159,6 +162,7 @@ func PrepareIncBackup(
 		UseInnobackupex:     cfg.UseInnobackupex,
 		IsLast:              isLast,
 		IncDir:              fmt.Sprintf("inc%d", inc),
+		UseMemory:           cfg.UseMemory,
 	}
 	return _prepareBackup(ctx, rcfg)
 }

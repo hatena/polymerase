@@ -152,12 +152,14 @@ xtrabackup \
 				XtrabackupBinPath: "xtrabackup",
 				IsLast:            false,
 				IncDir:            "inc1",
+				UseMemory:         "2GB",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
   --target-dir base \
   --apply-log-only \
   --incremental-dir inc1 \
+  --use-memory 2GB \
   --prepare`)},
 		},
 	}

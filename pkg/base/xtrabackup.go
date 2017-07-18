@@ -24,6 +24,7 @@ type XtrabackupConfig struct {
 	UseInnobackupex     bool
 	InsecureAuth        bool
 	Parallel            int
+	UseMemory           string
 }
 
 type RestoreXtrabackupConfig struct {
@@ -33,6 +34,7 @@ type RestoreXtrabackupConfig struct {
 	IsLast              bool
 	IncDir              string
 	Parallel            int
+	UseMemory           string
 }
 
 func MakeXtrabackupConfig() *XtrabackupConfig {

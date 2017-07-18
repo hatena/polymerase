@@ -112,6 +112,7 @@ func init() {
 		f.StringVarP(&xtrabackupCfg.Password, "mysql-password", "P", xtrabackupCfg.Password, "The MySQL password to connect with.")
 		f.BoolVar(&xtrabackupCfg.InsecureAuth, "insecure-auth", xtrabackupCfg.InsecureAuth, "Connect with insecure auth. It is useful when server uses old protocol.")
 		f.IntVar(&xtrabackupCfg.Parallel, "parallel", xtrabackupCfg.Parallel, "The number of threads to use to copy multiple data files concurrently when creating a backup.")
+		f.StringVar(&backupCtx.compressCmd, "compress-cmd", "gzip -c", "Use external compression program command.")
 	}
 
 	// Full-backup command specific

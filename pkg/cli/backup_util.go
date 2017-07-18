@@ -22,6 +22,8 @@ type backupContext struct {
 	backupType base.BackupType
 
 	purgePrev bool
+
+	compressCmd string
 }
 
 func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Reader, error) {
@@ -45,7 +47,7 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 
 	log.Println(cmdexec.StringWithMaskPassword(xtrabackupCmd))
 
-	gzipCmd := exec.Command("gzip", "-c")
+	gzipCmd := exec.Command("sh", "-c", backupCtx.compressCmd)
 
 	xtrabackupCmdStdout, err := xtrabackupCmd.StdoutPipe()
 	if err != nil {

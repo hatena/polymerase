@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -139,6 +140,16 @@ func PrepareIncBackup(ctx context.Context, inc int, isLast bool, cfg *base.Xtrab
 		}
 	}
 
+}
+
+func StringWithMaskPassword(cmd *exec.Cmd) string {
+	ss := make([]string, len(cmd.Args))
+	copy(ss, cmd.Args)
+	re := regexp.MustCompile(`password [^\\]*`)
+	for i, s := range ss {
+		ss[i] = re.ReplaceAllString(s, `password *** `)
+	}
+	return strings.Join(ss, " ")
 }
 
 func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {

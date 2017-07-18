@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,6 +42,8 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 	default:
 		return nil, errors.New("Not found such a backup type")
 	}
+
+	log.Println(cmdexec.StringWithMaskPassword(xtrabackupCmd))
 
 	gzipCmd := exec.Command("gzip", "-c")
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -13,13 +14,14 @@ import (
 )
 
 type backupCmd struct {
-	fullTmpl string
-	incTmpl  string
+	fullTmpl    string
+	incTmpl     string
+	restoreTmpl string
 }
 
 var xtrabackup = backupCmd{
 	fullTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .XtrabackupBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -27,15 +29,16 @@ var xtrabackup = backupCmd{
   {{- end }}
   --slave-info \
   --backup \{{ if .LsnTempDir }}
-  --extra-lsndir={{ .LsnTempDir }} \
+  --extra-lsndir {{ .LsnTempDir }} \
   {{- end }}{{ if .InsecureAuth }}
   --skip-secure-auth \
   {{- end }}
   --safe-slave-backup \
-  --stream=tar
+  --stream tar \
+  --parallel {{ .Parallel }}
 `),
 	incTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .XtrabackupBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -43,19 +46,33 @@ var xtrabackup = backupCmd{
   {{- end }}
   --slave-info \
   --backup \{{ if .LsnTempDir }}
-  --extra-lsndir={{ .LsnTempDir }} \
+  --extra-lsndir {{ .LsnTempDir }} \
   {{- end }}{{ if .InsecureAuth }}
   --skip-secure-auth \
   {{- end }}
-  --stream=xbstream \
+  --stream xbstream \
   --safe-slave-backup \
-  --incremental-lsn={{ .ToLsn }}
+  --incremental-lsn {{ .ToLsn }} \
+  --parallel {{ .Parallel }}
+`),
+	restoreTmpl: strings.TrimSpace(`
+{{ .XtrabackupBinPath }} \
+  --target-dir base \{{ if not .IsLast }}
+  --apply-log-only \
+  {{- end }}{{ if .IncDir }}
+  --incremental-dir {{ .IncDir }} \
+  {{- end }}{{ if .Parallel }}
+  --parallel {{ .Parallel }} \
+  {{- end }}{{ if .UseMemory }}
+  --use-memory {{ .UseMemory }} \
+  {{- end }}
+  --prepare
 `),
 }
 
 var innobackupex = backupCmd{
 	fullTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .InnobackupexBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -67,7 +84,7 @@ var innobackupex = backupCmd{
   .
 `),
 	incTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .InnobackupexBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -80,8 +97,18 @@ var innobackupex = backupCmd{
   --incremental-lsn={{ .ToLsn }} \
   .
 `),
+	restoreTmpl: strings.TrimSpace(`
+{{ .InnobackupexBinPath }} \
+  --apply-log \{{ if not .IsLast }}
+  --redo-only \
+  {{- end }}
+  base{{ if .IncDir }}\
+  {{ .IncDir }}
+  {{- end }}
+`),
 }
 
+// BuildFullBackupCmd constructs a command to create a full backup.
 func BuildFullBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
 	var tmpl string
 	if cfg.UseInnobackupex {
@@ -92,6 +119,7 @@ func BuildFullBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.
 	return _buildBackupCmd(ctx, cfg, tmpl)
 }
 
+// BuildIncBackupCmd constructs a command to create a incremental backup.
 func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
 	if cfg.ToLsn == "" {
 		return nil, errors.New("ToLSN cannot be empty")
@@ -105,45 +133,70 @@ func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.C
 	return _buildBackupCmd(ctx, cfg, tmpl)
 }
 
-func PrepareBaseBackup(ctx context.Context, isLast bool, cfg *base.XtrabackupConfig) *exec.Cmd {
-	if cfg.UseInnobackupex {
-		if isLast {
-			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "base")
-		} else {
-			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "--redo-only", "base")
-		}
-	} else {
-		if isLast {
-			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--target-dir=base")
-		} else {
-			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base")
-		}
+// PrepareBaseBackup constructs a command to restore a base backup.
+func PrepareBaseBackup(
+	ctx context.Context,
+	isLast bool,
+	cfg *base.XtrabackupConfig,
+) (*exec.Cmd, error) {
+	rcfg := &base.RestoreXtrabackupConfig{
+		XtrabackupBinPath:   cfg.XtrabackupBinPath,
+		InnobackupexBinPath: cfg.InnobackupexBinPath,
+		UseInnobackupex:     cfg.UseInnobackupex,
+		IsLast:              isLast,
+		UseMemory:           cfg.UseMemory,
 	}
+	return _prepareBackup(ctx, rcfg)
 }
 
-func PrepareIncBackup(ctx context.Context, inc int, isLast bool, cfg *base.XtrabackupConfig) *exec.Cmd {
-	incDir := fmt.Sprintf("--incremental-dir=inc%d", inc)
-	if cfg.UseInnobackupex {
-		if isLast {
-			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "base", incDir)
-		} else {
-			return exec.CommandContext(ctx, cfg.BinPath, "--apply-log", "--redo-only", "base", incDir)
-		}
-	} else {
-		if isLast {
-			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--target-dir=base", incDir)
-		} else {
-			return exec.CommandContext(ctx, cfg.BinPath, "--prepare", "--apply-log-only", "--target-dir=base", incDir)
-		}
+// PrepareIncBackup constructs a command to restore a incremental backup.
+func PrepareIncBackup(
+	ctx context.Context,
+	inc int,
+	isLast bool,
+	cfg *base.XtrabackupConfig,
+) (*exec.Cmd, error) {
+	rcfg := &base.RestoreXtrabackupConfig{
+		XtrabackupBinPath:   cfg.XtrabackupBinPath,
+		InnobackupexBinPath: cfg.InnobackupexBinPath,
+		UseInnobackupex:     cfg.UseInnobackupex,
+		IsLast:              isLast,
+		IncDir:              fmt.Sprintf("inc%d", inc),
+		UseMemory:           cfg.UseMemory,
 	}
-
+	return _prepareBackup(ctx, rcfg)
 }
 
-func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
-	err := cfg.InitDefaults()
+// StringWithMaskPassword outputs a string masked password.
+func StringWithMaskPassword(cmd *exec.Cmd) string {
+	ss := make([]string, len(cmd.Args))
+	copy(ss, cmd.Args)
+	re := regexp.MustCompile(`password [^\\]*`)
+	for i, s := range ss {
+		ss[i] = re.ReplaceAllString(s, `password *** `)
+	}
+	return strings.Join(ss, " ")
+}
+
+func _prepareBackup(ctx context.Context, cfg *base.RestoreXtrabackupConfig) (*exec.Cmd, error) {
+	var tmpl string
+	if cfg.UseInnobackupex {
+		tmpl = innobackupex.restoreTmpl
+	} else {
+		tmpl = xtrabackup.restoreTmpl
+	}
+	t := template.New("restore tmpl")
+	t, err := t.Parse(tmpl)
 	if err != nil {
 		return nil, err
 	}
+	buf := new(bytes.Buffer)
+	t.Execute(buf, cfg)
+	cmd := exec.CommandContext(ctx, "sh", "-c", buf.String())
+	return cmd, nil
+}
+
+func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
 	t := template.New("backup_cmd_tmpl")
 	t, _ = t.Parse(tmpl)
 	buf := new(bytes.Buffer)

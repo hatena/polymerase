@@ -19,6 +19,8 @@ func TestRestoreArgsChecking(t *testing.T) {
 		{[]string{}, ``},
 		{[]string{`--max-bandwidth=50mb`}, ``},
 		{[]string{`--max-bandwidth=50ab`}, `unhandled size name:`},
+		{[]string{`--use-memory=16GB`}, ``},
+		{[]string{`--use-memory=15ab`}, `unhandled size name:`},
 	}
 	for i, c := range testCases {
 		err := f.Parse(c.args)

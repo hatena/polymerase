@@ -24,3 +24,26 @@ func (mb *MaxBandWidthType) Set(v string) error {
 	}
 	return nil
 }
+
+type UseMemoryType string
+
+func (mb *UseMemoryType) String() string {
+	return string(*mb)
+}
+
+func (mb *UseMemoryType) Type() string {
+	return "UseMemory"
+}
+
+func (mb *UseMemoryType) Set(v string) error {
+	if v == "" {
+		*mb = UseMemoryType("100MB")
+		return nil
+	}
+	if _, err := humanize.ParseBytes(v); err != nil {
+		return err
+	} else {
+		*mb = UseMemoryType(v)
+	}
+	return nil
+}

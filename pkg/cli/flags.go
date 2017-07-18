@@ -8,36 +8,26 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 )
 
-var mysqlHost, mysqlPort, mysqlUser, mysqlPassword string
 var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
 var db string
-var useInnobackupex, insecureAuth bool
+var useInnobackupex bool
 
 var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
-var restoreCtx = restoreContext{Config: baseCfg, applyPrepare: false}
+var restoreCtx = MakeRestoreContext(baseCfg)
 var cronCtx = cronContext{}
-var xtrabackupCfg *base.XtrabackupConfig
+var xtrabackupCfg = base.MakeXtrabackupConfig()
 
-func initXtrabackupConfig() error {
-	var xtrabackupPath string
+func initXtrabackupConfig() {
 	if useInnobackupex {
-		xtrabackupPath = envutil.EnvOrDefaultString("POLYMERASE_INNOBACKUPEX_PATH", "")
+		xtrabackupCfg.InnobackupexBinPath =
+			envutil.EnvOrDefaultString("POLYMERASE_INNOBACKUPEX_PATH", xtrabackupCfg.InnobackupexBinPath)
 	} else {
-		xtrabackupPath = envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", "")
+		xtrabackupCfg.XtrabackupBinPath =
+			envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
 	}
-	xtrabackupCfg = &base.XtrabackupConfig{
-		BinPath:         xtrabackupPath,
-		Host:            mysqlHost,
-		Port:            mysqlPort,
-		User:            mysqlUser,
-		Password:        mysqlPassword,
-		UseInnobackupex: useInnobackupex,
-		InsecureAuth:    insecureAuth,
-	}
-	return xtrabackupCfg.InitDefaults()
 }
 
 func init() {
@@ -51,18 +41,22 @@ func init() {
 	fullBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		backupCtx.backupType = base.FULL
-		return initXtrabackupConfig()
+		initXtrabackupConfig()
+		return nil
 	}
 
 	incBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		backupCtx.backupType = base.INC
-		return initXtrabackupConfig()
+		initXtrabackupConfig()
+		return nil
 	}
 
 	restoreCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		return initXtrabackupConfig()
+		initXtrabackupConfig()
+		xtrabackupCfg.UseMemory = restoreCtx.useMemory.String()
+		return nil
 	}
 
 	nodesInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
@@ -113,11 +107,13 @@ func init() {
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {
 		f := cmd.PersistentFlags()
 
-		f.StringVar(&mysqlHost, "mysql-host", "127.0.0.1", "The MySQL hostname to connect with.")
-		f.StringVarP(&mysqlPort, "mysql-port", "p", "3306", "The MySQL port to connect with.")
-		f.StringVarP(&mysqlUser, "mysql-user", "u", "", "The MySQL username to connect with.")
-		f.StringVarP(&mysqlPassword, "mysql-password", "P", "", "The MySQL password to connect with.")
-		f.BoolVar(&insecureAuth, "insecure-auth", false, "Connect with insecure auth. It is useful when server uses old protocol.")
+		f.StringVar(&xtrabackupCfg.Host, "mysql-host", xtrabackupCfg.Host, "The MySQL hostname to connect with.")
+		f.StringVarP(&xtrabackupCfg.Port, "mysql-port", "p", xtrabackupCfg.Port, "The MySQL port to connect with.")
+		f.StringVarP(&xtrabackupCfg.User, "mysql-user", "u", xtrabackupCfg.User, "The MySQL username to connect with.")
+		f.StringVarP(&xtrabackupCfg.Password, "mysql-password", "P", xtrabackupCfg.Password, "The MySQL password to connect with.")
+		f.BoolVar(&xtrabackupCfg.InsecureAuth, "insecure-auth", xtrabackupCfg.InsecureAuth, "Connect with insecure auth. It is useful when server uses old protocol.")
+		f.IntVar(&xtrabackupCfg.Parallel, "parallel", xtrabackupCfg.Parallel, "The number of threads to use to copy multiple data files concurrently when creating a backup.")
+		f.StringVar(&backupCtx.compressCmd, "compress-cmd", "gzip -c", "Use external compression program command.")
 	}
 
 	// Full-backup command specific
@@ -136,6 +132,7 @@ func init() {
 		f.Var(&restoreCtx.maxBandWidth, "max-bandwidth", "max bandwidth for download src archives (Bytes/sec)")
 		f.BoolVar(&restoreCtx.latest, "latest", false, "Fetch the latest backups.")
 		f.StringVar(&restoreCtx.decompressCmd, "decompress-cmd", "gzip", "Use external decompression program command")
+		f.Var(&restoreCtx.useMemory, "use-memory", "How much memory is allocated for preparing a backup.")
 	}
 
 	// Start Flags

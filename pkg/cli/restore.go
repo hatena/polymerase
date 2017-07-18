@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/cheggaaa/pb"
 	"github.com/dustin/go-humanize"
+	"github.com/elastic/gosigar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/base"
@@ -27,6 +31,9 @@ import (
 
 const (
 	progressBarWidth = 80
+
+	defaultApplyPrepare = false
+	defaultUseMemory    = "100MB"
 )
 
 type restoreContext struct {
@@ -41,6 +48,29 @@ type restoreContext struct {
 	latest bool
 
 	decompressCmd string
+
+	useMemory UseMemoryType
+}
+
+func MakeRestoreContext(cfg *base.Config) *restoreContext {
+	// Use half the total memory
+	mem := gosigar.Mem{}
+	um := defaultUseMemory
+	if err := mem.Get(); err == nil {
+		ss := strings.Split(humanize.Bytes(mem.Total/2), " ")
+		hm, err := strconv.ParseFloat(ss[0], 64)
+		if err != nil {
+			panic(err)
+		}
+		// Round off to the nearest whole number
+		um = fmt.Sprintf("%d%s", int(math.Floor(hm+0.5)), ss[1])
+	}
+
+	return &restoreContext{
+		Config:       cfg,
+		applyPrepare: defaultApplyPrepare,
+		useMemory:    UseMemoryType(um),
+	}
 }
 
 var restoreCmd = &cobra.Command{
@@ -142,14 +172,30 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		// Automatically preparing backups only when applyPrepare flag is true.
 		if restoreCtx.applyPrepare {
 			os.Chdir(restoreDir)
-			c := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			log.Println(pexec.StringWithMaskPassword(c))
+			c.Stdout = os.Stderr
+			c.Stderr = os.Stderr
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+				return
 			}
 			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				if err != nil {
+					errCh <- err
+					return
+				}
+				log.Println(pexec.StringWithMaskPassword(c))
+				c.Stdout = os.Stderr
+				c.Stderr = os.Stderr
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+					return
 				}
 			}
 		}

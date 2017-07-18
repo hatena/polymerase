@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -54,7 +55,7 @@ func MakeRestoreContext(cfg *base.Config) *restoreContext {
 	mem := gosigar.Mem{}
 	um := defaultUseMemory
 	if err := mem.Get(); err == nil {
-		um = humanize.Bytes(mem.Total / 2)
+		um = strings.Replace(humanize.Bytes(mem.Total/2), " ", "", -1)
 	}
 
 	return &restoreContext{

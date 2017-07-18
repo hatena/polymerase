@@ -163,7 +163,7 @@ xtrabackup \
 	}
 
 	for i, c := range testCases {
-		cmd, err := PrepareBackup(context.Background(), c.cfg)
+		cmd, err := _prepareBackup(context.Background(), c.cfg)
 		if err != nil {
 			t.Errorf("%d: expected %v, but error %v", i, c.expected, err)
 		}

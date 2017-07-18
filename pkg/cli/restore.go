@@ -142,14 +142,24 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		// Automatically preparing backups only when applyPrepare flag is true.
 		if restoreCtx.applyPrepare {
 			os.Chdir(restoreDir)
-			c := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+			if err != nil {
+				errCh <- err
+				return
+			}
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+				return
 			}
 			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+				if err != nil {
+					errCh <- err
+					return
+				}
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+					return
 				}
 			}
 		}

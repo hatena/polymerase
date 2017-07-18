@@ -26,6 +26,15 @@ type XtrabackupConfig struct {
 	Parallel            int
 }
 
+type RestoreXtrabackupConfig struct {
+	XtrabackupBinPath   string
+	InnobackupexBinPath string
+	UseInnobackupex     bool
+	IsLast              bool
+	IncDir              string
+	Parallel            int
+}
+
 func MakeXtrabackupConfig() *XtrabackupConfig {
 	cfg := &XtrabackupConfig{
 		XtrabackupBinPath:   defaultXtrabackupBinPath,

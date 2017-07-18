@@ -14,8 +14,9 @@ import (
 )
 
 type backupCmd struct {
-	fullTmpl string
-	incTmpl  string
+	fullTmpl    string
+	incTmpl     string
+	restoreTmpl string
 }
 
 var xtrabackup = backupCmd{
@@ -54,6 +55,17 @@ var xtrabackup = backupCmd{
   --incremental-lsn {{ .ToLsn }} \
   --parallel {{ .Parallel }}
 `),
+	restoreTmpl: strings.TrimSpace(`
+{{ .XtrabackupBinPath }} \
+  --target-dir base \{{ if not .IsLast }}
+  --apply-log-only \
+  {{- end }}{{ if .IncDir }}
+  --incremental-dir {{ .IncDir }} \
+  {{- end }}{{ if .Parallel }}
+  --parallel {{ .Parallel }} \
+  {{- end }}
+  --prepare
+`),
 }
 
 var innobackupex = backupCmd{
@@ -82,6 +94,15 @@ var innobackupex = backupCmd{
   --incremental \
   --incremental-lsn={{ .ToLsn }} \
   .
+`),
+	restoreTmpl: strings.TrimSpace(`
+{{ .InnobackupexBinPath }} \
+  --apply-log \{{ if not .IsLast }}
+  --redo-only \
+  {{- end }}
+  base{{ if .IncDir }}\
+  {{ .IncDir }}
+  {{- end }}
 `),
 }
 
@@ -139,7 +160,24 @@ func PrepareIncBackup(ctx context.Context, inc int, isLast bool, cfg *base.Xtrab
 			return exec.CommandContext(ctx, cfg.XtrabackupBinPath, "--prepare", "--apply-log-only", "--target-dir=base", incDir)
 		}
 	}
+}
 
+func PrepareBackup(ctx context.Context, cfg *base.RestoreXtrabackupConfig) (*exec.Cmd, error) {
+	var tmpl string
+	if cfg.UseInnobackupex {
+		tmpl = innobackupex.restoreTmpl
+	} else {
+		tmpl = xtrabackup.restoreTmpl
+	}
+	t := template.New("restore tmpl")
+	t, err := t.Parse(tmpl)
+	if err != nil {
+		return nil, err
+	}
+	buf := new(bytes.Buffer)
+	t.Execute(buf, cfg)
+	cmd := exec.CommandContext(ctx, "sh", "-c", buf.String())
+	return cmd, nil
 }
 
 func StringWithMaskPassword(cmd *exec.Cmd) string {

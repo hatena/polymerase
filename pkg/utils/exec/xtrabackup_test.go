@@ -109,3 +109,66 @@ xtrabackup \
 		t.Errorf("Command does not equal to expected command: actual=(%v) expected=(%v)", cmd.Args, expected)
 	}
 }
+
+func TestPrepareBackupCmd(t *testing.T) {
+	testCases := []struct {
+		cfg      *base.RestoreXtrabackupConfig
+		expected []string
+	}{
+		{
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            true,
+				Parallel:          4,
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --parallel 4 \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            false,
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --apply-log-only \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            true,
+				IncDir:            "inc1",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --incremental-dir inc1 \
+  --prepare`)},
+		}, {
+			&base.RestoreXtrabackupConfig{
+				XtrabackupBinPath: "xtrabackup",
+				IsLast:            false,
+				IncDir:            "inc1",
+			},
+			[]string{"sh", "-c", strings.TrimSpace(`
+xtrabackup \
+  --target-dir base \
+  --apply-log-only \
+  --incremental-dir inc1 \
+  --prepare`)},
+		},
+	}
+
+	for i, c := range testCases {
+		cmd, err := PrepareBackup(context.Background(), c.cfg)
+		if err != nil {
+			t.Errorf("%d: expected %v, but error %v", i, c.expected, err)
+		}
+		if !reflect.DeepEqual(cmd.Args, c.expected) {
+			t.Errorf("%d: expected %v, but found %v", i, c.expected, cmd.Args)
+		}
+	}
+}

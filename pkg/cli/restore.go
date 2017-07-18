@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -55,7 +57,13 @@ func MakeRestoreContext(cfg *base.Config) *restoreContext {
 	mem := gosigar.Mem{}
 	um := defaultUseMemory
 	if err := mem.Get(); err == nil {
-		um = strings.Replace(humanize.Bytes(mem.Total/2), " ", "", -1)
+		ss := strings.Split(humanize.Bytes(mem.Total/2), " ")
+		hm, err := strconv.ParseFloat(ss[0], 64)
+		if err != nil {
+			panic(err)
+		}
+		// Round off to the nearest whole number
+		um = fmt.Sprintf("%d%s", int(math.Floor(hm+0.5)), ss[1])
 	}
 
 	return &restoreContext{
@@ -169,6 +177,9 @@ func runRestore(cmd *cobra.Command, args []string) error {
 				errCh <- err
 				return
 			}
+			log.Println(pexec.StringWithMaskPassword(c))
+			c.Stdout = os.Stderr
+			c.Stderr = os.Stderr
 			if err := c.Run(); err != nil {
 				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
 				return
@@ -179,6 +190,9 @@ func runRestore(cmd *cobra.Command, args []string) error {
 					errCh <- err
 					return
 				}
+				log.Println(pexec.StringWithMaskPassword(c))
+				c.Stdout = os.Stderr
+				c.Stderr = os.Stderr
 				if err := c.Run(); err != nil {
 					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
 					return

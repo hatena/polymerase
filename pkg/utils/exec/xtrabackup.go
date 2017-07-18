@@ -20,7 +20,7 @@ type backupCmd struct {
 
 var xtrabackup = backupCmd{
 	fullTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .XtrabackupBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -37,7 +37,7 @@ var xtrabackup = backupCmd{
   --parallel {{ .Parallel }}
 `),
 	incTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .XtrabackupBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -58,7 +58,7 @@ var xtrabackup = backupCmd{
 
 var innobackupex = backupCmd{
 	fullTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .InnobackupexBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -70,7 +70,7 @@ var innobackupex = backupCmd{
   .
 `),
 	incTmpl: strings.TrimSpace(`
-{{ .BinPath }} \
+{{ .InnobackupexBinPath }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}

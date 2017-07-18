@@ -13,41 +13,34 @@ const (
 )
 
 type XtrabackupConfig struct {
-	BinPath         string
-	Host            string
-	Port            string
-	User            string
-	Password        string
-	LsnTempDir      string
-	ToLsn           string
-	UseInnobackupex bool
-	InsecureAuth    bool
-	Parallel        int
+	XtrabackupBinPath   string
+	InnobackupexBinPath string
+	Host                string
+	Port                string
+	User                string
+	Password            string
+	LsnTempDir          string
+	ToLsn               string
+	UseInnobackupex     bool
+	InsecureAuth        bool
+	Parallel            int
 }
 
-func (cfg *XtrabackupConfig) InitDefaults() error {
-	if cfg.BinPath == "" {
-		if cfg.UseInnobackupex {
-			cfg.BinPath = defaultInnobackupexBinPath
-		} else {
-			cfg.BinPath = defaultXtrabackupBinPath
-		}
+func MakeXtrabackupConfig() *XtrabackupConfig {
+	cfg := &XtrabackupConfig{
+		XtrabackupBinPath:   defaultXtrabackupBinPath,
+		InnobackupexBinPath: defaultInnobackupexBinPath,
+		Host:                defaultMySQLHost,
+		Port:                defaultMySQLPort,
+		InsecureAuth:        false,
+		Parallel:            runtime.NumCPU(),
 	}
-	if cfg.Host == "" {
-		cfg.Host = defaultMySQLHost
+
+	dir, err := ioutil.TempDir("", "polymerase_cp")
+	if err != nil {
+		panic(err)
 	}
-	if cfg.Port == "" {
-		cfg.Port = defaultMySQLPort
-	}
-	if cfg.LsnTempDir == "" {
-		dir, err := ioutil.TempDir("", "polymerase_cp")
-		if err != nil {
-			return err
-		}
-		cfg.LsnTempDir = dir
-	}
-	if cfg.Parallel == 0 {
-		cfg.Parallel = runtime.NumCPU()
-	}
-	return nil
+	cfg.LsnTempDir = dir
+
+	return cfg
 }

@@ -27,12 +27,13 @@ var xtrabackup = backupCmd{
   {{- end }}
   --slave-info \
   --backup \{{ if .LsnTempDir }}
-  --extra-lsndir={{ .LsnTempDir }} \
+  --extra-lsndir {{ .LsnTempDir }} \
   {{- end }}{{ if .InsecureAuth }}
   --skip-secure-auth \
   {{- end }}
   --safe-slave-backup \
-  --stream=tar
+  --stream tar \
+  --parallel {{ .Parallel }}
 `),
 	incTmpl: strings.TrimSpace(`
 {{ .BinPath }} \
@@ -43,13 +44,14 @@ var xtrabackup = backupCmd{
   {{- end }}
   --slave-info \
   --backup \{{ if .LsnTempDir }}
-  --extra-lsndir={{ .LsnTempDir }} \
+  --extra-lsndir {{ .LsnTempDir }} \
   {{- end }}{{ if .InsecureAuth }}
   --skip-secure-auth \
   {{- end }}
-  --stream=xbstream \
+  --stream xbstream \
   --safe-slave-backup \
-  --incremental-lsn={{ .ToLsn }}
+  --incremental-lsn {{ .ToLsn }} \
+  --parallel {{ .Parallel }}
 `),
 }
 

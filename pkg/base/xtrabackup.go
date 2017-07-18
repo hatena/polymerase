@@ -2,6 +2,7 @@ package base
 
 import (
 	"io/ioutil"
+	"runtime"
 )
 
 const (
@@ -21,6 +22,7 @@ type XtrabackupConfig struct {
 	ToLsn           string
 	UseInnobackupex bool
 	InsecureAuth    bool
+	Parallel        int
 }
 
 func (cfg *XtrabackupConfig) InitDefaults() error {
@@ -43,6 +45,9 @@ func (cfg *XtrabackupConfig) InitDefaults() error {
 			return err
 		}
 		cfg.LsnTempDir = dir
+	}
+	if cfg.Parallel == 0 {
+		cfg.Parallel = runtime.NumCPU()
 	}
 	return nil
 }

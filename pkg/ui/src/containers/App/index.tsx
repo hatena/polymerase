@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { RootState } from '../../reducers';
 import { Header, MainSection } from '../../components';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 
 export namespace App {
   export interface Props extends RouteComponentProps<void> {
@@ -24,11 +25,13 @@ export class App extends React.Component<App.Props, App.State> {
   render() {
     const { todos, actions, children } = this.props;
     return (
-      <div className={style.normal}>
-        <Header addTodo={actions.addTodo} />
-        <MainSection todos={todos} actions={actions} />
-        {children}
-      </div>
+      <MuiThemeProvider>
+        <div className={style.normal}>
+          <Header />
+          <MainSection todos={todos} actions={actions} />
+          {children}
+        </div>
+      </MuiThemeProvider>
     );
   }
 }

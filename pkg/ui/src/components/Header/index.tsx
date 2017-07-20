@@ -1,13 +1,14 @@
 import * as React from 'react';
 import * as style from './style.css';
-import { TodoTextInput } from '../TodoTextInput';
-import { AppBar, MenuItem } from 'material-ui';
+import AppBar from 'material-ui/AppBar';
+import Toolbar from 'material-ui/Toolbar';
+import Typography from 'material-ui/Typography';
 import IconButton from 'material-ui/IconButton';
-import BackupIcon from 'material-ui/svg-icons/action/backup';
+import MenuIcon from 'material-ui-icons/Menu';
+import List, { ListItem, ListItemIcon, ListItemText } from 'material-ui/List';
 import Drawer from 'material-ui/Drawer';
-import ContentClear from 'material-ui/svg-icons/content/clear';
-import Divider from 'material-ui/Divider';
 import { Link } from 'react-router-dom';
+import BackupIcon from 'material-ui-icons/Backup';
 
 export namespace Header {
   export interface Props {
@@ -26,12 +27,13 @@ export class Header extends React.Component<Header.Props, Header.State> {
     this.state = {
       open: false,
     };
-    this.handleLeftIconToggle = this.handleLeftIconToggle.bind(this);
+
+    this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
     this.handleDrawerClose = this.handleDrawerClose.bind(this);
   }
 
-  handleLeftIconToggle() {
-    this.setState({open: !this.state.open});
+  handleDrawerOpen() {
+    this.setState({open: true})
   }
 
   handleDrawerClose() {
@@ -39,18 +41,37 @@ export class Header extends React.Component<Header.Props, Header.State> {
   }
 
   render() {
+    const sideList = (
+      <div>
+        <List className={style.list} disablePadding>
+          <ListItem button>
+            <ListItemIcon>
+              <BackupIcon />
+            </ListItemIcon>
+          <ListItemText primary="Backups" />
+        </ListItem>
+        </List>
+      </div>
+    );
+
     return (
       <div>
-        <AppBar
-          title="Polymerase UI"
-          iconElementLeft={<IconButton><BackupIcon /></IconButton>}
-          className={style.navbar}
-          onLeftIconButtonTouchTap={this.handleLeftIconToggle}
-        />
-        <Drawer open={this.state.open}>
-          <ContentClear onClick={this.handleDrawerClose}/>
-          <Divider/>
-          <MenuItem onTouchTap={this.handleDrawerClose}><Link to="/">Home</Link></MenuItem>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton color="contrast" aria-label="Menu">
+              <MenuIcon onClick={this.handleDrawerOpen} />
+            </IconButton>
+            <Typography type="title" color="inherit" className="initial">
+              Polymerase UI
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Drawer
+          open={this.state.open}
+          onRequestClose={this.handleDrawerClose}
+          onClick={this.handleDrawerClose}
+        >
+          {sideList}
         </Drawer>
       </div>
     );

@@ -4,10 +4,10 @@ import { Provider } from 'react-redux';
 import { Router, Route, Switch } from 'react-router';
 import { createBrowserHistory } from 'history';
 import { configureStore } from './store';
-import { App } from './containers/App';
+import { Layout } from './containers/App/Layout';
 import * as injectTapEventPlugin from 'react-tap-event-plugin';
 
-// Fix not working tap event
+// Work tap event
 injectTapEventPlugin();
 
 const store = configureStore();
@@ -17,7 +17,7 @@ ReactDOM.render(
   <Provider store={store}>
     <Router history={history}>
       <Switch>
-        <Route path="/" component={App} />
+        <Route path="/" component={Layout} />
       </Switch>
     </Router>
   </Provider>,

@@ -53,6 +53,7 @@
     "react-tap-event-plugin": "^2.0.1",
     "redux": "^3.7.1",
     "redux-actions": "^2.1.0",
-    "redux-cycles": "^0.4.1"
+    "redux-cycles": "^0.4.1",
+    "redux-thunk": "^2.2.0"
   }
 }

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as style from './style.css';
+import { withStyles, createStyleSheet } from 'material-ui/styles';
 import AppBar from 'material-ui/AppBar';
 import Toolbar from 'material-ui/Toolbar';
 import Typography from 'material-ui/Typography';
@@ -20,6 +21,18 @@ export namespace Header {
   }
 }
 
+const styleSheet = createStyleSheet('UndockedDrawer', {
+  list: {
+    width: 250,
+    flex: 'initial',
+  },
+  listFull: {
+    width: 'auto',
+    flex: 'initial',
+  },
+});
+
+@withStyles(styleSheet)
 export class Header extends React.Component<Header.Props, Header.State> {
 
   constructor(props?: Header.Props, context?: any) {

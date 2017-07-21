@@ -1,11 +1,7 @@
-.navbar {
-  background-color: #5B5B5B !important;
-}
-
 .list {
-  width: 250,
+  width: 250px
 }
 
 .listFull {
-  width: 'auto',
+  width: auto
 }

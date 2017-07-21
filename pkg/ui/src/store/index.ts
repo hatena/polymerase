@@ -1,4 +1,5 @@
 import { createStore, applyMiddleware, Store } from 'redux';
+import thunk from 'redux-thunk';
 import { logger } from '../middleware';
 import rootReducer, { RootState } from '../reducers';
 
@@ -7,7 +8,12 @@ export function configureStore(initialState?: RootState): Store<RootState> {
     ? window.devToolsExtension()(createStore)
     : createStore;
 
-  const createStoreWithMiddleware = applyMiddleware(logger)(create);
+  const middlewares = [
+    logger,
+    thunk
+  ];
+
+  const createStoreWithMiddleware = applyMiddleware(...middlewares)(create);
 
   const store = createStoreWithMiddleware(rootReducer, initialState) as Store<RootState>;
 

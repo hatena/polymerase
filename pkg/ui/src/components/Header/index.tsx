@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as style from './style.css';
 import { withStyles, createStyleSheet } from 'material-ui/styles';
 import AppBar from 'material-ui/AppBar';
 import Toolbar from 'material-ui/Toolbar';
@@ -11,9 +10,9 @@ import Drawer from 'material-ui/Drawer';
 import { Link } from 'react-router-dom';
 import BackupIcon from 'material-ui-icons/Backup';
 
-export namespace Header {
+namespace Header {
   export interface Props {
-
+    classes: any
   }
 
   export interface State {
@@ -32,8 +31,7 @@ const styleSheet = createStyleSheet('UndockedDrawer', {
   },
 });
 
-@withStyles(styleSheet)
-export class Header extends React.Component<Header.Props, Header.State> {
+class Header extends React.Component<Header.Props, Header.State> {
 
   constructor(props?: Header.Props, context?: any) {
     super(props, context);
@@ -54,15 +52,19 @@ export class Header extends React.Component<Header.Props, Header.State> {
   }
 
   render() {
+    const classes = this.props.classes;
+
     const sideList = (
       <div>
-        <List className={style.list} disablePadding>
-          <ListItem button>
-            <ListItemIcon>
-              <BackupIcon />
-            </ListItemIcon>
-          <ListItemText primary="Backups" />
-        </ListItem>
+        <List className={classes.list} disablePadding>
+          <Link to="/backups">
+            <ListItem button>
+              <ListItemIcon>
+                <BackupIcon />
+              </ListItemIcon>
+              <ListItemText primary="Backups" />
+            </ListItem>
+          </Link>
         </List>
       </div>
     );
@@ -90,3 +92,9 @@ export class Header extends React.Component<Header.Props, Header.State> {
     );
   }
 }
+
+const styledHeader = withStyles(styleSheet)(Header);
+
+export {
+  styledHeader as Header
+};

@@ -19,8 +19,8 @@ ReactDOM.render(
     <Router history={history}>
       <Layout>
       <Switch>
-        <Route path="/" render={routeProps => <BackupTable {...routeProps} />} />
-        <Redirect from="*" to="/" />
+        <Route path="/backups" render={routeProps => <BackupTable {...routeProps} />} />
+        <Redirect from="*" to="/backups" />
       </Switch>
       </Layout>
     </Router>

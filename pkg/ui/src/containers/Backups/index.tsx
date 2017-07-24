@@ -4,12 +4,6 @@ import { withStyles, createStyleSheet } from 'material-ui/styles';
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import Paper from 'material-ui/Paper';
 
-namespace BackupTable {
-  export interface Props {
-    classes: any
-  }
-}
-
 const styleSheet = createStyleSheet('BasicTable', theme => ({
   paper: {
     width: '100%',
@@ -18,20 +12,17 @@ const styleSheet = createStyleSheet('BasicTable', theme => ({
   },
 }));
 
-let id = 0;
-function createData(name, calories, fat, carbs, protein) {
-  id += 1;
-  return { id, name, calories, fat, carbs, protein };
-}
 const data = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
+  {id: 1, backup_key: 'test db', backup_type: 'full', node: 'node1', hostname: 'localhost', started_at: 'aaa', ended_at: 'bbb', status: 'failed'}
 ];
 
-class BackupTable extends React.Component<BackupTable.Props, {}> {
+interface BackupTableExplicitData {
+  classes: any
+}
+
+type BackupTableProps = BackupTableExplicitData & RouteComponentProps<void>;
+
+class BackupTable extends React.Component<BackupTableProps, {}> {
   render() {
     const classes = this.props.classes;
 
@@ -40,11 +31,13 @@ class BackupTable extends React.Component<BackupTable.Props, {}> {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Dessert (100g serving)</TableCell>
-              <TableCell numeric>Calories</TableCell>
-              <TableCell numeric>Fat (g)</TableCell>
-              <TableCell numeric>Carbs (g)</TableCell>
-              <TableCell numeric>Protein (g)</TableCell>
+              <TableCell>Backup Key</TableCell>
+              <TableCell>Backup Type</TableCell>
+              <TableCell>Node Name</TableCell>
+              <TableCell>Hostname</TableCell>
+              <TableCell>Started At</TableCell>
+              <TableCell>Ended At</TableCell>
+              <TableCell>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -52,19 +45,25 @@ class BackupTable extends React.Component<BackupTable.Props, {}> {
               return (
                 <TableRow key={n.id}>
                   <TableCell>
-                    {n.name}
+                    {n.backup_key}
                   </TableCell>
-                  <TableCell numeric>
-                    {n.calories}
+                  <TableCell>
+                    {n.backup_type}
                   </TableCell>
-                  <TableCell numeric>
-                    {n.fat}
+                  <TableCell>
+                    {n.node}
                   </TableCell>
-                  <TableCell numeric>
-                    {n.carbs}
+                  <TableCell>
+                    {n.hostname}
                   </TableCell>
-                  <TableCell numeric>
-                    {n.protein}
+                  <TableCell>
+                    {n.started_at}
+                  </TableCell>
+                  <TableCell>
+                    {n.ended_at}
+                  </TableCell>
+                  <TableCell>
+                    {n.status}
                   </TableCell>
                 </TableRow>
               );

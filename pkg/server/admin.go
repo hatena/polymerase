@@ -1,9 +1,8 @@
 package server
 
 import (
-	"context"
-
 	"github.com/taku-k/polymerase/pkg/server/admin"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

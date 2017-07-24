@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "status/statuspb/status.proto";
+import "github.com/taku-k/polymerase/pkg/status/statuspb/status.proto";
 
 package admin;
 

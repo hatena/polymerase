@@ -40,6 +40,7 @@ proto: $(PROTOSRCS)
 	for src in $(PROTOSRCS); do \
 	  $(PROTO) \
 	   -Ipkg \
+	   -I../../.. \
 	   $$src \
 	   --go_out=plugins=grpc:pkg; \
 	done

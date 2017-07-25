@@ -22,6 +22,7 @@ type backupCmd struct {
 var xtrabackup = backupCmd{
 	fullTmpl: strings.TrimSpace(`
 {{ .XtrabackupBinPath }} \
+  --defaults-file {{ .DefaultsFile }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -39,6 +40,7 @@ var xtrabackup = backupCmd{
 `),
 	incTmpl: strings.TrimSpace(`
 {{ .XtrabackupBinPath }} \
+  --defaults-file {{ .DefaultsFile }} \
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -57,6 +59,7 @@ var xtrabackup = backupCmd{
 `),
 	restoreTmpl: strings.TrimSpace(`
 {{ .XtrabackupBinPath }} \
+  --defaults-file {{ .DefaultsFile }} \
   --target-dir base \{{ if not .IsLast }}
   --apply-log-only \
   {{- end }}{{ if .IncDir }}
@@ -145,6 +148,7 @@ func PrepareBaseBackup(
 		UseInnobackupex:     cfg.UseInnobackupex,
 		IsLast:              isLast,
 		UseMemory:           cfg.UseMemory,
+		DefaultsFile:        cfg.DefaultsFile,
 	}
 	return _prepareBackup(ctx, rcfg)
 }
@@ -163,6 +167,7 @@ func PrepareIncBackup(
 		IsLast:              isLast,
 		IncDir:              fmt.Sprintf("inc%d", inc),
 		UseMemory:           cfg.UseMemory,
+		DefaultsFile:        cfg.DefaultsFile,
 	}
 	return _prepareBackup(ctx, rcfg)
 }

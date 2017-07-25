@@ -1,10 +1,12 @@
 import { combineReducers, Reducer } from 'redux';
-import todos from './todos';
+import backups from './backups';
 
-export interface RootState {
-  todos: TodoStoreState;
+export interface AdminUIState {
+  backups: BackupStoreState;
 }
 
-export default combineReducers<RootState>({
-  todos
+export default combineReducers<AdminUIState>({
+  backups
 });
+
+

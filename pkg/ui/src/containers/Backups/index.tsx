@@ -3,6 +3,8 @@ import { RouteComponentProps } from 'react-router';
 import { withStyles, createStyleSheet } from 'material-ui/styles';
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import Paper from 'material-ui/Paper';
+import { connect } from "react-redux";
+import { AdminUIState } from "../../reducers";
 
 const styleSheet = createStyleSheet('BasicTable', theme => ({
   paper: {
@@ -77,6 +79,15 @@ class BackupTable extends React.Component<BackupTableProps, {}> {
 
 const styledBackupTable = withStyles(styleSheet)(BackupTable);
 
+const backupTableConnected = connect(
+  (state: AdminUIState) => {
+
+  },
+  {
+
+  },
+)(styledBackupTable);
+
 export {
-  styledBackupTable as BackupTable
+  backupTableConnected as BackupTable
 };

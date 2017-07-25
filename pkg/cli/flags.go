@@ -101,6 +101,7 @@ func init() {
 
 		f.StringVarP(&db, "db", "d", "", "DB name")
 		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
+		f.StringVar(&xtrabackupCfg.DefaultsFile, "defaults-file", xtrabackupCfg.DefaultsFile, "Read default MySQL options from the given file.")
 	}
 
 	// Backup commands flags

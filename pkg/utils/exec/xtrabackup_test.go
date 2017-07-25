@@ -24,9 +24,11 @@ func TestBuildFullBackupCmd(t *testing.T) {
 				LsnTempDir:        "/tmp/test",
 				InsecureAuth:      true,
 				Parallel:          1,
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -47,9 +49,11 @@ xtrabackup \
 				User:              "user",
 				LsnTempDir:        "/tmp/test",
 				Parallel:          1,
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 /usr/bin/xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -85,11 +89,13 @@ func TestBuildIncBackupCmd(t *testing.T) {
 		LsnTempDir:        "/tmp/test",
 		ToLsn:             "100",
 		Parallel:          1,
+		DefaultsFile:      "/etc/mysql/my.cnf",
 	}
 	cmd, err := BuildIncBackupCmd(context.Background(), cfg)
 
 	expected := []string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -120,9 +126,11 @@ func TestPrepareBackupCmd(t *testing.T) {
 				XtrabackupBinPath: "xtrabackup",
 				IsLast:            true,
 				Parallel:          4,
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --parallel 4 \
   --prepare`)},
@@ -130,9 +138,11 @@ xtrabackup \
 			&base.RestoreXtrabackupConfig{
 				XtrabackupBinPath: "xtrabackup",
 				IsLast:            false,
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --apply-log-only \
   --prepare`)},
@@ -141,9 +151,11 @@ xtrabackup \
 				XtrabackupBinPath: "xtrabackup",
 				IsLast:            true,
 				IncDir:            "inc1",
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --incremental-dir inc1 \
   --prepare`)},
@@ -153,9 +165,11 @@ xtrabackup \
 				IsLast:            false,
 				IncDir:            "inc1",
 				UseMemory:         "2GB",
+				DefaultsFile:      "/etc/mysql/my.cnf",
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --apply-log-only \
   --incremental-dir inc1 \

@@ -26,7 +26,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	pexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"go.uber.org/ratelimit"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -90,7 +89,6 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	if db == "" {
 		return errors.New("You must specify `db`")
 	}
-	maxBandWidth := uint64(restoreCtx.maxBandWidth)
 
 	// If `from` is not specified and `latest` option is added,
 	// restoreCtx.from is set as tomorrow.
@@ -108,100 +106,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go func() {
-		scli, err := getSuitableStorageClient(ctx, db)
-		if err != nil {
-			errCh <- err
-			return
-		}
-		res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
-			Db:   db,
-			From: restoreCtx.from,
-		})
-
-		restoreDir, err := filepath.Abs("polymerase-restore")
-		if err != nil {
-			errCh <- err
-			return
-		}
-		if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
-			errCh <- err
-			return
-		}
-		log.Printf("Restore data directory: %v\n", restoreDir)
-
-		pbs := make([]*pb.ProgressBar, len(res.Keys))
-		pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
-		for i := 0; i < len(res.Keys)-1; i += 1 {
-			inc := len(res.Keys) - i - 1
-			info := res.Keys[i]
-			pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
-		}
-		for _, bar := range pbs {
-			bar.SetWidth(progressBarWidth)
-			bar.SetUnits(pb.U_BYTES)
-		}
-
-		pool, err := pb.StartPool(pbs...)
-		if err != nil {
-			errCh <- err
-			return
-		}
-
-		g, _ := errgroup.WithContext(ctx)
-
-		for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
-			info := res.Keys[idx]
-			bar := pbs[idx]
-			inc := inc
-			g.Go(func() error {
-				return getIncBackup(scli, info, restoreDir, inc, bar, maxBandWidth)
-			})
-			idx += 1
-		}
-		g.Go(func() error {
-			return getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1], maxBandWidth)
-		})
-		if err := g.Wait(); err != nil {
-			pool.Stop()
-			errCh <- err
-			return
-		}
-		pool.Stop()
-
-		// Automatically preparing backups only when applyPrepare flag is true.
-		if restoreCtx.applyPrepare {
-			os.Chdir(restoreDir)
-			c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			log.Println(pexec.StringWithMaskPassword(c))
-			c.Stdout = os.Stderr
-			c.Stderr = os.Stderr
-			if err := c.Run(); err != nil {
-				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
-				return
-			}
-			for inc := 1; inc < len(res.Keys); inc += 1 {
-				c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
-				if err != nil {
-					errCh <- err
-					return
-				}
-				log.Println(pexec.StringWithMaskPassword(c))
-				c.Stdout = os.Stderr
-				c.Stderr = os.Stderr
-				if err := c.Run(); err != nil {
-					errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
-					return
-				}
-			}
-		}
-
-		finishCh <- struct{}{}
-	}()
+	go doRestore(ctx, errCh, finishCh)
 
 	select {
 	case err := <-errCh:
@@ -210,6 +115,103 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	case <-finishCh:
 	}
 	return nil
+}
+
+func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
+	scli, err := getAppropriateStorageClient(ctx, db)
+	if err != nil {
+		errCh <- err
+		return
+	}
+	res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
+		Db:   db,
+		From: restoreCtx.from,
+	})
+
+	restoreDir, err := filepath.Abs("polymerase-restore")
+	if err != nil {
+		errCh <- err
+		return
+	}
+	if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
+		errCh <- err
+		return
+	}
+	log.Printf("Restore data directory: %v\n", restoreDir)
+
+	pbs := make([]*pb.ProgressBar, len(res.Keys))
+	pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
+	for i := 0; i < len(res.Keys)-1; i += 1 {
+		inc := len(res.Keys) - i - 1
+		info := res.Keys[i]
+		pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
+	}
+	for _, bar := range pbs {
+		bar.SetWidth(progressBarWidth)
+		bar.SetUnits(pb.U_BYTES)
+	}
+
+	pool, err := pb.StartPool(pbs...)
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	maxBandWidth := uint64(restoreCtx.maxBandWidth)
+	if maxBandWidth != 0 {
+		log.Printf("Set max bandwidth %s/sec\n", humanize.Bytes(maxBandWidth))
+	}
+
+	for inc, idx := len(res.Keys)-1, 0; inc > 0; inc -= 1 {
+		info := res.Keys[idx]
+		bar := pbs[idx]
+		inc := inc
+		if err := getIncBackup(scli, info, restoreDir, inc, bar, maxBandWidth); err != nil {
+			pool.Stop()
+			errCh <- err
+			return
+		}
+		idx += 1
+	}
+	if err := getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1], maxBandWidth); err != nil {
+		pool.Stop()
+		errCh <- err
+		return
+	}
+	pool.Stop()
+
+	// Automatically preparing backups only when applyPrepare flag is true.
+	if restoreCtx.applyPrepare {
+		os.Chdir(restoreDir)
+		c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		log.Println(pexec.StringWithMaskPassword(c))
+		c.Stdout = os.Stderr
+		c.Stderr = os.Stderr
+		if err := c.Run(); err != nil {
+			errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+			return
+		}
+		for inc := 1; inc < len(res.Keys); inc += 1 {
+			c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			log.Println(pexec.StringWithMaskPassword(c))
+			c.Stdout = os.Stderr
+			c.Stderr = os.Stderr
+			if err := c.Run(); err != nil {
+				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
+				return
+			}
+		}
+	}
+
+	finishCh <- struct{}{}
 }
 
 func getIncBackup(
@@ -329,7 +331,6 @@ func writeOutFromStreamWithRateLimit(
 	if maxBandwidth == 0 {
 		rl = ratelimit.NewUnlimited()
 	} else {
-		log.Printf("Set max bandwidth %s/sec\n", humanize.Bytes(maxBandwidth))
 		rl = ratelimit.New(int(maxBandwidth / uint64(len(fs.Content))))
 	}
 

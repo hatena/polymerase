@@ -28,7 +28,7 @@ func TestBuildFullBackupCmd(t *testing.T) {
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -53,7 +53,7 @@ xtrabackup \
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 /usr/bin/xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -95,7 +95,7 @@ func TestBuildIncBackupCmd(t *testing.T) {
 
 	expected := []string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --host 127.0.0.1 \
   --port 3306 \
   --user user \
@@ -130,7 +130,7 @@ func TestPrepareBackupCmd(t *testing.T) {
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --parallel 4 \
   --prepare`)},
@@ -142,7 +142,7 @@ xtrabackup \
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --apply-log-only \
   --prepare`)},
@@ -155,7 +155,7 @@ xtrabackup \
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --incremental-dir inc1 \
   --prepare`)},
@@ -169,7 +169,7 @@ xtrabackup \
 			},
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
-  --defaults-file /etc/mysql/my.cnf \
+  --defaults-file=/etc/mysql/my.cnf \
   --target-dir base \
   --apply-log-only \
   --incremental-dir inc1 \

@@ -10,7 +10,6 @@ const (
 	defaultInnobackupexBinPath = "innobackupex"
 	defaultMySQLHost           = "127.0.0.1"
 	defaultMySQLPort           = "3306"
-	defaultMycnf               = "/etc/mysql/my.cnf"
 )
 
 type XtrabackupConfig struct {
@@ -48,7 +47,6 @@ func MakeXtrabackupConfig() *XtrabackupConfig {
 		Port:                defaultMySQLPort,
 		InsecureAuth:        false,
 		Parallel:            runtime.NumCPU(),
-		DefaultsFile:        defaultMycnf,
 	}
 
 	dir, err := ioutil.TempDir("", "polymerase_cp")

@@ -21,8 +21,9 @@ type backupCmd struct {
 
 var xtrabackup = backupCmd{
 	fullTmpl: strings.TrimSpace(`
-{{ .XtrabackupBinPath }} \
-  --defaults-file {{ .DefaultsFile }} \
+{{ .XtrabackupBinPath }} \{{ if .DefaultsFile }}
+  --defaults-file={{ .DefaultsFile }} \
+  {{- end }}
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -39,8 +40,9 @@ var xtrabackup = backupCmd{
   --parallel {{ .Parallel }}
 `),
 	incTmpl: strings.TrimSpace(`
-{{ .XtrabackupBinPath }} \
-  --defaults-file {{ .DefaultsFile }} \
+{{ .XtrabackupBinPath }} \{{ if .DefaultsFile }}
+  --defaults-file={{ .DefaultsFile }} \
+  {{- end }}
   --host {{ .Host }} \
   --port {{ .Port }} \
   --user {{ .User }} \{{ if .Password }}
@@ -58,8 +60,9 @@ var xtrabackup = backupCmd{
   --parallel {{ .Parallel }}
 `),
 	restoreTmpl: strings.TrimSpace(`
-{{ .XtrabackupBinPath }} \
-  --defaults-file {{ .DefaultsFile }} \
+{{ .XtrabackupBinPath }} \{{ if .DefaultsFile }}
+  --defaults-file={{ .DefaultsFile }} \
+  {{- end }}
   --target-dir base \{{ if not .IsLast }}
   --apply-log-only \
   {{- end }}{{ if .IncDir }}

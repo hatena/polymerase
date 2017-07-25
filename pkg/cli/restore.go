@@ -182,36 +182,44 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 
 	// Automatically preparing backups only when applyPrepare flag is true.
 	if restoreCtx.applyPrepare {
-		os.Chdir(restoreDir)
-		c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
-		if err != nil {
+		if err := applyPrepare(ctx, res, restoreDir); err != nil {
 			errCh <- err
 			return
+		}
+	}
+
+	finishCh <- struct{}{}
+}
+
+func applyPrepare(
+	ctx context.Context,
+	res *storagepb.GetKeysAtPointResponse,
+	restoreDir string,
+) error {
+	os.Chdir(restoreDir)
+	c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+	if err != nil {
+		return err
+	}
+	log.Println(pexec.StringWithMaskPassword(c))
+	c.Stdout = os.Stderr
+	c.Stderr = os.Stderr
+	if err := c.Run(); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
+	}
+	for inc := 1; inc < len(res.Keys); inc += 1 {
+		c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+		if err != nil {
+			return err
 		}
 		log.Println(pexec.StringWithMaskPassword(c))
 		c.Stdout = os.Stderr
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {
-			errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
-			return
-		}
-		for inc := 1; inc < len(res.Keys); inc += 1 {
-			c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			log.Println(pexec.StringWithMaskPassword(c))
-			c.Stdout = os.Stderr
-			c.Stderr = os.Stderr
-			if err := c.Run(); err != nil {
-				errCh <- errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
-				return
-			}
+			return errors.Wrap(err, fmt.Sprintf("failed preparing inc%d: %v", inc, c.Args))
 		}
 	}
-
-	finishCh <- struct{}{}
+	return nil
 }
 
 func getIncBackup(

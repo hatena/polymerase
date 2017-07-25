@@ -118,7 +118,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 }
 
 func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
-	scli, err := getSuitableStorageClient(ctx, db)
+	scli, err := getAppropriateStorageClient(ctx, db)
 	if err != nil {
 		errCh <- err
 		return

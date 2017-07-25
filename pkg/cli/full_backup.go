@@ -106,7 +106,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, db string, errCh chan 
 }
 
 func purgePrevBackup(db string) error {
-	cli, err := getSuitableStorageClient(context.Background(), db)
+	cli, err := getAppropriateStorageClient(context.Background(), db)
 	if err != nil {
 		return err
 	}

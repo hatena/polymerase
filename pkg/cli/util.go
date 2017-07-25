@@ -22,7 +22,7 @@ func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobr
 	}
 }
 
-func getSuitableStorageClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
+func getAppropriateStorageClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,

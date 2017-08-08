@@ -170,10 +170,10 @@ xtrabackup \
 			[]string{"sh", "-c", strings.TrimSpace(`
 xtrabackup \
   --defaults-file=/etc/mysql/my.cnf \
+  --use-memory 2GB \
   --target-dir base \
   --apply-log-only \
   --incremental-dir inc1 \
-  --use-memory 2GB \
   --prepare`)},
 		},
 	}

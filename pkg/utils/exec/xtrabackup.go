@@ -62,6 +62,8 @@ var xtrabackup = backupCmd{
 	restoreTmpl: strings.TrimSpace(`
 {{ .XtrabackupBinPath }} \{{ if .DefaultsFile }}
   --defaults-file={{ .DefaultsFile }} \
+  {{- end }}{{ if .UseMemory }}
+  --use-memory {{ .UseMemory }} \
   {{- end }}
   --target-dir base \{{ if not .IsLast }}
   --apply-log-only \
@@ -69,8 +71,6 @@ var xtrabackup = backupCmd{
   --incremental-dir {{ .IncDir }} \
   {{- end }}{{ if .Parallel }}
   --parallel {{ .Parallel }} \
-  {{- end }}{{ if .UseMemory }}
-  --use-memory {{ .UseMemory }} \
   {{- end }}
   --prepare
 `),

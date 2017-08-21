@@ -40,8 +40,18 @@ proto: $(PROTOSRCS)
 	for src in $(PROTOSRCS); do \
 	  $(PROTO) \
 	   -Ipkg \
+	   -I../../.. \
 	   $$src \
 	   --go_out=plugins=grpc:pkg; \
+	done;
+	for src in $(PROTOSRCS); do \
+	  $(PROTO) \
+	    --plugin=protoc-gen-ts=./pkg/ui/node_modules/.bin/protoc-gen-ts \
+	    --js_out=import_style=commonjs,binary:./pkg/ui/src/proto \
+	    --ts_out=service=true:./pkg/ui/src/proto \
+	    -I../../.. \
+	    -Ipkg \
+	    $$src; \
 	done
 
 .PHONY: mockgen

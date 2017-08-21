@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "github.com/taku-k/polymerase/pkg/status/statuspb/status.proto";
+
+package admin;
+
+message BackupsRequest {}
+
+message BackupsResponse {
+  repeated BackupInfoWithKey backups = 1;
+}
+
+message BackupInfoWithKey {
+  string key = 1;
+  statuspb.BackupInfo info = 2;
+}
+
+service Admin {
+  rpc Backups(BackupsRequest) returns (BackupsResponse) {};
+}

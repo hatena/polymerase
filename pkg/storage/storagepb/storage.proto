@@ -12,6 +12,12 @@ service StorageService {
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 
   rpc GetBestStartTime(GetBestStartTimeRequest) returns (GetBestStartTimeResponse) {};
+
+  rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
+
+  rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
+
+  rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -62,4 +68,29 @@ message GetBestStartTimeRequest {
 message GetBestStartTimeResponse {
   int32 minute = 1;
   int32 hour = 2;
+}
+
+message FullBackupContentStream {
+  string db = 1;
+  bytes content = 2;
+}
+
+message IncBackupContentStream {
+  string db = 1;
+  string lsn = 2;
+  bytes content = 3;
+}
+
+message BackupReply {
+  string message = 1;
+  string key = 2;
+}
+
+message PostCheckpointsRequest {
+  string key = 1;
+  bytes content = 2;
+}
+
+message PostCheckpointsResponse {
+  string message = 1;
 }

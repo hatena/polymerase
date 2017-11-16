@@ -23,7 +23,8 @@ type Server struct {
 	cfg           *base.ServerConfig
 	grpc          *grpc.Server
 	storage       storage.BackupStorage
-	manager       *tempbackup.TempBackupManager
+	mngrByTemp    *tempbackup.TempBackupManager
+	mngrByStorage *storage.TempBackupManager
 	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
 	etcdServer    *etcdServer
@@ -60,7 +61,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 		return nil, errors.Wrap(err, "backup storage configuration is failed")
 	}
 
-	mngr, err := tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
+	mngrByStorage, err := storage.NewTempBackupManager(s.storage, &storage.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
 		Name:    cfg.Name,
@@ -68,13 +69,23 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
 	}
-	s.manager = mngr
+	s.mngrByStorage = mngrByStorage
 
-	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.manager)
+	mngrByTemp, err := tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
+		Config:  cfg.Config,
+		TempDir: cfg.TempDir(),
+		Name:    cfg.Name,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
+	}
+	s.mngrByTemp = mngrByTemp
+
+	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.mngrByTemp)
 
 	s.aggregator = status.NewWeeklyBackupAggregator()
 
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.aggregator)
+	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		tempbackuppb.RegisterBackupTransferServiceServer(gs, s.tempBackupSvc)
@@ -109,12 +120,13 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	// Inject etcd client after launching embedded etcd server
-	s.manager.EtcdCli = cli
+	s.mngrByTemp.EtcdCli = cli
+	s.mngrByStorage.EtcdCli = cli
 	s.storageSvc.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
-	if err := s.storage.RestoreBackupInfo(s.manager.EtcdCli); err != nil {
+	if err := s.storage.RestoreBackupInfo(cli); err != nil {
 		return err
 	}
 
@@ -124,8 +136,8 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
-	if s.manager.EtcdCli != nil {
-		s.manager.EtcdCli.Close()
+	if s.mngrByStorage.EtcdCli != nil {
+		s.mngrByStorage.EtcdCli.Close()
 	}
 	if s.etcdServer != nil {
 		s.etcdServer.close()
@@ -139,7 +151,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := status.NewStatusRecorder(
-		s.manager.EtcdCli, s.cfg.StoreDir.Path, s.cfg.Name, s.cfg)
+		s.mngrByStorage.EtcdCli, s.cfg.StoreDir.Path, s.cfg.Name, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.WriteStatus(context.Background()); err != nil {

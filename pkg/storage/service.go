@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"log"
@@ -10,23 +11,27 @@ import (
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/peer"
 )
 
 type StorageService struct {
 	storage    BackupStorage
 	rateLimit  float64
 	EtcdCli    *clientv3.Client
+	tempMngr   *TempBackupManager
 	aggregator *status.WeeklyBackupAggregator
 }
 
 func NewStorageService(
 	storage BackupStorage,
 	rateLimit uint64,
+	tempMngr *TempBackupManager,
 	aggregator *status.WeeklyBackupAggregator,
 ) *StorageService {
 	return &StorageService{
 		storage:    storage,
 		rateLimit:  float64(rateLimit),
+		tempMngr:   tempMngr,
 		aggregator: aggregator,
 	}
 }
@@ -106,5 +111,99 @@ func (s *StorageService) GetBestStartTime(
 	return &storagepb.GetBestStartTimeResponse{
 		Minute: int32(m),
 		Hour:   int32(h),
+	}, nil
+}
+
+func (s *StorageService) TransferFullBackup(
+	stream storagepb.StorageService_TransferFullBackupServer,
+) error {
+	var state *TempBackupState
+
+	if p, ok := peer.FromContext(stream.Context()); ok {
+		log.Printf("Established peer: %v\n", p.Addr)
+	}
+
+	for {
+		content, err := stream.Recv()
+		if err == io.EOF {
+			if err := state.Close(); err != nil {
+				return err
+			}
+			return stream.SendAndClose(&storagepb.BackupReply{
+				Message: "success",
+				Key:     state.key,
+			})
+		}
+		if err != nil {
+			return err
+		}
+		if state == nil {
+			if content.Db == "" {
+				return errors.New("empty db is not acceptable")
+			}
+			state, err = s.tempMngr.OpenFullBackup(content.Db)
+			if err != nil {
+				return err
+			}
+			log.Printf("Start full-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
+		}
+		if err := state.Append(content.Content); err != nil {
+			return err
+		}
+	}
+}
+
+func (s *StorageService) TransferIncBackup(
+	stream storagepb.StorageService_TransferIncBackupServer,
+) error {
+	var state *TempBackupState
+
+	if p, ok := peer.FromContext(stream.Context()); ok {
+		log.Printf("Established peer: %v\n", p.Addr)
+	}
+
+	for {
+		content, err := stream.Recv()
+		if err == io.EOF {
+			if err := state.Close(); err != nil {
+				return err
+			}
+			return stream.SendAndClose(&storagepb.BackupReply{
+				Message: "success",
+				Key:     state.key,
+			})
+		}
+		if err != nil {
+			return err
+		}
+		if state == nil {
+			if content.Db == "" {
+				return errors.New("empty db is not acceptable")
+			}
+			if content.Lsn == "" {
+				return errors.New("empty lsn is not acceptable")
+			}
+			state, err = s.tempMngr.OpenIncBackup(content.Db, content.Lsn)
+			if err != nil {
+				return err
+			}
+			log.Printf("Start inc-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
+		}
+		if err := state.Append(content.Content); err != nil {
+			return err
+		}
+	}
+}
+
+func (s *StorageService) PostCheckpoints(
+	ctx context.Context,
+	req *storagepb.PostCheckpointsRequest,
+) (*storagepb.PostCheckpointsResponse, error) {
+	r := bytes.NewReader(req.Content)
+	if err := s.tempMngr.storage.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
+		return &storagepb.PostCheckpointsResponse{}, err
+	}
+	return &storagepb.PostCheckpointsResponse{
+		Message: "success",
 	}, nil
 }

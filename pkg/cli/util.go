@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/taku-k/polymerase/pkg/allocator"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 )
 
 func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
@@ -56,7 +55,7 @@ func getStorageClient(ctx context.Context, addr string) (storagepb.StorageServic
 	return storagepb.NewStorageServiceClient(c), nil
 }
 
-func getTempBackupClient(ctx context.Context, db string) (tempbackuppb.BackupTransferServiceClient, error) {
+func getTempBackupClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,
@@ -78,7 +77,7 @@ func getTempBackupClient(ctx context.Context, db string) (tempbackuppb.BackupTra
 	}
 
 	log.Printf("Select node as backup: %s\n", node)
-	return tempbackuppb.NewBackupTransferServiceClient(c), nil
+	return storagepb.NewStorageServiceClient(c), nil
 }
 
 func usageAndError(cmd *cobra.Command) error {

@@ -36,12 +36,12 @@ ENV PATH   /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
 
-# Install Xtrabackup 2.3.8
+# Install Xtrabackup 2.3.10
 RUN \
   wget -q https://repo.percona.com/apt/percona-release_0.1-4.xenial_all.deb && \
   dpkg -i percona-release_0.1-4.xenial_all.deb && \
   apt-get update && \
-  apt-get install -y percona-xtrabackup=2.3.9-1.xenial
+  apt-get install -y percona-xtrabackup=2.3.10-1.xenial
 
 # Setup ycsb
 RUN \

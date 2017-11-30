@@ -10,10 +10,11 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
 	"google.golang.org/grpc"
+
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
 )
 
 type backupContext struct {
@@ -94,12 +95,12 @@ func connectGRPC(ctx context.Context, addr string) (*grpc.ClientConn, error) {
 	return conn, err
 }
 
-func postXtrabackupCP(ctx context.Context, cli tempbackuppb.BackupTransferServiceClient, key string) (*tempbackuppb.PostCheckpointsResponse, error) {
+func postXtrabackupCP(ctx context.Context, cli storagepb.StorageServiceClient, key string) (*storagepb.PostCheckpointsResponse, error) {
 	b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
 	if err != nil {
 		return nil, err
 	}
-	res, err := cli.PostCheckpoints(ctx, &tempbackuppb.PostCheckpointsRequest{
+	res, err := cli.PostCheckpoints(ctx, &storagepb.PostCheckpointsRequest{
 		Key:     key,
 		Content: b,
 	})

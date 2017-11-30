@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
 )
 
 var incBackupCmd = &cobra.Command{
@@ -91,7 +91,7 @@ func transferIncBackup(ctx context.Context, r io.Reader, db string, errCh chan e
 			errCh <- err
 			return
 		}
-		stream.Send(&tempbackuppb.IncBackupContentStream{
+		stream.Send(&storagepb.IncBackupContentStream{
 			Content: chunk[:n],
 			Db:      db,
 			Lsn:     xtrabackupCfg.ToLsn,

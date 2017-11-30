@@ -31,3 +31,9 @@ type BackupStorage interface {
 
 	RestoreBackupInfo(cli *clientv3.Client) error
 }
+
+type Storage interface {
+	TraverseDir(func()) error
+	Put()
+	Get()
+}

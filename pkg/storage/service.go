@@ -2,12 +2,18 @@ package storage
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"log"
 	"time"
 
+	"fmt"
+
+	"sort"
+	"strings"
+
 	"github.com/coreos/etcd/clientv3"
+	"github.com/pkg/errors"
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
@@ -20,6 +26,7 @@ type StorageService struct {
 	EtcdCli    *clientv3.Client
 	tempMngr   *TempBackupManager
 	aggregator *status.WeeklyBackupAggregator
+	cfg        *base.ServerConfig
 }
 
 func NewStorageService(
@@ -27,12 +34,14 @@ func NewStorageService(
 	rateLimit uint64,
 	tempMngr *TempBackupManager,
 	aggregator *status.WeeklyBackupAggregator,
+	cfg *base.ServerConfig,
 ) *StorageService {
 	return &StorageService{
 		storage:    storage,
 		rateLimit:  float64(rateLimit),
 		tempMngr:   tempMngr,
 		aggregator: aggregator,
+		cfg:        cfg,
 	}
 }
 
@@ -43,6 +52,40 @@ func (s *StorageService) GetLatestToLSN(
 	if err != nil {
 		log.Printf("Not found db=%s\n", req.Db)
 		return &storagepb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
+	}
+	resp, err := s.EtcdCli.KV.Get(context.Background(), req.Db, clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend), clientv3.WithKeysOnly())
+	if err != nil {
+		panic(err)
+	}
+	if len(resp.Kvs) == 0 {
+		return nil, errors.New("not found any base backup")
+	}
+	sort.Slice(resp.Kvs, func(i, j int) bool {
+		spi := strings.Split(string(resp.Kvs[i].Key), "/")
+		spj := strings.Split(string(resp.Kvs[j].Key), "/")
+		ti, err := time.Parse(s.cfg.TimeFormat, spi[1])
+		if err != nil {
+			panic(err)
+		}
+		tj, err := time.Parse(s.cfg.TimeFormat, spj[1])
+		if err != nil {
+			panic(err)
+		}
+		if ti.Equal(tj) {
+			ti, err := time.Parse(s.cfg.TimeFormat, spi[2])
+			if err != nil {
+				panic(err)
+			}
+			tj, err := time.Parse(s.cfg.TimeFormat, spj[2])
+			if err != nil {
+				panic(err)
+			}
+			return tj.After(ti)
+		}
+		return tj.After(ti)
+	})
+	for _, kv := range resp.Kvs {
+		fmt.Printf("%s\n", kv.Key)
 	}
 	return &storagepb.GetLatestToLSNResponse{
 		Lsn: lsn,

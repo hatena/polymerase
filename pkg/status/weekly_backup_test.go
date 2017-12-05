@@ -12,21 +12,21 @@ import (
 
 func TestGetAverageBandwidth(t *testing.T) {
 	testCases := []struct {
-		info     *statuspb.FullBackupInfo
+		meta     *statuspb.BackupMetadata
 		expected float64
 	}{
 		{
-			&statuspb.FullBackupInfo{
+			meta: &statuspb.BackupMetadata{
 				StoredTime: parseTimeStr("2017-07-14_10-00-00"),
 				EndTime:    parseTimeStr("2017-07-14_10-01-40"),
 				FileSize:   1000000,
 			},
-			10000.0,
+			expected: 10000.0,
 		},
 	}
 
 	for i, c := range testCases {
-		a, err := getAverageBandwidth(c.info)
+		a, err := getAverageBandwidth(c.meta)
 		if err != nil {
 			t.Errorf("%d: expected %f, but get error %v", i, c.expected, err)
 		} else if math.Abs(a-c.expected) > 0.00001 {

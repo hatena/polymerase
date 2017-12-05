@@ -20,26 +20,21 @@ message NodeInfoMap {
 }
 
 message BackupInfo {
-  FullBackupInfo full_backup = 1;
-  repeated IncBackupInfo inc_backups = 2;
+  BackupMetadata full_backup = 1;
+  repeated BackupMetadata inc_backups = 2;
+  string db = 3;
 }
 
-message FullBackupInfo {
+message BackupMetadata {
   google.protobuf.Timestamp stored_time = 1;
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
   google.protobuf.Timestamp end_time = 5;
   uint64 file_size = 6;
-}
-
-message IncBackupInfo {
-  google.protobuf.Timestamp stored_time = 1;
-  string node_name = 2;
-  string host = 3;
-  StoredType stored_type = 4;
-  google.protobuf.Timestamp end_time = 5;
-  uint64 file_size = 6;
+  BackupType backup_type = 7;
+  string db = 8;
+  string to_lsn = 9;
 }
 
 message AllBackups {
@@ -48,4 +43,9 @@ message AllBackups {
 
 enum StoredType {
   LOCAL = 0;
+}
+
+enum BackupType {
+  FULL = 0;
+  INC = 1;
 }

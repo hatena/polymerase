@@ -1,4 +1,4 @@
-package server
+package etcd
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type etcdServer struct {
+type EtcdServer struct {
 	Server     *embed.Etcd
 	cfg        *embed.Config
 	ClientPort string
 }
 
-func newEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
+func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	etcdCfg := embed.NewConfig()
 	lcurl, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", ctx.ClientPort))
 	if err != nil {
@@ -66,8 +66,8 @@ func newEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 	return etcdCfg, nil
 }
 
-func newEtcdServer(cfg *embed.Config) (*etcdServer, error) {
-	es := &etcdServer{}
+func NewEtcdServer(cfg *embed.Config) (*EtcdServer, error) {
+	es := &EtcdServer{}
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {
 		os.RemoveAll(cfg.Dir)
@@ -78,7 +78,7 @@ func newEtcdServer(cfg *embed.Config) (*etcdServer, error) {
 	return es, nil
 }
 
-func (e *etcdServer) close() {
+func (e *EtcdServer) Close() {
 	defer os.RemoveAll(e.Server.Config().Dir)
 	ep := make([]string, len(e.cfg.ACUrls))
 	for i, e := range e.cfg.ACUrls {

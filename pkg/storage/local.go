@@ -62,47 +62,6 @@ func (s *LocalBackupStorage) GetStorageType() string {
 	return "local"
 }
 
-// GetLatestToLSN fetches `to_lsn` from most recent backup.
-func (s *LocalBackupStorage) GetLatestToLSN(db string) (string, error) {
-	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.backupsDir, db))
-	if err != nil {
-		return "", err
-	}
-	if len(startingPointDirs) == 0 {
-		return "", errors.New("Not any base backup found")
-	}
-
-	latestBackupDir := ""
-	var latestBackupTime time.Time
-	fileDir := fmt.Sprintf("%s/%s/%s", s.backupsDir, db, startingPointDirs[len(startingPointDirs)-1].Name())
-	files, err := ioutil.ReadDir(fileDir)
-	if err != nil {
-		return "", err
-	}
-	for _, f := range files {
-		curBackupTime, err := time.Parse(s.timeFormat, f.Name())
-		if err != nil {
-			return "", err
-		}
-		if latestBackupDir == "" {
-			latestBackupDir = filepath.Join(fileDir, f.Name())
-			latestBackupTime = curBackupTime
-		} else {
-			if !latestBackupTime.After(curBackupTime) {
-				latestBackupDir = filepath.Join(fileDir, f.Name())
-				latestBackupTime = curBackupTime
-			}
-		}
-	}
-
-	// Extract a LSN from a last checkpoint
-	cp := base.LoadXtrabackupCP(filepath.Join(latestBackupDir, "xtrabackup_checkpoints"))
-	if cp.ToLSN == "" {
-		return "", errors.New("xtrabackup_checkpoints not found")
-	}
-	return cp.ToLSN, nil
-}
-
 // SearchStartingPointByLSN returns a starting point containing `to_lsn` equals lsn.
 func (s *LocalBackupStorage) SearchStaringPointByLSN(db, lsn string) (string, error) {
 	startingPointDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", s.backupsDir, db))
@@ -284,12 +243,22 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if err != nil {
 				return err
 			}
-			if err := status.StoreFullBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
-				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: storedTime,
-				Host:       s.AdvertiseAddr,
-				NodeName:   s.nodeName,
-			}); err != nil {
+			cp := base.LoadXtrabackupCP(filepath.Join(filepath.Dir(path), "xtrabackup_checkpoints"))
+			if cp.ToLSN == "" {
+				return errors.New("xtrabackup_checkpoints is not found")
+			}
+			if err := status.StoreFullBackupInfo(
+				cli,
+				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
+				&statuspb.BackupMetadata{
+					StoredType: statuspb.StoredType_LOCAL,
+					StoredTime: storedTime,
+					Host:       s.AdvertiseAddr,
+					NodeName:   s.nodeName,
+					BackupType: statuspb.BackupType_FULL,
+					Db:         db,
+					ToLsn:      cp.ToLSN,
+				}); err != nil {
 				return err
 			}
 			log.Printf("Restore full backup: %s", path)
@@ -302,12 +271,22 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if err != nil {
 				return err
 			}
-			if err := status.StoreIncBackupInfo(cli, base.BackupBaseDBKey(db, start.Format(s.timeFormat)), &statuspb.IncBackupInfo{
-				StoredType: statuspb.StoredType_LOCAL,
-				StoredTime: storedTime,
-				Host:       s.AdvertiseAddr,
-				NodeName:   s.nodeName,
-			}); err != nil {
+			cp := base.LoadXtrabackupCP(filepath.Join(filepath.Dir(path), "xtrabackup_checkpoints"))
+			if cp.ToLSN == "" {
+				return errors.New("xtrabackup_checkpoints is not found")
+			}
+			if err := status.StoreIncBackupInfo(
+				cli,
+				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
+				&statuspb.BackupMetadata{
+					StoredType: statuspb.StoredType_LOCAL,
+					StoredTime: storedTime,
+					Host:       s.AdvertiseAddr,
+					NodeName:   s.nodeName,
+					BackupType: statuspb.BackupType_INC,
+					Db:         db,
+					ToLsn:      cp.ToLSN,
+				}); err != nil {
 				return err
 			}
 			log.Printf("Restore inc backup: %s", path)

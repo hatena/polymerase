@@ -11,8 +11,6 @@ import (
 type BackupStorage interface {
 	GetStorageType() string
 
-	GetLatestToLSN(db string) (string, error)
-
 	SearchStaringPointByLSN(db, lsn string) (string, error)
 
 	TransferTempFullBackup(tempDir string, key string) error
@@ -30,4 +28,40 @@ type BackupStorage interface {
 	GetKPastBackupKey(db string, k int) (string, error)
 
 	RestoreBackupInfo(cli *clientv3.Client) error
+}
+
+type PhysicalStorage interface {
+	Open()
+	Append()
+	Close()
+}
+
+type DiskStorage struct {
+}
+
+func (*DiskStorage) Open() {
+	panic("implement me")
+}
+
+func (*DiskStorage) Append() {
+	panic("implement me")
+}
+
+func (*DiskStorage) Close() {
+	panic("implement me")
+}
+
+type MemStorage struct {
+}
+
+func (*MemStorage) Open() {
+	panic("implement me")
+}
+
+func (*MemStorage) Append() {
+	panic("implement me")
+}
+
+func (*MemStorage) Close() {
+	panic("implement me")
 }

@@ -23,18 +23,6 @@ func NewLocalBackupStorageForTest() *LocalBackupStorage {
 	}
 }
 
-func TestLocalBackupStorage_GetLastLSN(t *testing.T) {
-	s := NewLocalBackupStorageForTest()
-	a, err := s.GetLatestToLSN("test-db1")
-	e := "110"
-	if err != nil {
-		t.Errorf(`GetLastLSN("test-db1") is failed: %v`, err)
-	}
-	if a != e {
-		t.Errorf(`GetLastLSN("test-db1") returns wrong lsn: expected = (%v), actual (%v)`, e, a)
-	}
-}
-
 func TestLocalBackupStorage_SearchStaringPointByLSN(t *testing.T) {
 	s := NewLocalBackupStorageForTest()
 	a, err := s.SearchStaringPointByLSN("test-db1", "110")

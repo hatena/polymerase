@@ -70,7 +70,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 
 	s.aggregator = status.NewWeeklyBackupAggregator()
 
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator)
+	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator, cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)

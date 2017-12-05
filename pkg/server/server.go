@@ -10,22 +10,19 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/tempbackup"
-	"github.com/taku-k/polymerase/pkg/tempbackup/tempbackuppb"
-	"google.golang.org/grpc"
 )
 
 type Server struct {
 	cfg           *base.ServerConfig
 	grpc          *grpc.Server
 	storage       storage.BackupStorage
-	mngrByTemp    *tempbackup.TempBackupManager
 	mngrByStorage *storage.TempBackupManager
-	tempBackupSvc *tempbackup.TempBackupTransferService
 	storageSvc    *storage.StorageService
 	etcdServer    *etcdServer
 	etcdCfg       *embed.Config
@@ -71,24 +68,11 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	}
 	s.mngrByStorage = mngrByStorage
 
-	mngrByTemp, err := tempbackup.NewTempBackupManager(s.storage, &tempbackup.TempBackupManagerConfig{
-		Config:  cfg.Config,
-		TempDir: cfg.TempDir(),
-		Name:    cfg.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
-	}
-	s.mngrByTemp = mngrByTemp
-
-	s.tempBackupSvc = tempbackup.NewBackupTransferService(s.mngrByTemp)
-
 	s.aggregator = status.NewWeeklyBackupAggregator()
 
 	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
-		tempbackuppb.RegisterBackupTransferServiceServer(gs, s.tempBackupSvc)
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)
 	}
 
@@ -120,7 +104,6 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	// Inject etcd client after launching embedded etcd server
-	s.mngrByTemp.EtcdCli = cli
 	s.mngrByStorage.EtcdCli = cli
 	s.storageSvc.EtcdCli = cli
 

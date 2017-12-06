@@ -148,12 +148,17 @@ func (s *TempBackupState) closeFullBackup() error {
 	if err != nil {
 		return err
 	}
-	if err := status.StoreFullBackupInfo(s.cli, base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)), &statuspb.FullBackupInfo{
-		StoredTime: storedTime,
-		StoredType: statuspb.StoredType_LOCAL,
-		NodeName:   s.name,
-		Host:       s.addr,
-	}); err != nil {
+	if err := status.StoreFullBackupInfo(
+		s.cli,
+		base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)),
+		&statuspb.BackupMetadata{
+			StoredTime: storedTime,
+			StoredType: statuspb.StoredType_LOCAL,
+			NodeName:   s.name,
+			Host:       s.addr,
+			BackupType: statuspb.BackupType_FULL,
+			Db:         s.db,
+		}); err != nil {
 		return err
 	}
 	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)))
@@ -176,12 +181,17 @@ func (s *TempBackupState) closeIncBackup() error {
 		return err
 	}
 	fromTime, _ := time.Parse(s.timeFormat, from)
-	if err := status.StoreIncBackupInfo(s.cli, base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)), &statuspb.IncBackupInfo{
-		StoredTime: storedTime,
-		StoredType: statuspb.StoredType_LOCAL,
-		NodeName:   s.name,
-		Host:       s.addr,
-	}); err != nil {
+	if err := status.StoreIncBackupInfo(
+		s.cli,
+		base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)),
+		&statuspb.BackupMetadata{
+			StoredTime: storedTime,
+			StoredType: statuspb.StoredType_LOCAL,
+			NodeName:   s.name,
+			Host:       s.addr,
+			BackupType: statuspb.BackupType_INC,
+			Db:         s.db,
+		}); err != nil {
 		return err
 	}
 	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)))

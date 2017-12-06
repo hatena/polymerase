@@ -16,6 +16,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils/etcd"
 )
 
 type Server struct {
@@ -24,7 +25,7 @@ type Server struct {
 	storage       storage.BackupStorage
 	mngrByStorage *storage.TempBackupManager
 	storageSvc    *storage.StorageService
-	etcdServer    *etcdServer
+	etcdServer    *etcd.EtcdServer
 	etcdCfg       *embed.Config
 	aggregator    *status.WeeklyBackupAggregator
 }
@@ -34,7 +35,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 		cfg: cfg,
 	}
 
-	etcdCfg, err := newEtcdEmbedConfig(&EtcdContext{
+	etcdCfg, err := etcd.NewEtcdEmbedConfig(&etcd.EtcdContext{
 		Host:       cfg.Host,
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
@@ -70,7 +71,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 
 	s.aggregator = status.NewWeeklyBackupAggregator()
 
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator)
+	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator, s.cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)
@@ -80,7 +81,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	es, err := newEtcdServer(s.etcdCfg)
+	es, err := etcd.NewEtcdServer(s.etcdCfg)
 	s.etcdServer = es
 	if err != nil {
 		return errors.Wrap(err, "etcd server cannot be started")
@@ -123,7 +124,7 @@ func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
 		s.mngrByStorage.EtcdCli.Close()
 	}
 	if s.etcdServer != nil {
-		s.etcdServer.close()
+		s.etcdServer.Close()
 	}
 	stopped <- struct{}{}
 }

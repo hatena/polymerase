@@ -4,12 +4,11 @@
 package storage
 
 import (
-	io "io"
-	time "time"
-
 	clientv3 "github.com/coreos/etcd/clientv3"
 	gomock "github.com/golang/mock/gomock"
 	storagepb "github.com/taku-k/polymerase/pkg/storage/storagepb"
+	io "io"
+	time "time"
 )
 
 // Mock of BackupStorage interface
@@ -41,17 +40,6 @@ func (_m *MockBackupStorage) GetStorageType() string {
 
 func (_mr *_MockBackupStorageRecorder) GetStorageType() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetStorageType")
-}
-
-func (_m *MockBackupStorage) GetLatestToLSN(db string) (string, error) {
-	ret := _m.ctrl.Call(_m, "GetLatestToLSN", db)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockBackupStorageRecorder) GetLatestToLSN(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetLatestToLSN", arg0)
 }
 
 func (_m *MockBackupStorage) SearchStaringPointByLSN(db string, lsn string) (string, error) {
@@ -146,4 +134,49 @@ func (_m *MockBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 
 func (_mr *_MockBackupStorageRecorder) RestoreBackupInfo(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "RestoreBackupInfo", arg0)
+}
+
+// Mock of PhysicalStorage interface
+type MockPhysicalStorage struct {
+	ctrl     *gomock.Controller
+	recorder *_MockPhysicalStorageRecorder
+}
+
+// Recorder for MockPhysicalStorage (not exported)
+type _MockPhysicalStorageRecorder struct {
+	mock *MockPhysicalStorage
+}
+
+func NewMockPhysicalStorage(ctrl *gomock.Controller) *MockPhysicalStorage {
+	mock := &MockPhysicalStorage{ctrl: ctrl}
+	mock.recorder = &_MockPhysicalStorageRecorder{mock}
+	return mock
+}
+
+func (_m *MockPhysicalStorage) EXPECT() *_MockPhysicalStorageRecorder {
+	return _m.recorder
+}
+
+func (_m *MockPhysicalStorage) Open() {
+	_m.ctrl.Call(_m, "Open")
+}
+
+func (_mr *_MockPhysicalStorageRecorder) Open() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Open")
+}
+
+func (_m *MockPhysicalStorage) Append() {
+	_m.ctrl.Call(_m, "Append")
+}
+
+func (_mr *_MockPhysicalStorageRecorder) Append() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Append")
+}
+
+func (_m *MockPhysicalStorage) Close() {
+	_m.ctrl.Call(_m, "Close")
+}
+
+func (_mr *_MockPhysicalStorageRecorder) Close() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }

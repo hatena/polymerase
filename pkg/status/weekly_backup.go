@@ -34,7 +34,7 @@ func NewWeeklyBackupAggregator() *WeeklyBackupAggregator {
 }
 
 // AddFullBackupInfo adds full backup information to aggregator.
-func (a *WeeklyBackupAggregator) AddFullBackupInfo(i *statuspb.FullBackupInfo) error {
+func (a *WeeklyBackupAggregator) AddFullBackupInfo(i *statuspb.BackupMetadata) error {
 	bw, err := getAverageBandwidth(i)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func initWeeklyInfo() *weeklyInfo {
 	return wi
 }
 
-func getAverageBandwidth(i *statuspb.FullBackupInfo) (float64, error) {
+func getAverageBandwidth(i *statuspb.BackupMetadata) (float64, error) {
 	end, err := ptypes.Timestamp(i.EndTime)
 	if err != nil {
 		return 0, err

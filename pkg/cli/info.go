@@ -8,6 +8,8 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/spf13/cobra"
+
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/status"
 	"github.com/taku-k/polymerase/pkg/status/statuspb"
 )
@@ -56,7 +58,7 @@ func runBackupsInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	kv := status.GetBackupsInfo(cli)
+	kv := status.GetBackupsInfo(cli, base.BackupsKey)
 	all := &statuspb.AllBackups{
 		DbToBackups: make(map[string]*statuspb.BackupInfo),
 	}

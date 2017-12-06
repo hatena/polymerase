@@ -25,9 +25,9 @@ type XtrabackupCheckpoints struct {
 	RecoverBinlogInfo int    `ini:"recover_binlog_info"`
 }
 
-func LoadXtrabackupCP(path string) XtrabackupCheckpoints {
+func LoadXtrabackupCP(source interface{}) XtrabackupCheckpoints {
 	var cp XtrabackupCheckpoints
-	err := ini.MapTo(&cp, path)
+	err := ini.MapTo(&cp, source)
 	if err != nil {
 		return XtrabackupCheckpoints{}
 	}

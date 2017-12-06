@@ -3,15 +3,19 @@ package storage
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/peer"
+
+	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 type StorageService struct {
@@ -20,6 +24,7 @@ type StorageService struct {
 	EtcdCli    *clientv3.Client
 	tempMngr   *TempBackupManager
 	aggregator *status.WeeklyBackupAggregator
+	cfg        *base.ServerConfig
 }
 
 func NewStorageService(
@@ -27,22 +32,42 @@ func NewStorageService(
 	rateLimit uint64,
 	tempMngr *TempBackupManager,
 	aggregator *status.WeeklyBackupAggregator,
+	cfg *base.ServerConfig,
 ) *StorageService {
 	return &StorageService{
 		storage:    storage,
 		rateLimit:  float64(rateLimit),
 		tempMngr:   tempMngr,
 		aggregator: aggregator,
+		cfg:        cfg,
 	}
 }
 
 func (s *StorageService) GetLatestToLSN(
 	ctx context.Context, req *storagepb.GetLatestToLSNRequest,
 ) (*storagepb.GetLatestToLSNResponse, error) {
-	lsn, err := s.storage.GetLatestToLSN(req.Db)
-	if err != nil {
+	backups := status.GetBackupsInfo(s.EtcdCli, base.BackupDBKey(req.Db))
+	if backups == nil {
 		log.Printf("Not found db=%s\n", req.Db)
-		return &storagepb.GetLatestToLSNResponse{Lsn: ""}, errors.New("Not found such a db")
+		return nil, errors.New("not found such a db")
+	}
+	sortedKeys := make([]*base.BackupKeyItem, len(backups))
+	var i int
+	for k := range backups {
+		sortedKeys[i] = base.ParseBackupKey(k, s.cfg.TimeFormat)
+		if sortedKeys[i] == nil {
+			return nil, errors.New(fmt.Sprintf("found invalid backup key=%s", k))
+		}
+		i++
+	}
+	sort.Slice(sortedKeys, func(i, j int) bool {
+		return sortedKeys[j].StoredTime.After(sortedKeys[i].StoredTime)
+	})
+	key := base.BackupBaseDBKey(req.Db, sortedKeys[0].StoredTime.Format(s.cfg.TimeFormat))
+	lsn := backups[key].FullBackup.ToLsn
+	if len(backups[key].IncBackups) != 0 {
+		incs := backups[key].IncBackups
+		lsn = incs[len(incs)-1].ToLsn
 	}
 	return &storagepb.GetLatestToLSNResponse{
 		Lsn: lsn,
@@ -202,6 +227,14 @@ func (s *StorageService) PostCheckpoints(
 	r := bytes.NewReader(req.Content)
 	if err := s.tempMngr.storage.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
 		return &storagepb.PostCheckpointsResponse{}, err
+	}
+	cp := base.LoadXtrabackupCP(req.Content)
+	if cp.ToLSN == "" {
+		return nil, errors.New("failed to load")
+	}
+	err := status.UpdateCheckpoint(s.EtcdCli, req.Key, cp.ToLSN)
+	if err != nil {
+		return nil, err
 	}
 	return &storagepb.PostCheckpointsResponse{
 		Message: "success",

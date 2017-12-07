@@ -2,44 +2,38 @@ package storage
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/embed"
+	"github.com/coreos/etcd/integration"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils/etcd"
 )
 
 type testContext struct {
+	t       *testing.T
 	tempdir string
-	server  *etcd.EtcdServer
-	cli     *clientv3.Client
+	cluster *integration.ClusterV3
+	cli     etcd.ClientAPI
 	storage *StorageService
 }
 
 func (tc *testContext) Start(t *testing.T) {
 	var err error
-	tc.tempdir, err = ioutil.TempDir(os.TempDir(), "polymerase_test")
+
+	tc.t = t
+
+	tc.cluster = integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
+
+	tc.cli, err = etcd.NewTestClient(tc.cluster.RandClient())
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := embed.NewConfig()
-	cfg.Dir = tc.tempdir
-	tc.server, err = etcd.NewEtcdServer(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tc.cli, err = clientv3.New(clientv3.Config{
-		Endpoints: []string{cfg.ACUrls[0].Host},
-	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,8 +44,7 @@ func (tc *testContext) Start(t *testing.T) {
 }
 
 func (tc *testContext) Close() {
-	tc.server.Close()
-	os.RemoveAll(tc.tempdir)
+	tc.cluster.Terminate(tc.t)
 }
 
 func TestGetLatestToLSN(t *testing.T) {
@@ -63,7 +56,7 @@ func TestGetLatestToLSN(t *testing.T) {
 		db   string
 		data []struct {
 			key  string
-			info *statuspb.BackupInfo
+			info *polypb.BackupInfo
 		}
 		expect string
 	}{
@@ -71,12 +64,12 @@ func TestGetLatestToLSN(t *testing.T) {
 			db: "test-1",
 			data: []struct {
 				key  string
-				info *statuspb.BackupInfo
+				info *polypb.BackupInfo
 			}{
 				{
 					key: base.BackupBaseDBKey("test-1", time.Now().Format(base.DefaultTimeFormat)),
-					info: &statuspb.BackupInfo{
-						FullBackup: &statuspb.BackupMetadata{
+					info: &polypb.BackupInfo{
+						FullBackup: &polypb.BackupMetadata{
 							StoredTime: &timestamp.Timestamp{
 								Seconds: 1,
 							},
@@ -91,15 +84,15 @@ func TestGetLatestToLSN(t *testing.T) {
 			db: "test-2",
 			data: []struct {
 				key  string
-				info *statuspb.BackupInfo
+				info *polypb.BackupInfo
 			}{
 				{
 					key: base.BackupBaseDBKey("test-2", time.Now().Format(base.DefaultTimeFormat)),
-					info: &statuspb.BackupInfo{
-						FullBackup: &statuspb.BackupMetadata{
+					info: &polypb.BackupInfo{
+						FullBackup: &polypb.BackupMetadata{
 							ToLsn: "100",
 						},
-						IncBackups: []*statuspb.BackupMetadata{
+						IncBackups: []*polypb.BackupMetadata{
 							{
 								ToLsn: "102",
 							},
@@ -116,7 +109,7 @@ func TestGetLatestToLSN(t *testing.T) {
 
 	for i, ca := range testCases {
 		for _, d := range ca.data {
-			err := status.StoreBackupInfo(tc.cli, d.key, d.info)
+			err := polypb.StoreBackupInfo(tc.cli, d.key, d.info)
 			if err != nil {
 				t.Fatalf("#%d: got error %v; want success", i, err)
 			}

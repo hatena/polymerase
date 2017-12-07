@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -23,45 +23,21 @@ type BackupStorage interface {
 
 	PostFile(key string, name string, r io.Reader) error
 
-	RemoveBackups(cli *clientv3.Client, key string) error
+	RemoveBackups(cli etcd.ClientAPI, key string) error
 
 	GetKPastBackupKey(db string, k int) (string, error)
 
-	RestoreBackupInfo(cli *clientv3.Client) error
+	RestoreBackupInfo(cli etcd.ClientAPI) error
 }
 
 type PhysicalStorage interface {
-	Open()
-	Append()
-	Close()
+	Create(name string) (io.WriteCloser, error)
+	Move(src, dest string) error
+	Delete(name string) error
 }
 
 type DiskStorage struct {
 }
 
-func (*DiskStorage) Open() {
-	panic("implement me")
-}
-
-func (*DiskStorage) Append() {
-	panic("implement me")
-}
-
-func (*DiskStorage) Close() {
-	panic("implement me")
-}
-
 type MemStorage struct {
-}
-
-func (*MemStorage) Open() {
-	panic("implement me")
-}
-
-func (*MemStorage) Append() {
-	panic("implement me")
-}
-
-func (*MemStorage) Close() {
-	panic("implement me")
 }

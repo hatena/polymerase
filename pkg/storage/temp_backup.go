@@ -1,20 +1,18 @@
 package storage
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
-	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 )
 
@@ -32,25 +30,100 @@ type TempBackupManager struct {
 	storage    BackupStorage
 	name       string
 	cfg        *base.Config
+	pstorage   PhysicalStorage
 
 	// Injected after etcd launched
-	EtcdCli *clientv3.Client
+	EtcdCli etcd.ClientAPI
 }
 
-type TempBackupState struct {
+type AppendCloser interface {
+	Append(data []byte) error
+	CloseTransfer() (*polypb.BackupMetadata, error)
+}
+
+type tempBackup struct {
 	db         string
-	file       *os.File
-	writer     *bufio.Writer
+	writer     io.WriteCloser
 	start      time.Time
-	backupType base.BackupType
-	timeFormat string
-	storage    BackupStorage
+	manager    *TempBackupManager
 	lsn        string
+	backupType polypb.BackupType
 	tempDir    string
-	key        string
-	cli        *clientv3.Client
-	name       string
-	addr       string
+}
+
+func (m *TempBackupManager) openTempBackup(db, lsn string) (AppendCloser, error) {
+	now := time.Now()
+	tempDir, err := ioutil.TempDir(m.tempDir, "polymerase-backup-dir")
+	if err != nil {
+		return nil, err
+	}
+	var artifact string
+	var backupType polypb.BackupType
+	if lsn == "" {
+		artifact = filepath.Join(tempDir, "base.tar.gz")
+		backupType = polypb.BackupType_FULL
+	} else {
+		artifact = filepath.Join(tempDir, "inc.xb.gz")
+		backupType = polypb.BackupType_INC
+	}
+	writer, err := m.pstorage.Create(artifact)
+	if err != nil {
+		m.pstorage.Delete(tempDir)
+		return nil, err
+	}
+	return &tempBackup{
+		db:         db,
+		writer:     writer,
+		start:      now,
+		manager:    m,
+		lsn:        lsn,
+		backupType: backupType,
+		tempDir:    tempDir,
+	}, nil
+}
+
+func (b *tempBackup) Append(data []byte) error {
+	_, err := b.writer.Write(data)
+	return err
+}
+
+func (b *tempBackup) CloseTransfer() (*polypb.BackupMetadata, error) {
+	err := b.writer.Close()
+	if err != nil {
+		return nil, err
+	}
+	var baseTime, startTime string
+	switch b.backupType {
+	case polypb.BackupType_FULL:
+		baseTime = b.start.Format(b.manager.timeFormat)
+		startTime = baseTime
+	case polypb.BackupType_INC:
+		baseTime, err = b.manager.storage.SearchStaringPointByLSN(b.db, b.lsn)
+		if err != nil {
+			return nil, err
+		}
+		startTime = b.start.Format(b.manager.timeFormat)
+	default:
+		return nil, errors.New("not supported such a backup type")
+	}
+	key := fmt.Sprintf("%s/%s/%s", b.db, baseTime, startTime)
+	if err := b.manager.storage.TransferTempFullBackup(b.tempDir, key); err != nil {
+		b.manager.pstorage.Delete(b.tempDir)
+		return nil, err
+	}
+	storedTime, err := ptypes.TimestampProto(b.start)
+	if err != nil {
+		return nil, err
+	}
+	return &polypb.BackupMetadata{
+		StoredTime: storedTime,
+		StoredType: polypb.StoredType_LOCAL,
+		NodeName:   b.manager.name,
+		Host:       b.manager.cfg.AdvertiseAddr,
+		BackupType: polypb.BackupType_FULL,
+		Db:         b.db,
+		Key:        key,
+	}, nil
 }
 
 func NewTempBackupManager(storage BackupStorage, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
@@ -64,136 +137,4 @@ func NewTempBackupManager(storage BackupStorage, cfg *TempBackupManagerConfig) (
 		name:       cfg.Name,
 		cfg:        cfg.Config,
 	}, nil
-}
-
-func (m *TempBackupManager) OpenFullBackup(db string) (*TempBackupState, error) {
-	s, err := m.createBackup(db, "base.tar.gz")
-	if err != nil {
-		return nil, err
-	}
-	s.backupType = base.FULL
-	return s, nil
-}
-
-func (m *TempBackupManager) OpenIncBackup(db string, lsn string) (*TempBackupState, error) {
-	s, err := m.createBackup(db, "inc.xb.gz")
-	if s == nil {
-		return nil, err
-	}
-	s.backupType = base.INC
-	s.lsn = lsn
-	return s, nil
-}
-
-func (m *TempBackupManager) createBackup(db string, artifact string) (*TempBackupState, error) {
-	now := time.Now()
-	tempDir, err := ioutil.TempDir(m.tempDir, "polymerase-backup-dir")
-	if err != nil {
-		return nil, err
-	}
-	f, err := os.Create(filepath.Join(tempDir, artifact))
-	if err != nil {
-		os.RemoveAll(tempDir)
-		return nil, err
-	}
-	s := &TempBackupState{
-		db:         db,
-		file:       f,
-		writer:     bufio.NewWriter(f),
-		start:      now,
-		timeFormat: m.timeFormat,
-		tempDir:    tempDir,
-		storage:    m.storage,
-		cli:        m.EtcdCli,
-		name:       m.name,
-		addr:       m.cfg.AdvertiseAddr,
-	}
-	return s, nil
-}
-
-func (s *TempBackupState) Append(content []byte) error {
-	_, err := s.writer.Write(content)
-	return err
-}
-
-func (s *TempBackupState) Close() error {
-	s.closeTempFile()
-	switch s.backupType {
-	case base.FULL:
-		return s.closeFullBackup()
-	case base.INC:
-		return s.closeIncBackup()
-	}
-	return errors.New("Not supported such a backup type")
-}
-
-func (s *TempBackupState) closeTempFile() {
-	s.writer.Flush()
-	s.file.Close()
-}
-
-func (s *TempBackupState) removeTempDir() {
-	os.RemoveAll(s.tempDir)
-}
-
-func (s *TempBackupState) closeFullBackup() error {
-	//defer s.removeTempDir()
-	key := fmt.Sprintf("%s/%s/%s", s.db,
-		s.start.Format(s.timeFormat), s.start.Format(s.timeFormat))
-	s.key = key
-	if err := s.storage.TransferTempFullBackup(s.tempDir, key); err != nil {
-		return err
-	}
-	storedTime, err := ptypes.TimestampProto(s.start)
-	if err != nil {
-		return err
-	}
-	if err := status.StoreFullBackupInfo(
-		s.cli,
-		base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)),
-		&statuspb.BackupMetadata{
-			StoredTime: storedTime,
-			StoredType: statuspb.StoredType_LOCAL,
-			NodeName:   s.name,
-			Host:       s.addr,
-			BackupType: statuspb.BackupType_FULL,
-			Db:         s.db,
-		}); err != nil {
-		return err
-	}
-	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, s.start.Format(s.timeFormat)))
-	return nil
-}
-
-func (s *TempBackupState) closeIncBackup() error {
-	//defer s.removeTempDir()
-	from, err := s.storage.SearchStaringPointByLSN(s.db, s.lsn)
-	if err != nil {
-		return err
-	}
-	key := fmt.Sprintf("%s/%s/%s", s.db, from, s.start.Format(s.timeFormat))
-	s.key = key
-	if err := s.storage.TransferTempIncBackup(s.tempDir, key); err != nil {
-		return err
-	}
-	storedTime, err := ptypes.TimestampProto(s.start)
-	if err != nil {
-		return err
-	}
-	fromTime, _ := time.Parse(s.timeFormat, from)
-	if err := status.StoreIncBackupInfo(
-		s.cli,
-		base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)),
-		&statuspb.BackupMetadata{
-			StoredTime: storedTime,
-			StoredType: statuspb.StoredType_LOCAL,
-			NodeName:   s.name,
-			Host:       s.addr,
-			BackupType: statuspb.BackupType_INC,
-			Db:         s.db,
-		}); err != nil {
-		return err
-	}
-	log.Printf("Store to %s key\n", base.BackupBaseDBKey(s.db, fromTime.Format(s.timeFormat)))
-	return nil
 }

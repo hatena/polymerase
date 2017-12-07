@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
 var nodesInfoCmd = &cobra.Command{
@@ -21,7 +21,7 @@ var nodesInfoCmd = &cobra.Command{
 }
 
 func runNodesInfo(cmd *cobra.Command, args []string) error {
-	cli, err := clientv3.New(clientv3.Config{
+	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		DialTimeout: 5 * time.Second,
 	})
@@ -30,7 +30,7 @@ func runNodesInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	nodes := status.GetNodesInfo(cli)
+	nodes := polypb.GetNodesInfo(cli)
 	marshaler := jsonpb.Marshaler{
 		Indent: "  ",
 	}
@@ -49,7 +49,7 @@ var backupsInfoCmd = &cobra.Command{
 }
 
 func runBackupsInfo(cmd *cobra.Command, args []string) error {
-	cli, err := clientv3.New(clientv3.Config{
+	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		DialTimeout: 5 * time.Second,
 	})
@@ -58,9 +58,9 @@ func runBackupsInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	kv := status.GetBackupsInfo(cli, base.BackupsKey)
-	all := &statuspb.AllBackups{
-		DbToBackups: make(map[string]*statuspb.BackupInfo),
+	kv := polypb.GetBackupInfoMap(cli, base.BackupsKey)
+	all := &polypb.AllBackups{
+		DbToBackups: make(map[string]*polypb.BackupInfo),
 	}
 	for db, info := range kv {
 		all.DbToBackups[db] = info

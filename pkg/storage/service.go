@@ -9,44 +9,41 @@ import (
 	"sort"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/peer"
 
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 type StorageService struct {
-	storage    BackupStorage
-	rateLimit  float64
-	EtcdCli    *clientv3.Client
-	tempMngr   *TempBackupManager
-	aggregator *status.WeeklyBackupAggregator
-	cfg        *base.ServerConfig
+	storage   BackupStorage
+	rateLimit float64
+	EtcdCli   etcd.ClientAPI
+	tempMngr  *TempBackupManager
+	cfg       *base.ServerConfig
 }
 
 func NewStorageService(
 	storage BackupStorage,
 	rateLimit uint64,
 	tempMngr *TempBackupManager,
-	aggregator *status.WeeklyBackupAggregator,
 	cfg *base.ServerConfig,
 ) *StorageService {
 	return &StorageService{
-		storage:    storage,
-		rateLimit:  float64(rateLimit),
-		tempMngr:   tempMngr,
-		aggregator: aggregator,
-		cfg:        cfg,
+		storage:   storage,
+		rateLimit: float64(rateLimit),
+		tempMngr:  tempMngr,
+		cfg:       cfg,
 	}
 }
 
 func (s *StorageService) GetLatestToLSN(
 	ctx context.Context, req *storagepb.GetLatestToLSNRequest,
 ) (*storagepb.GetLatestToLSNResponse, error) {
-	backups := status.GetBackupsInfo(s.EtcdCli, base.BackupDBKey(req.Db))
+	backups := polypb.GetBackupInfoMap(s.EtcdCli, base.BackupDBKey(req.Db))
 	if backups == nil {
 		log.Printf("Not found db=%s\n", req.Db)
 		return nil, errors.New("not found such a db")
@@ -129,20 +126,10 @@ func (s *StorageService) PurgePrevBackup(
 	}, nil
 }
 
-func (s *StorageService) GetBestStartTime(
-	ctx context.Context, req *storagepb.GetBestStartTimeRequest,
-) (*storagepb.GetBestStartTimeResponse, error) {
-	m, h := s.aggregator.BestStartTime(time.Weekday(0))
-	return &storagepb.GetBestStartTimeResponse{
-		Minute: int32(m),
-		Hour:   int32(h),
-	}, nil
-}
-
 func (s *StorageService) TransferFullBackup(
 	stream storagepb.StorageService_TransferFullBackupServer,
 ) error {
-	var state *TempBackupState
+	var tempBackup AppendCloser
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
@@ -151,28 +138,32 @@ func (s *StorageService) TransferFullBackup(
 	for {
 		content, err := stream.Recv()
 		if err == io.EOF {
-			if err := state.Close(); err != nil {
+			meta, err := tempBackup.CloseTransfer()
+			if err != nil {
+				return err
+			}
+			if err := polypb.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
 				return err
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
 				Message: "success",
-				Key:     state.key,
+				Key:     meta.Key,
 			})
 		}
 		if err != nil {
 			return err
 		}
-		if state == nil {
+		if tempBackup == nil {
 			if content.Db == "" {
 				return errors.New("empty db is not acceptable")
 			}
-			state, err = s.tempMngr.OpenFullBackup(content.Db)
+			tempBackup, err = s.tempMngr.openTempBackup(content.Db, "")
 			if err != nil {
 				return err
 			}
-			log.Printf("Start full-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
+			log.Printf("Start full-backup: db=%s\n", content.Db)
 		}
-		if err := state.Append(content.Content); err != nil {
+		if err := tempBackup.Append(content.Content); err != nil {
 			return err
 		}
 	}
@@ -181,7 +172,7 @@ func (s *StorageService) TransferFullBackup(
 func (s *StorageService) TransferIncBackup(
 	stream storagepb.StorageService_TransferIncBackupServer,
 ) error {
-	var state *TempBackupState
+	var tempBackup AppendCloser
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
@@ -190,31 +181,35 @@ func (s *StorageService) TransferIncBackup(
 	for {
 		content, err := stream.Recv()
 		if err == io.EOF {
-			if err := state.Close(); err != nil {
+			meta, err := tempBackup.CloseTransfer()
+			if err != nil {
+				return err
+			}
+			if err := polypb.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
 				return err
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
 				Message: "success",
-				Key:     state.key,
+				Key:     meta.Key,
 			})
 		}
 		if err != nil {
 			return err
 		}
-		if state == nil {
+		if tempBackup == nil {
 			if content.Db == "" {
 				return errors.New("empty db is not acceptable")
 			}
 			if content.Lsn == "" {
 				return errors.New("empty lsn is not acceptable")
 			}
-			state, err = s.tempMngr.OpenIncBackup(content.Db, content.Lsn)
+			tempBackup, err = s.tempMngr.openTempBackup(content.Db, content.Lsn)
 			if err != nil {
 				return err
 			}
-			log.Printf("Start inc-backup: db=%s, temp_path=%s\n", content.Db, state.tempDir)
+			log.Printf("Start inc-backup: db=%s\n", content.Db)
 		}
-		if err := state.Append(content.Content); err != nil {
+		if err := tempBackup.Append(content.Content); err != nil {
 			return err
 		}
 	}
@@ -232,7 +227,7 @@ func (s *StorageService) PostCheckpoints(
 	if cp.ToLSN == "" {
 		return nil, errors.New("failed to load")
 	}
-	err := status.UpdateCheckpoint(s.EtcdCli, req.Key, cp.ToLSN)
+	err := polypb.UpdateCheckpoint(s.EtcdCli, req.Key, cp.ToLSN)
 	if err != nil {
 		return nil, err
 	}

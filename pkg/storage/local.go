@@ -12,13 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/go-ini/ini"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -208,13 +207,13 @@ func (s *LocalBackupStorage) PostFile(key string, name string, r io.Reader) erro
 	return nil
 }
 
-func (s *LocalBackupStorage) RemoveBackups(cli *clientv3.Client, key string) error {
+func (s *LocalBackupStorage) RemoveBackups(cli etcd.ClientAPI, key string) error {
 	sub := strings.Split(key, "/")
 	if len(sub) != 2 {
 		return errors.New("Not matched backup key")
 	}
 	skey := base.BackupBaseDBKey(sub[0], sub[1])
-	err := status.RemoveBackupInfo(cli, skey)
+	err := polypb.RemoveBackupInfo(cli, skey)
 	if err != nil {
 		return err
 	}
@@ -232,7 +231,7 @@ func (s *LocalBackupStorage) GetKPastBackupKey(db string, k int) (string, error)
 	return path.Join(db, spd[len(spd)-k].Name()), nil
 }
 
-func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
+func (s *LocalBackupStorage) RestoreBackupInfo(cli etcd.ClientAPI) error {
 	return filepath.Walk(s.backupsDir, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, "base.tar.gz") {
 			db, start, stored, err := s.pickDbAndTime(path)
@@ -247,15 +246,15 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if cp.ToLSN == "" {
 				return errors.New("xtrabackup_checkpoints is not found")
 			}
-			if err := status.StoreFullBackupInfo(
+			if err := polypb.StoreBackupMetadata(
 				cli,
 				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
-				&statuspb.BackupMetadata{
-					StoredType: statuspb.StoredType_LOCAL,
+				&polypb.BackupMetadata{
+					StoredType: polypb.StoredType_LOCAL,
 					StoredTime: storedTime,
 					Host:       s.AdvertiseAddr,
 					NodeName:   s.nodeName,
-					BackupType: statuspb.BackupType_FULL,
+					BackupType: polypb.BackupType_FULL,
 					Db:         db,
 					ToLsn:      cp.ToLSN,
 				}); err != nil {
@@ -275,15 +274,15 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
 			if cp.ToLSN == "" {
 				return errors.New("xtrabackup_checkpoints is not found")
 			}
-			if err := status.StoreIncBackupInfo(
+			if err := polypb.StoreBackupMetadata(
 				cli,
 				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
-				&statuspb.BackupMetadata{
-					StoredType: statuspb.StoredType_LOCAL,
+				&polypb.BackupMetadata{
+					StoredType: polypb.StoredType_LOCAL,
 					StoredTime: storedTime,
 					Host:       s.AdvertiseAddr,
 					NodeName:   s.nodeName,
-					BackupType: statuspb.BackupType_INC,
+					BackupType: polypb.BackupType_INC,
 					Db:         db,
 					ToLsn:      cp.ToLSN,
 				}); err != nil {

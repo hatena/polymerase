@@ -1,32 +1,33 @@
-package status
+package server
 
 import (
 	"context"
 	"sync"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/elastic/gosigar"
 	"github.com/golang/protobuf/proto"
+
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
-type StatusRecorder struct {
+type statusRecorder struct {
 	mu sync.Mutex
 
 	storeDir string
 
-	cli *clientv3.Client
+	cli etcd.ClientAPI
 
 	name string
 
 	cfg *base.ServerConfig
 }
 
-func NewStatusRecorder(
-	client *clientv3.Client, storeDir string, name string, cfg *base.ServerConfig,
-) *StatusRecorder {
-	return &StatusRecorder{
+func newStatusRecorder(
+	client etcd.ClientAPI, storeDir string, name string, cfg *base.ServerConfig,
+) *statusRecorder {
+	return &statusRecorder{
 		cli:      client,
 		storeDir: storeDir,
 		name:     name,
@@ -34,7 +35,7 @@ func NewStatusRecorder(
 	}
 }
 
-func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
+func (sr *statusRecorder) writeStatus(ctx context.Context) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
@@ -43,10 +44,10 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 		return err
 	}
 
-	info := &statuspb.NodeInfo{}
+	info := &polypb.NodeInfo{}
 	info.Addr = sr.cfg.AdvertiseAddr
 	info.StoreDir = sr.cfg.StoreDir.Path
-	info.DiskInfo = &statuspb.DiskInfo{}
+	info.DiskInfo = &polypb.DiskInfo{}
 	info.DiskInfo.Total = fileSystemUsage.Total
 	info.DiskInfo.Avail = fileSystemUsage.Avail
 
@@ -54,7 +55,7 @@ func (sr *StatusRecorder) WriteStatus(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = sr.cli.KV.Put(sr.cli.Ctx(), base.NodeInfo(sr.name), string(out))
+	_, err = sr.cli.Put(context.Background(), base.NodeInfo(sr.name), string(out))
 	if err != nil {
 		return err
 	}

@@ -4,8 +4,8 @@
 package storage
 
 import (
-	clientv3 "github.com/coreos/etcd/clientv3"
 	gomock "github.com/golang/mock/gomock"
+	etcd "github.com/taku-k/polymerase/pkg/etcd"
 	storagepb "github.com/taku-k/polymerase/pkg/storage/storagepb"
 	io "io"
 	time "time"
@@ -105,7 +105,7 @@ func (_mr *_MockBackupStorageRecorder) PostFile(arg0, arg1, arg2 interface{}) *g
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PostFile", arg0, arg1, arg2)
 }
 
-func (_m *MockBackupStorage) RemoveBackups(cli *clientv3.Client, key string) error {
+func (_m *MockBackupStorage) RemoveBackups(cli etcd.ClientAPI, key string) error {
 	ret := _m.ctrl.Call(_m, "RemoveBackups", cli, key)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -126,7 +126,7 @@ func (_mr *_MockBackupStorageRecorder) GetKPastBackupKey(arg0, arg1 interface{})
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetKPastBackupKey", arg0, arg1)
 }
 
-func (_m *MockBackupStorage) RestoreBackupInfo(cli *clientv3.Client) error {
+func (_m *MockBackupStorage) RestoreBackupInfo(cli etcd.ClientAPI) error {
 	ret := _m.ctrl.Call(_m, "RestoreBackupInfo", cli)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -157,26 +157,33 @@ func (_m *MockPhysicalStorage) EXPECT() *_MockPhysicalStorageRecorder {
 	return _m.recorder
 }
 
-func (_m *MockPhysicalStorage) Open() {
-	_m.ctrl.Call(_m, "Open")
+func (_m *MockPhysicalStorage) Create(name string) (io.WriteCloser, error) {
+	ret := _m.ctrl.Call(_m, "Create", name)
+	ret0, _ := ret[0].(io.WriteCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-func (_mr *_MockPhysicalStorageRecorder) Open() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Open")
+func (_mr *_MockPhysicalStorageRecorder) Create(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Create", arg0)
 }
 
-func (_m *MockPhysicalStorage) Append() {
-	_m.ctrl.Call(_m, "Append")
+func (_m *MockPhysicalStorage) Move(src string, dest string) error {
+	ret := _m.ctrl.Call(_m, "Move", src, dest)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-func (_mr *_MockPhysicalStorageRecorder) Append() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Append")
+func (_mr *_MockPhysicalStorageRecorder) Move(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Move", arg0, arg1)
 }
 
-func (_m *MockPhysicalStorage) Close() {
-	_m.ctrl.Call(_m, "Close")
+func (_m *MockPhysicalStorage) Delete(name string) error {
+	ret := _m.ctrl.Call(_m, "Delete", name)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-func (_mr *_MockPhysicalStorageRecorder) Close() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
+func (_mr *_MockPhysicalStorageRecorder) Delete(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Delete", arg0)
 }

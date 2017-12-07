@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
-package statuspb;
+package polypb;
 
 message DiskInfo {
   uint64 total = 1;
@@ -35,6 +35,7 @@ message BackupMetadata {
   BackupType backup_type = 7;
   string db = 8;
   string to_lsn = 9;
+  string key = 10;
 }
 
 message AllBackups {

@@ -17,7 +17,6 @@ var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
 var restoreCtx = MakeRestoreContext(baseCfg)
-var cronCtx = cronContext{}
 var xtrabackupCfg = base.MakeXtrabackupConfig()
 
 func initXtrabackupConfig() {
@@ -69,11 +68,6 @@ func init() {
 		return nil
 	}
 
-	cronCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
-		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		return nil
-	}
-
 	// Client Flags
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,
@@ -81,7 +75,6 @@ func init() {
 		restoreCmd,
 		nodesInfoCmd,
 		backupsInfoCmd,
-		cronCmd,
 	}
 
 	for _, cmd := range clientCmds {
@@ -149,21 +142,11 @@ func init() {
 		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
 	}
 
-	// Cron Flags
-	{
-		f := cronCmd.Flags()
-
-		f.StringVar(&cronCtx.FullBackupCmd, "full-cmd", "", "Full backup command to render to cron.")
-		f.StringVar(&cronCtx.IncBackupCmd, "inc-cmd", "", "Incremental backup command to render to cron.")
-		f.StringVar(&cronCtx.cronPath, "out", "-", "path to generate cron file (default: stdout)")
-	}
-
 	rootCmd.AddCommand(
 		startCmd,
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
 		infoCmd,
-		cronCmd,
 		versionCmd)
 }

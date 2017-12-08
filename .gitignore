@@ -5,3 +5,4 @@ dist
 polymerase-data*
 polymerase-restore
 *.iml
+coverage.txt

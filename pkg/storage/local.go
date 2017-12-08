@@ -15,6 +15,7 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/polypb"
@@ -213,7 +214,7 @@ func (s *LocalBackupStorage) RemoveBackups(cli etcd.ClientAPI, key string) error
 		return errors.New("Not matched backup key")
 	}
 	skey := base.BackupBaseDBKey(sub[0], sub[1])
-	err := polypb.RemoveBackupInfo(cli, skey)
+	err := etcd.RemoveBackupInfo(cli, skey)
 	if err != nil {
 		return err
 	}
@@ -246,7 +247,7 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli etcd.ClientAPI) error {
 			if cp.ToLSN == "" {
 				return errors.New("xtrabackup_checkpoints is not found")
 			}
-			if err := polypb.StoreBackupMetadata(
+			if err := etcd.StoreBackupMetadata(
 				cli,
 				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
 				&polypb.BackupMetadata{
@@ -274,7 +275,7 @@ func (s *LocalBackupStorage) RestoreBackupInfo(cli etcd.ClientAPI) error {
 			if cp.ToLSN == "" {
 				return errors.New("xtrabackup_checkpoints is not found")
 			}
-			if err := polypb.StoreBackupMetadata(
+			if err := etcd.StoreBackupMetadata(
 				cli,
 				base.BackupBaseDBKey(db, start.Format(s.timeFormat)),
 				&polypb.BackupMetadata{

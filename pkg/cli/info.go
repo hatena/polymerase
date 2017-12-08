@@ -11,7 +11,6 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
 var nodesInfoCmd = &cobra.Command{
@@ -30,7 +29,7 @@ func runNodesInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	nodes := polypb.GetNodesInfo(cli)
+	nodes := etcd.GetNodesInfo(cli)
 	marshaler := jsonpb.Marshaler{
 		Indent: "  ",
 	}
@@ -58,13 +57,7 @@ func runBackupsInfo(cmd *cobra.Command, args []string) error {
 	}
 	defer cli.Close()
 
-	kv := polypb.GetBackupInfoMap(cli, base.BackupsKey)
-	all := &polypb.AllBackups{
-		DbToBackups: make(map[string]*polypb.BackupInfo),
-	}
-	for db, info := range kv {
-		all.DbToBackups[db] = info
-	}
+	all := etcd.GetBackupInfoMap(cli, base.BackupsKey)
 	marshaler := jsonpb.Marshaler{
 		Indent: "  ",
 	}

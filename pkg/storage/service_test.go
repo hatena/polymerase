@@ -109,7 +109,7 @@ func TestGetLatestToLSN(t *testing.T) {
 
 	for i, ca := range testCases {
 		for _, d := range ca.data {
-			err := polypb.StoreBackupInfo(tc.cli, d.key, d.info)
+			err := etcd.StoreBackupInfo(tc.cli, d.key, d.info)
 			if err != nil {
 				t.Fatalf("#%d: got error %v; want success", i, err)
 			}

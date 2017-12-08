@@ -136,5 +136,6 @@ func NewTempBackupManager(storage BackupStorage, cfg *TempBackupManagerConfig) (
 		storage:    storage,
 		name:       cfg.Name,
 		cfg:        cfg.Config,
+		pstorage:   &DiskStorage{},
 	}, nil
 }

@@ -38,7 +38,12 @@ message BackupMetadata {
   string key = 10;
 }
 
-message AllBackups {
+message BackupInfoWithKey {
+  string key = 1;
+  BackupInfo info = 2;
+}
+
+message BackupInfoMap {
   map<string, BackupInfo> db_to_backups = 1;
 }
 

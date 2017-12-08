@@ -4,6 +4,8 @@ import (
 	"io"
 	"time"
 
+	"os"
+
 	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
@@ -37,6 +39,22 @@ type PhysicalStorage interface {
 }
 
 type DiskStorage struct {
+}
+
+func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {
+	f, err := os.Create(name)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+func (s *DiskStorage) Move(src, dest string) error {
+	panic("implement me")
+}
+
+func (s *DiskStorage) Delete(name string) error {
+	return os.RemoveAll(name)
 }
 
 type MemStorage struct {

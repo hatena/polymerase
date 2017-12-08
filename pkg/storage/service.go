@@ -14,7 +14,6 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -43,14 +42,14 @@ func NewStorageService(
 func (s *StorageService) GetLatestToLSN(
 	ctx context.Context, req *storagepb.GetLatestToLSNRequest,
 ) (*storagepb.GetLatestToLSNResponse, error) {
-	backups := polypb.GetBackupInfoMap(s.EtcdCli, base.BackupDBKey(req.Db))
+	backups := etcd.GetBackupInfoMap(s.EtcdCli, base.BackupDBKey(req.Db))
 	if backups == nil {
 		log.Printf("Not found db=%s\n", req.Db)
 		return nil, errors.New("not found such a db")
 	}
-	sortedKeys := make([]*base.BackupKeyItem, len(backups))
+	sortedKeys := make([]*base.BackupKeyItem, len(backups.DbToBackups))
 	var i int
-	for k := range backups {
+	for k := range backups.DbToBackups {
 		sortedKeys[i] = base.ParseBackupKey(k, s.cfg.TimeFormat)
 		if sortedKeys[i] == nil {
 			return nil, errors.New(fmt.Sprintf("found invalid backup key=%s", k))
@@ -61,9 +60,9 @@ func (s *StorageService) GetLatestToLSN(
 		return sortedKeys[j].StoredTime.After(sortedKeys[i].StoredTime)
 	})
 	key := base.BackupBaseDBKey(req.Db, sortedKeys[0].StoredTime.Format(s.cfg.TimeFormat))
-	lsn := backups[key].FullBackup.ToLsn
-	if len(backups[key].IncBackups) != 0 {
-		incs := backups[key].IncBackups
+	lsn := backups.DbToBackups[key].FullBackup.ToLsn
+	if len(backups.DbToBackups[key].IncBackups) != 0 {
+		incs := backups.DbToBackups[key].IncBackups
 		lsn = incs[len(incs)-1].ToLsn
 	}
 	return &storagepb.GetLatestToLSNResponse{
@@ -142,7 +141,7 @@ func (s *StorageService) TransferFullBackup(
 			if err != nil {
 				return err
 			}
-			if err := polypb.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
+			if err := etcd.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
 				return err
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
@@ -185,7 +184,7 @@ func (s *StorageService) TransferIncBackup(
 			if err != nil {
 				return err
 			}
-			if err := polypb.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
+			if err := etcd.StoreBackupMetadata(s.EtcdCli, meta.Key, meta); err != nil {
 				return err
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
@@ -227,7 +226,7 @@ func (s *StorageService) PostCheckpoints(
 	if cp.ToLSN == "" {
 		return nil, errors.New("failed to load")
 	}
-	err := polypb.UpdateCheckpoint(s.EtcdCli, req.Key, cp.ToLSN)
+	err := etcd.UpdateCheckpoint(s.EtcdCli, req.Key, cp.ToLSN)
 	if err != nil {
 		return nil, err
 	}

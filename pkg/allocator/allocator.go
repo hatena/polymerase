@@ -28,7 +28,7 @@ func SelectAppropriateHost(cli etcd.ClientAPI, db string) (string, string, error
 }
 
 func selectBasedDiskCap(cli etcd.ClientAPI) (string, string) {
-	nodes := polypb.GetNodesInfo(cli)
+	nodes := etcd.GetNodesInfo(cli)
 	var maxAvail uint64
 	resultNode := ""
 	resultHost := ""

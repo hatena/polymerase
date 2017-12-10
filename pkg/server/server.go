@@ -19,9 +19,10 @@ import (
 )
 
 type Server struct {
-	cfg           *base.ServerConfig
-	grpc          *grpc.Server
-	storage       storage.BackupStorage
+	cfg  *base.ServerConfig
+	grpc *grpc.Server
+	//storage       storage.BackupStorage
+	backupManager *storage.BackupManager
 	mngrByStorage *storage.TempBackupManager
 	storageSvc    *storage.StorageService
 	etcdServer    *etcd.EtcdServer
@@ -47,17 +48,18 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	s.etcdCfg = etcdCfg
 
 	// For now, local storage only
-	s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
-		Config:         cfg.Config,
-		BackupsDir:     cfg.BackupsDir(),
-		ServeRateLimit: cfg.ServeRateLimit,
-		NodeName:       cfg.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "backup storage configuration is failed")
-	}
+	//s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
+	//	Config:         cfg.Config,
+	//	BackupsDir:     cfg.BackupsDir(),
+	//	ServeRateLimit: cfg.ServeRateLimit,
+	//	NodeName:       cfg.Name,
+	//})
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "backup storage configuration is failed")
+	//}
+	s.backupManager = storage.NewBackupManager(s.cfg)
 
-	mngrByStorage, err := storage.NewTempBackupManager(s.storage, &storage.TempBackupManagerConfig{
+	mngrByStorage, err := storage.NewTempBackupManager(s.backupManager, &storage.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
 		Name:    cfg.Name,
@@ -67,7 +69,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	}
 	s.mngrByStorage = mngrByStorage
 
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
+	s.storageSvc = storage.NewStorageService(s.backupManager, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)
@@ -103,10 +105,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Inject etcd client after launching embedded etcd server
 	s.mngrByStorage.EtcdCli = cli
 	s.storageSvc.EtcdCli = cli
+	s.backupManager.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
-	if err := s.storage.RestoreBackupInfo(cli); err != nil {
+	if err := s.backupManager.RestoreBackupInfo(cli); err != nil {
 		return err
 	}
 

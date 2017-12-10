@@ -39,9 +39,10 @@ deps:
 proto: $(PROTOSRCS)
 	for src in $(PROTOSRCS); do \
 	  $(PROTO) \
-	   -Ipkg \
-	   $$src \
-	   --go_out=plugins=grpc:pkg; \
+	    -Ipkg \
+	    -Ivendor \
+	    $$src \
+	    --gofast_out=plugins=grpc:pkg; \
 	done
 
 .PHONY: mockgen

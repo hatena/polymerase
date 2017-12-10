@@ -58,23 +58,11 @@ func init() {
 		return nil
 	}
 
-	nodesInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
-		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		return nil
-	}
-
-	backupsInfoCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
-		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		return nil
-	}
-
 	// Client Flags
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
-		nodesInfoCmd,
-		backupsInfoCmd,
 	}
 
 	for _, cmd := range clientCmds {
@@ -147,6 +135,5 @@ func init() {
 		fullBackupCmd,
 		incBackupCmd,
 		restoreCmd,
-		infoCmd,
 		versionCmd)
 }

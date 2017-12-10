@@ -1,17 +1,16 @@
 package storage
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 )
@@ -27,10 +26,11 @@ type TempBackupManagerConfig struct {
 type TempBackupManager struct {
 	timeFormat string
 	tempDir    string
-	storage    BackupStorage
-	name       string
-	cfg        *base.Config
-	pstorage   PhysicalStorage
+	//storage    BackupStorage
+	backupManager *BackupManager
+	name          string
+	cfg           *base.Config
+	pstorage      PhysicalStorage
 
 	// Injected after etcd launched
 	EtcdCli etcd.ClientAPI
@@ -38,7 +38,7 @@ type TempBackupManager struct {
 
 type AppendCloser interface {
 	Append(data []byte) error
-	CloseTransfer() (*polypb.BackupMetadata, error)
+	CloseTransfer() (*polypb.BackupMeta, error)
 }
 
 type tempBackup struct {
@@ -87,55 +87,56 @@ func (b *tempBackup) Append(data []byte) error {
 	return err
 }
 
-func (b *tempBackup) CloseTransfer() (*polypb.BackupMetadata, error) {
+func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	err := b.writer.Close()
 	if err != nil {
 		return nil, err
 	}
-	var baseTime, startTime string
+	db := polypb.DatabaseID(b.db)
+	var baseTime, backupTime polypb.TimePoint
 	switch b.backupType {
 	case polypb.BackupType_FULL:
-		baseTime = b.start.Format(b.manager.timeFormat)
-		startTime = baseTime
+		baseTime = polypb.NewTimePoint(b.start)
+		backupTime = baseTime
 	case polypb.BackupType_INC:
-		baseTime, err = b.manager.storage.SearchStaringPointByLSN(b.db, b.lsn)
+		baseTime, err = b.manager.backupManager.SearchBaseTimePointByLSN(db, b.lsn)
 		if err != nil {
 			return nil, err
 		}
-		startTime = b.start.Format(b.manager.timeFormat)
+		backupTime = polypb.NewTimePoint(b.start)
 	default:
 		return nil, errors.New("not supported such a backup type")
 	}
-	key := fmt.Sprintf("%s/%s/%s", b.db, baseTime, startTime)
-	if err := b.manager.storage.TransferTempFullBackup(b.tempDir, key); err != nil {
+	key := keys.MakeBackupKey(db, baseTime, backupTime)
+	if err := b.manager.backupManager.TransferTempBackup(b.tempDir, key); err != nil {
 		b.manager.pstorage.Delete(b.tempDir)
 		return nil, err
 	}
-	storedTime, err := ptypes.TimestampProto(b.start)
-	if err != nil {
-		return nil, err
-	}
-	return &polypb.BackupMetadata{
-		StoredTime: storedTime,
+	return &polypb.BackupMeta{
+		StoredTime: &b.start,
 		StoredType: polypb.StoredType_LOCAL,
 		NodeName:   b.manager.name,
 		Host:       b.manager.cfg.AdvertiseAddr,
-		BackupType: polypb.BackupType_FULL,
-		Db:         b.db,
+		BackupType: b.backupType,
+		Db:         db,
 		Key:        key,
+		// TODO:
+		FileSize:      0,
+		BaseTimePoint: baseTime,
 	}, nil
 }
 
-func NewTempBackupManager(storage BackupStorage, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
+func NewTempBackupManager(backupManager *BackupManager, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
 	if err := dirutil.MkdirAllWithLog(cfg.TempDir); err != nil {
 		return nil, errors.Wrap(err, "Cannot create temporary directory")
 	}
 	return &TempBackupManager{
 		timeFormat: cfg.TimeFormat,
 		tempDir:    cfg.TempDir,
-		storage:    storage,
-		name:       cfg.Name,
-		cfg:        cfg.Config,
-		pstorage:   &DiskStorage{},
+		//storage:    storage,
+		backupManager: backupManager,
+		name:          cfg.Name,
+		cfg:           cfg.Config,
+		pstorage:      &DiskStorage{},
 	}, nil
 }

@@ -6,39 +6,52 @@ import (
 
 	"os"
 
+	"path/filepath"
+
+	"path"
+
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
 type BackupStorage interface {
 	GetStorageType() string
 
-	SearchStaringPointByLSN(db, lsn string) (string, error)
+	SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn string) (polypb.TimePoint, error)
 
 	TransferTempFullBackup(tempDir string, key string) error
 
 	TransferTempIncBackup(tempDir string, key string) error
 
-	SearchConsecutiveIncBackups(db string, from time.Time) ([]*storagepb.BackupFileInfo, error)
+	SearchConsecutiveIncBackups(db polypb.DatabaseID, from time.Time) ([]*storagepb.BackupFileInfo, error)
 
 	GetFileStream(key string) (io.Reader, error)
 
 	PostFile(key string, name string, r io.Reader) error
 
-	RemoveBackups(cli etcd.ClientAPI, key string) error
+	RemoveBackups(cli etcd.ClientAPI, key polypb.Key) error
 
-	GetKPastBackupKey(db string, k int) (string, error)
+	GetKPastBackupPrefixKey(db polypb.DatabaseID, k int) (polypb.Key, error)
 
 	RestoreBackupInfo(cli etcd.ClientAPI) error
 }
 
 type PhysicalStorage interface {
 	Create(name string) (io.WriteCloser, error)
-	Move(src, dest string) error
+	CreateBackup(key polypb.Key, name string) (io.WriteCloser, error)
+	Move(src string, dest polypb.Key) error
 	Delete(name string) error
+	DeleteBackup(key polypb.Key) error
+	FullBackupStream(key polypb.Key) (io.Reader, error)
+	IncBackupStream(key polypb.Key) (io.Reader, error)
+	LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints
+	Walk(f func(path string, info os.FileInfo, err error) error) error
 }
 
 type DiskStorage struct {
+	backupsDir string
 }
 
 func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {
@@ -49,12 +62,43 @@ func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {
 	return f, nil
 }
 
-func (s *DiskStorage) Move(src, dest string) error {
-	panic("implement me")
+func (s *DiskStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
+	return s.Create(filepath.Join(s.backupsDir, string(key), name))
+}
+
+func (s *DiskStorage) Move(src string, dest polypb.Key) error {
+	p := path.Join(s.backupsDir, string(dest))
+	if err := os.MkdirAll(p, 0755); err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil {
+		return err
+	}
+	return os.Rename(src, p)
 }
 
 func (s *DiskStorage) Delete(name string) error {
 	return os.RemoveAll(name)
+}
+
+func (s *DiskStorage) DeleteBackup(key polypb.Key) error {
+	return os.RemoveAll(filepath.Join(s.backupsDir, string(key)))
+}
+
+func (s *DiskStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
+	return os.Open(filepath.Join(s.backupsDir, string(key), "base.tar.gz"))
+}
+
+func (s *DiskStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
+	return os.Open(filepath.Join(s.backupsDir, string(key), "inc.xb.gz"))
+}
+
+func (s *DiskStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
+	return base.LoadXtrabackupCP(filepath.Join(s.backupsDir, string(key), "xtrabackup_checkpoints"))
+}
+
+func (s *DiskStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
+	return filepath.Walk(s.backupsDir, f)
 }
 
 type MemStorage struct {

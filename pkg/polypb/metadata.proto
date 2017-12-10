@@ -1,56 +1,44 @@
 syntax = "proto3";
-
-import "google/protobuf/timestamp.proto";
-
 package polypb;
 
-message DiskInfo {
+import "google/protobuf/timestamp.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+// DiskMeta is a metadata about a disk.
+message DiskMeta {
   uint64 total = 1;
   uint64 avail = 2;
 }
 
-message NodeInfo {
-  DiskInfo diskInfo = 1;
+// NodeMeta is a metadata about a node.
+message NodeMeta {
+  DiskMeta disk = 1;
   string addr = 2;
   string store_dir = 3;
+  bytes node_id = 4 [(gogoproto.casttype) = "NodeID"];
 }
 
-message NodeInfoMap {
-  map<string, NodeInfo> nodes = 1;
-}
-
-message BackupInfo {
-  BackupMetadata full_backup = 1;
-  repeated BackupMetadata inc_backups = 2;
-  string db = 3;
-}
-
-message BackupMetadata {
-  google.protobuf.Timestamp stored_time = 1;
+// BackupMeta is a metadata about a backup file.
+message BackupMeta {
+  google.protobuf.Timestamp stored_time = 1 [(gogoproto.stdtime) = true];
   string node_name = 2;
   string host = 3;
   StoredType stored_type = 4;
-  google.protobuf.Timestamp end_time = 5;
-  uint64 file_size = 6;
+  google.protobuf.Timestamp end_time = 5 [(gogoproto.stdtime) = true];
+  int64 file_size = 6;
   BackupType backup_type = 7;
-  string db = 8;
+  bytes db = 8 [(gogoproto.casttype) = "DatabaseID"];
   string to_lsn = 9;
-  string key = 10;
+  bytes key = 10 [(gogoproto.casttype) = "Key"];
+  bytes base_time_point = 11 [(gogoproto.casttype) = "TimePoint"];
 }
 
-message BackupInfoWithKey {
-  string key = 1;
-  BackupInfo info = 2;
-}
-
-message BackupInfoMap {
-  map<string, BackupInfo> db_to_backups = 1;
-}
-
+// StoredType
 enum StoredType {
   LOCAL = 0;
 }
 
+// BackupType
 enum BackupType {
   FULL = 0;
   INC = 1;

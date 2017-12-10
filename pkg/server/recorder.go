@@ -5,10 +5,10 @@ import (
 	"sync"
 
 	"github.com/elastic/gosigar"
-	"github.com/golang/protobuf/proto"
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
@@ -44,21 +44,12 @@ func (sr *statusRecorder) writeStatus(ctx context.Context) error {
 		return err
 	}
 
-	info := &polypb.NodeInfo{}
-	info.Addr = sr.cfg.AdvertiseAddr
-	info.StoreDir = sr.cfg.StoreDir.Path
-	info.DiskInfo = &polypb.DiskInfo{}
-	info.DiskInfo.Total = fileSystemUsage.Total
-	info.DiskInfo.Avail = fileSystemUsage.Avail
+	meta := &polypb.NodeMeta{}
+	meta.Addr = sr.cfg.AdvertiseAddr
+	meta.StoreDir = sr.cfg.StoreDir.Path
+	meta.Disk = &polypb.DiskMeta{}
+	meta.Disk.Total = fileSystemUsage.Total
+	meta.Disk.Avail = fileSystemUsage.Avail
 
-	out, err := proto.Marshal(info)
-	if err != nil {
-		return err
-	}
-	_, err = sr.cli.Put(context.Background(), base.NodeInfo(sr.name), string(out))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return sr.cli.PutNodeMeta(keys.MakeNodeMetaKey(polypb.NodeID(sr.name)), meta)
 }

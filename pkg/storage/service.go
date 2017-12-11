@@ -18,8 +18,7 @@ import (
 )
 
 type StorageService struct {
-	manager *BackupManager
-	//storage   BackupStorage
+	manager   *BackupManager
 	rateLimit float64
 	EtcdCli   etcd.ClientAPI
 	tempMngr  *TempBackupManager
@@ -33,7 +32,6 @@ func NewStorageService(
 	cfg *base.ServerConfig,
 ) *StorageService {
 	return &StorageService{
-		//storage:   storage,
 		manager:   manager,
 		rateLimit: float64(rateLimit),
 		tempMngr:  tempMngr,
@@ -130,14 +128,14 @@ func (s *StorageService) TransferFullBackup(
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
 				Message: "success",
-				Key:     string(meta.Key),
+				Key:     meta.Key,
 			})
 		}
 		if err != nil {
 			return err
 		}
 		if tempBackup == nil {
-			if content.Db == "" {
+			if content.Db == nil {
 				return errors.New("empty db is not acceptable")
 			}
 			tempBackup, err = s.tempMngr.openTempBackup(content.Db, "")
@@ -174,14 +172,14 @@ func (s *StorageService) TransferIncBackup(
 			}
 			return stream.SendAndClose(&storagepb.BackupReply{
 				Message: "success",
-				Key:     string(meta.Key),
+				Key:     meta.Key,
 			})
 		}
 		if err != nil {
 			return err
 		}
 		if tempBackup == nil {
-			if content.Db == "" {
+			if content.Db == nil {
 				return errors.New("empty db is not acceptable")
 			}
 			if content.Lsn == "" {

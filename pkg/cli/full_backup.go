@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -23,7 +24,7 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 		return usageAndError(cmd)
 	}
 
-	if db == "" {
+	if db == nil {
 		return errors.New("You should specify db with '--db' flag")
 	}
 
@@ -56,7 +57,13 @@ func runFullBackup(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func transferFullBackup(ctx context.Context, r io.Reader, db string, errCh chan error, finishCh chan struct{}) {
+func transferFullBackup(
+	ctx context.Context,
+	r io.Reader,
+	db polypb.DatabaseID,
+	errCh chan error,
+	finishCh chan struct{},
+) {
 	cli, err := getTempBackupClient(ctx, db)
 	if err != nil {
 		errCh <- err
@@ -70,7 +77,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, db string, errCh chan 
 
 	chunk := make([]byte, 1<<20)
 	buf := bufio.NewReader(r)
-	var key string
+	var key polypb.Key
 
 	for {
 		n, err := buf.Read(chunk)
@@ -105,7 +112,7 @@ func transferFullBackup(ctx context.Context, r io.Reader, db string, errCh chan 
 	return
 }
 
-func purgePrevBackup(db string) error {
+func purgePrevBackup(db polypb.DatabaseID) error {
 	cli, err := getAppropriateStorageClient(context.Background(), db)
 	if err != nil {
 		return err

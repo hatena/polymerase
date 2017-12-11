@@ -6,12 +6,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 )
 
 var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
-var db string
+var db polypb.DatabaseID
 var useInnobackupex bool
 
 var serverCfg = base.MakeServerConfig()
@@ -81,7 +82,7 @@ func init() {
 	} {
 		f := cmd.Flags()
 
-		f.StringVarP(&db, "db", "d", "", "DB name")
+		f.VarP(&db, "db", "d", "Database ID")
 		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
 		f.StringVar(&xtrabackupCfg.DefaultsFile, "defaults-file", xtrabackupCfg.DefaultsFile, "Read default MySQL options from the given file.")
 	}

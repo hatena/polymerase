@@ -81,20 +81,17 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 	}
 	metas.Sort()
 	for i := len(metas) - 1; i >= 0; i-- {
-		m := metas[i]
-		if (*m.StoredTime).Before(from) {
+		mi := metas[i]
+		if (*mi.StoredTime).Before(from) {
 			for j := i; j >= 0; j-- {
-				m := metas[j]
+				mj := metas[j]
 				files = append(files, &storagepb.BackupFileInfo{
-					// TODO: Maybe removed
-					StorageType: "local",
-					// TODO: Use BackupType
-					BackupType: m.BackupType.String(),
-					// TODO: Use polypb.Key type
-					Key:      string(m.Key),
-					FileSize: m.FileSize,
+					StorageType: m.storage.StorageType(),
+					BackupType:  mj.BackupType,
+					Key:         mj.Key,
+					FileSize:    mj.FileSize,
 				})
-				if m.BackupType == polypb.BackupType_FULL {
+				if mj.BackupType == polypb.BackupType_FULL {
 					return files, nil
 				}
 			}

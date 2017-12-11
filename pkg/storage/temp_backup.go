@@ -24,9 +24,8 @@ type TempBackupManagerConfig struct {
 }
 
 type TempBackupManager struct {
-	timeFormat string
-	tempDir    string
-	//storage    BackupStorage
+	timeFormat    string
+	tempDir       string
 	backupManager *BackupManager
 	name          string
 	cfg           *base.Config
@@ -42,7 +41,7 @@ type AppendCloser interface {
 }
 
 type tempBackup struct {
-	db         string
+	db         polypb.DatabaseID
 	writer     io.WriteCloser
 	start      time.Time
 	manager    *TempBackupManager
@@ -51,7 +50,7 @@ type tempBackup struct {
 	tempDir    string
 }
 
-func (m *TempBackupManager) openTempBackup(db, lsn string) (AppendCloser, error) {
+func (m *TempBackupManager) openTempBackup(db polypb.DatabaseID, lsn string) (AppendCloser, error) {
 	now := time.Now()
 	tempDir, err := ioutil.TempDir(m.tempDir, "polymerase-backup-dir")
 	if err != nil {
@@ -113,13 +112,13 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 		return nil, err
 	}
 	return &polypb.BackupMeta{
-		StoredTime: &b.start,
-		StoredType: polypb.StoredType_LOCAL,
-		NodeName:   b.manager.name,
-		Host:       b.manager.cfg.AdvertiseAddr,
-		BackupType: b.backupType,
-		Db:         db,
-		Key:        key,
+		StoredTime:  &b.start,
+		StorageType: polypb.StorageType_LOCAL,
+		NodeName:    b.manager.name,
+		Host:        b.manager.cfg.AdvertiseAddr,
+		BackupType:  b.backupType,
+		Db:          db,
+		Key:         key,
 		// TODO:
 		FileSize:      0,
 		BaseTimePoint: baseTime,

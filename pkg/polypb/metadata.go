@@ -18,6 +18,23 @@ type NodeID []byte
 
 type DatabaseID []byte
 
+func (d *DatabaseID) String() string {
+	return string(*d)
+}
+
+func (d *DatabaseID) Set(v string) error {
+	if v == "" {
+		*d = nil
+	} else {
+		*d = DatabaseID(v)
+	}
+	return nil
+}
+
+func (d *DatabaseID) Type() string {
+	return "DatabaseID"
+}
+
 type TimePoint []byte
 
 func NewTimePoint(t time.Time) TimePoint {

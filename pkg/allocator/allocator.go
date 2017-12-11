@@ -6,8 +6,8 @@ import (
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
-func SelectAppropriateHost(cli etcd.ClientAPI, db string) (string, string, error) {
-	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(polypb.DatabaseID(db)))
+func SelectAppropriateHost(cli etcd.ClientAPI, db polypb.DatabaseID) (string, string, error) {
+	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
 	if err != nil {
 		return "", "", err
 	}

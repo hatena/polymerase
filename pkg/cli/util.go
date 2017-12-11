@@ -12,6 +12,7 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/allocator"
 	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -23,7 +24,10 @@ func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobr
 	}
 }
 
-func getAppropriateStorageClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
+func getAppropriateStorageClient(
+	ctx context.Context,
+	db polypb.DatabaseID,
+) (storagepb.StorageServiceClient, error) {
 	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,
@@ -57,7 +61,10 @@ func getStorageClient(ctx context.Context, addr string) (storagepb.StorageServic
 	return storagepb.NewStorageServiceClient(c), nil
 }
 
-func getTempBackupClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
+func getTempBackupClient(
+	ctx context.Context,
+	db polypb.DatabaseID,
+) (storagepb.StorageServiceClient, error) {
 	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,

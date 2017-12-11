@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -23,7 +24,7 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 		return usageAndError(cmd)
 	}
 
-	if db == "" {
+	if db == nil {
 		return errors.New("You should specify db with '--db' flag")
 	}
 
@@ -63,7 +64,13 @@ func runIncBackup(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func transferIncBackup(ctx context.Context, r io.Reader, db string, errCh chan error, finishCh chan struct{}) {
+func transferIncBackup(
+	ctx context.Context,
+	r io.Reader,
+	db polypb.DatabaseID,
+	errCh chan error,
+	finishCh chan struct{},
+) {
 	bcli, _ := getTempBackupClient(ctx, db)
 	stream, err := bcli.TransferIncBackup(ctx)
 	if err != nil {
@@ -73,7 +80,7 @@ func transferIncBackup(ctx context.Context, r io.Reader, db string, errCh chan e
 
 	buf := bufio.NewReader(r)
 	chunk := make([]byte, 1<<20)
-	var key string
+	var key polypb.Key
 
 	for {
 		n, err := buf.Read(chunk)

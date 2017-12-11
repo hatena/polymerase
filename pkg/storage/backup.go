@@ -14,6 +14,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupManager struct {
@@ -81,20 +82,17 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 	}
 	metas.Sort()
 	for i := len(metas) - 1; i >= 0; i-- {
-		m := metas[i]
-		if (*m.StoredTime).Before(from) {
+		mi := metas[i]
+		if (*mi.StoredTime).Before(from) {
 			for j := i; j >= 0; j-- {
-				m := metas[j]
+				mj := metas[j]
 				files = append(files, &storagepb.BackupFileInfo{
-					// TODO: Maybe removed
-					StorageType: "local",
-					// TODO: Use BackupType
-					BackupType: m.BackupType.String(),
-					// TODO: Use polypb.Key type
-					Key:      string(m.Key),
-					FileSize: m.FileSize,
+					StorageType: m.storage.StorageType(),
+					BackupType:  mj.BackupType,
+					Key:         mj.Key,
+					FileSize:    mj.FileSize,
 				})
-				if m.BackupType == polypb.BackupType_FULL {
+				if mj.BackupType == polypb.BackupType_FULL {
 					return files, nil
 				}
 			}
@@ -198,7 +196,7 @@ func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {
 		if cp.ToLSN == "" {
 			return errors.New("xtrabackup_checkpoints file is not found")
 		}
-		storedTime, err := time.Parse(base.DefaultTimeFormat, string(backupTP))
+		storedTime, err := time.Parse(utils.TimeFormat, string(backupTP))
 		if err != nil {
 			return err
 		}
@@ -207,7 +205,7 @@ func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {
 			&polypb.BackupMeta{
 				StoredTime:    &storedTime,
 				Host:          m.cfg.AdvertiseAddr,
-				NodeName:      m.cfg.Name,
+				NodeId:        m.cfg.NodeID,
 				BackupType:    backupType,
 				Db:            db,
 				ToLsn:         cp.ToLSN,

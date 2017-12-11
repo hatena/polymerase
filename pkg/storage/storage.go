@@ -11,6 +11,7 @@ import (
 )
 
 type PhysicalStorage interface {
+	StorageType() polypb.StorageType
 	Create(name string) (io.WriteCloser, error)
 	CreateBackup(key polypb.Key, name string) (io.WriteCloser, error)
 	Move(src string, dest polypb.Key) error
@@ -24,6 +25,10 @@ type PhysicalStorage interface {
 
 type DiskStorage struct {
 	backupsDir string
+}
+
+func (s *DiskStorage) StorageType() polypb.StorageType {
+	return polypb.StorageType_LOCAL
 }
 
 func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {

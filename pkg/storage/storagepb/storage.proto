@@ -1,6 +1,8 @@
 syntax = "proto3";
-
 package storagepb;
+
+import "github.com/taku-k/polymerase/pkg/polypb/metadata.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 service StorageService {
   rpc GetLatestToLSN(GetLatestToLSNRequest) returns (GetLatestToLSNResponse) {};
@@ -19,7 +21,7 @@ service StorageService {
 }
 
 message GetLatestToLSNRequest {
-  string db = 1;
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
 }
 
 message GetLatestToLSNResponse {
@@ -27,7 +29,7 @@ message GetLatestToLSNResponse {
 }
 
 message GetKeysAtPointRequest {
-  string db = 1;
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
   string from = 2;
 }
 
@@ -36,15 +38,15 @@ message GetKeysAtPointResponse {
 }
 
 message BackupFileInfo {
-  string storage_type = 1;
-  string backup_type = 2;
-  string key = 3;
+  polypb.StorageType storage_type = 1;
+  polypb.BackupType backup_type = 2;
+  bytes key = 3 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
   int64 file_size = 4;
 }
 
 message GetFileByKeyRequest {
-  string key = 1;
-  string storage_type = 2;
+  bytes key = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
+  polypb.StorageType storage_type = 2;
 }
 
 message FileStream {
@@ -52,7 +54,7 @@ message FileStream {
 }
 
 message PurgePrevBackupRequest {
-  string db = 1;
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
 }
 
 message PurgePrevBackupResponse {
@@ -60,23 +62,23 @@ message PurgePrevBackupResponse {
 }
 
 message FullBackupContentStream {
-  string db = 1;
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
   bytes content = 2;
 }
 
 message IncBackupContentStream {
-  string db = 1;
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
   string lsn = 2;
   bytes content = 3;
 }
 
 message BackupReply {
   string message = 1;
-  string key = 2;
+  bytes key = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
 }
 
 message PostCheckpointsRequest {
-  string key = 1;
+  bytes key = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
   bytes content = 2;
 }
 

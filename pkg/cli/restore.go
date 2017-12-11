@@ -87,7 +87,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	if restoreCtx.from == "" && !restoreCtx.latest {
 		return errors.New("You must specify `from` option or `latest` flag.")
 	}
-	if db == "" {
+	if db == nil {
 		return errors.New("You must specify `db`")
 	}
 

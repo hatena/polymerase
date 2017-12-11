@@ -6,12 +6,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/utils/envutil"
 )
 
 var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
-var db string
+var db polypb.DatabaseID
 var useInnobackupex bool
 
 var serverCfg = base.MakeServerConfig()
@@ -81,7 +82,7 @@ func init() {
 	} {
 		f := cmd.Flags()
 
-		f.StringVarP(&db, "db", "d", "", "DB name")
+		f.VarP(&db, "db", "d", "Database ID")
 		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
 		f.StringVar(&xtrabackupCfg.DefaultsFile, "defaults-file", xtrabackupCfg.DefaultsFile, "Read default MySQL options from the given file.")
 	}
@@ -122,13 +123,13 @@ func init() {
 	{
 		f := startCmd.Flags()
 
-		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
-		f.StringVar(&serverAdvertiseHost, "advertise-host", serverCfg.Name, "The hostname to advertise to other nodes and clients.")
+		f.StringVar(&serverConnHost, "host", string(serverCfg.HostName), "The hostname to listen on.")
+		f.StringVar(&serverAdvertiseHost, "advertise-host", string(serverCfg.HostName), "The hostname to advertise to other nodes and clients.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.Var(serverCfg.StoreDir, "store-dir", "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")
 		f.StringVar(&serverCfg.EtcdPeerPort, "etcd-peer-port", "2380", "The port to be used for etcd peer communication.")
-		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
+		f.Var(&serverCfg.NodeID, "name", "The human-readable name.")
 	}
 
 	rootCmd.AddCommand(

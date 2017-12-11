@@ -8,8 +8,8 @@ import (
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
-func SearchStoredAddr(cli etcd.ClientAPI, db string) (string, error) {
-	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(polypb.DatabaseID(db)))
+func SearchStoredAddr(cli etcd.ClientAPI, db polypb.DatabaseID) (string, error) {
+	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
 	if err != nil {
 		return "", err
 	}

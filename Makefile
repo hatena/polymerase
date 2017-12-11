@@ -41,6 +41,7 @@ proto: $(PROTOSRCS)
 	  $(PROTO) \
 	    -Ipkg \
 	    -Ivendor \
+	    -I$$GOPATH/src \
 	    $$src \
 	    --gofast_out=plugins=grpc:pkg; \
 	done

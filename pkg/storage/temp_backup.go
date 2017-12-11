@@ -20,16 +20,12 @@ type TempBackupManagerConfig struct {
 
 	TempDir string
 
-	Name string
+	NodeID polypb.NodeID
 }
 
 type TempBackupManager struct {
-	timeFormat string
-	tempDir    string
-	//storage    BackupStorage
+	cfg           *TempBackupManagerConfig
 	backupManager *BackupManager
-	name          string
-	cfg           *base.Config
 	pstorage      PhysicalStorage
 
 	// Injected after etcd launched
@@ -42,18 +38,19 @@ type AppendCloser interface {
 }
 
 type tempBackup struct {
-	db         string
+	db         polypb.DatabaseID
 	writer     io.WriteCloser
 	start      time.Time
 	manager    *TempBackupManager
 	lsn        string
 	backupType polypb.BackupType
 	tempDir    string
+	fileSize   int64
 }
 
-func (m *TempBackupManager) openTempBackup(db, lsn string) (AppendCloser, error) {
+func (m *TempBackupManager) openTempBackup(db polypb.DatabaseID, lsn string) (AppendCloser, error) {
 	now := time.Now()
-	tempDir, err := ioutil.TempDir(m.tempDir, "polymerase-backup-dir")
+	tempDir, err := ioutil.TempDir(m.cfg.TempDir, "polymerase-backup-dir")
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +76,13 @@ func (m *TempBackupManager) openTempBackup(db, lsn string) (AppendCloser, error)
 		lsn:        lsn,
 		backupType: backupType,
 		tempDir:    tempDir,
+		fileSize:   0,
 	}, nil
 }
 
 func (b *tempBackup) Append(data []byte) error {
-	_, err := b.writer.Write(data)
+	n, err := b.writer.Write(data)
+	b.fileSize += int64(n)
 	return err
 }
 
@@ -113,15 +112,14 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 		return nil, err
 	}
 	return &polypb.BackupMeta{
-		StoredTime: &b.start,
-		StoredType: polypb.StoredType_LOCAL,
-		NodeName:   b.manager.name,
-		Host:       b.manager.cfg.AdvertiseAddr,
-		BackupType: b.backupType,
-		Db:         db,
-		Key:        key,
-		// TODO:
-		FileSize:      0,
+		StoredTime:    &b.start,
+		StorageType:   polypb.StorageType_LOCAL,
+		NodeId:        b.manager.cfg.NodeID,
+		Host:          b.manager.cfg.AdvertiseAddr,
+		BackupType:    b.backupType,
+		Db:            db,
+		Key:           key,
+		FileSize:      b.fileSize,
 		BaseTimePoint: baseTime,
 	}, nil
 }
@@ -131,12 +129,8 @@ func NewTempBackupManager(backupManager *BackupManager, cfg *TempBackupManagerCo
 		return nil, errors.Wrap(err, "Cannot create temporary directory")
 	}
 	return &TempBackupManager{
-		timeFormat: cfg.TimeFormat,
-		tempDir:    cfg.TempDir,
-		//storage:    storage,
 		backupManager: backupManager,
-		name:          cfg.Name,
-		cfg:           cfg.Config,
+		cfg:           cfg,
 		pstorage:      &DiskStorage{},
 	}, nil
 }

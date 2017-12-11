@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
 )
@@ -95,7 +96,11 @@ func connectGRPC(ctx context.Context, addr string) (*grpc.ClientConn, error) {
 	return conn, err
 }
 
-func postXtrabackupCP(ctx context.Context, cli storagepb.StorageServiceClient, key string) (*storagepb.PostCheckpointsResponse, error) {
+func postXtrabackupCP(
+	ctx context.Context,
+	cli storagepb.StorageServiceClient,
+	key polypb.Key,
+) (*storagepb.PostCheckpointsResponse, error) {
 	b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
 	if err != nil {
 		return nil, err

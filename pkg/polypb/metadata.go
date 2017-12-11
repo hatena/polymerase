@@ -21,9 +21,7 @@ func (d *NodeID) String() string {
 }
 
 func (d *NodeID) Set(v string) error {
-	if v == "" {
-		*d = nil
-	} else {
+	if v != "" {
 		*d = NodeID(v)
 	}
 	return nil

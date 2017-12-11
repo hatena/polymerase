@@ -33,6 +33,8 @@ type ServerConfig struct {
 
 	NodeID polypb.NodeID
 
+	HostName string
+
 	StatusSampleInterval time.Duration
 
 	ServeRateLimit uint64
@@ -57,6 +59,7 @@ func MakeServerConfig() *ServerConfig {
 	if err != nil {
 		host = xid.New().String()
 	}
+	cfg.HostName = host
 	cfg.NodeID = polypb.NodeID(host)
 
 	// TODO: It can be changed by option

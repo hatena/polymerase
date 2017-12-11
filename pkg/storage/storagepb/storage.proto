@@ -11,8 +11,6 @@ service StorageService {
 
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 
-  rpc GetBestStartTime(GetBestStartTimeRequest) returns (GetBestStartTimeResponse) {};
-
   rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
 
   rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
@@ -41,7 +39,7 @@ message BackupFileInfo {
   string storage_type = 1;
   string backup_type = 2;
   string key = 3;
-  int64 size = 4;
+  int64 file_size = 4;
 }
 
 message GetFileByKeyRequest {
@@ -59,15 +57,6 @@ message PurgePrevBackupRequest {
 
 message PurgePrevBackupResponse {
   string message = 1;
-}
-
-message GetBestStartTimeRequest {
-
-}
-
-message GetBestStartTimeResponse {
-  int32 minute = 1;
-  int32 hour = 2;
 }
 
 message FullBackupContentStream {

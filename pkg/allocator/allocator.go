@@ -1,40 +1,39 @@
 package allocator
 
 import (
-	"github.com/coreos/etcd/clientv3"
-	"github.com/golang/protobuf/proto"
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
-	"github.com/taku-k/polymerase/pkg/status/statuspb"
+	"github.com/taku-k/polymerase/pkg/etcd"
+	"github.com/taku-k/polymerase/pkg/keys"
+	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
-func SelectAppropriateHost(cli *clientv3.Client, db string) (string, string, error) {
-	res, err := cli.KV.Get(cli.Ctx(), base.BackupDBKey(db), clientv3.WithPrefix())
+func SelectAppropriateHost(cli etcd.ClientAPI, db string) (string, string, error) {
+	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(polypb.DatabaseID(db)))
 	if err != nil {
 		return "", "", err
 	}
-	if len(res.Kvs) == 0 {
-		node, host := selectBasedDiskCap(cli)
-		return node, host, nil
+	if len(metas) == 0 {
+		node, host, err := selectBasedDiskCap(cli)
+		return node, host, err
 	}
-	info := &statuspb.BackupInfo{}
-	if err := proto.Unmarshal(res.Kvs[0].Value, info); err != nil {
-		return "", "", err
-	}
-	return info.FullBackup.NodeName, info.FullBackup.Host, nil
+	// TODO: I'm not sure that the head metadata is appropriate.
+	m := metas[0]
+	return m.NodeName, m.Host, nil
 }
 
-func selectBasedDiskCap(cli *clientv3.Client) (string, string) {
-	nodes := status.GetNodesInfo(cli)
+func selectBasedDiskCap(cli etcd.ClientAPI) (string, string, error) {
+	nodes, err := cli.GetNodeMeta(keys.MakeNodeMetaPrefix())
+	if err != nil {
+		return "", "", err
+	}
 	var maxAvail uint64
 	resultNode := ""
 	resultHost := ""
-	for node, info := range nodes.Nodes {
-		if info.DiskInfo.Avail > maxAvail {
-			maxAvail = info.DiskInfo.Avail
-			resultHost = info.Addr
-			resultNode = node
+	for _, node := range nodes {
+		if node.Disk.Avail > maxAvail {
+			maxAvail = node.Disk.Avail
+			resultHost = node.Addr
+			resultNode = string(node.NodeId)
 		}
 	}
-	return resultNode, resultHost
+	return resultNode, resultHost, nil
 }

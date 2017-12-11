@@ -39,9 +39,10 @@ deps:
 proto: $(PROTOSRCS)
 	for src in $(PROTOSRCS); do \
 	  $(PROTO) \
-	   -Ipkg \
-	   $$src \
-	   --go_out=plugins=grpc:pkg; \
+	    -Ipkg \
+	    -Ivendor \
+	    $$src \
+	    --gofast_out=plugins=grpc:pkg; \
 	done
 
 .PHONY: mockgen
@@ -58,14 +59,21 @@ test:
 
 .PHONY: test-race
 test-race:
-	go test -v -race ./pkg/...
+	echo "" > coverage.txt
+	for d in $$(go list ./... | grep -v vendor); do \
+	  go test -v -race -coverprofile=profile.out -covermode=atomic $$d; \
+	  if [ -f profile.out ]; then \
+	    cat profile.out >> coverage.txt; \
+	    rm profile.out; \
+	  fi \
+	done
 
 .PHONY: test-integration
 test-integration:
 	./integration-test/test.sh
 
 .PHONY: test-all
-test-all: vet test-race test-integration
+test-all: vet test test-race test-integration
 
 .PHONY: fmt
 fmt:

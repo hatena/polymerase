@@ -13,21 +13,20 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/status"
+	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils/etcd"
 )
 
 type Server struct {
-	cfg           *base.ServerConfig
-	grpc          *grpc.Server
-	storage       storage.BackupStorage
+	cfg  *base.ServerConfig
+	grpc *grpc.Server
+	//storage       storage.BackupStorage
+	backupManager *storage.BackupManager
 	mngrByStorage *storage.TempBackupManager
 	storageSvc    *storage.StorageService
 	etcdServer    *etcd.EtcdServer
 	etcdCfg       *embed.Config
-	aggregator    *status.WeeklyBackupAggregator
 }
 
 func NewServer(cfg *base.ServerConfig) (*Server, error) {
@@ -49,17 +48,18 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	s.etcdCfg = etcdCfg
 
 	// For now, local storage only
-	s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
-		Config:         cfg.Config,
-		BackupsDir:     cfg.BackupsDir(),
-		ServeRateLimit: cfg.ServeRateLimit,
-		NodeName:       cfg.Name,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "backup storage configuration is failed")
-	}
+	//s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
+	//	Config:         cfg.Config,
+	//	BackupsDir:     cfg.BackupsDir(),
+	//	ServeRateLimit: cfg.ServeRateLimit,
+	//	NodeName:       cfg.Name,
+	//})
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "backup storage configuration is failed")
+	//}
+	s.backupManager = storage.NewBackupManager(s.cfg)
 
-	mngrByStorage, err := storage.NewTempBackupManager(s.storage, &storage.TempBackupManagerConfig{
+	mngrByStorage, err := storage.NewTempBackupManager(s.backupManager, &storage.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
 		Name:    cfg.Name,
@@ -69,9 +69,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	}
 	s.mngrByStorage = mngrByStorage
 
-	s.aggregator = status.NewWeeklyBackupAggregator()
-
-	s.storageSvc = storage.NewStorageService(s.storage, cfg.ServeRateLimit, s.mngrByStorage, s.aggregator, s.cfg)
+	s.storageSvc = storage.NewStorageService(s.backupManager, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)
@@ -96,7 +94,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	// Create etcd client
-	cli, err := clientv3.New(clientv3.Config{
+	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{net.JoinHostPort(s.cfg.Host, s.cfg.Port)},
 		DialTimeout: 5 * time.Second,
 	})
@@ -107,10 +105,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Inject etcd client after launching embedded etcd server
 	s.mngrByStorage.EtcdCli = cli
 	s.storageSvc.EtcdCli = cli
+	s.backupManager.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
-	if err := s.storage.RestoreBackupInfo(cli); err != nil {
+	if err := s.backupManager.RestoreBackupInfo(cli); err != nil {
 		return err
 	}
 
@@ -134,11 +133,11 @@ func (s *Server) CleanupEtcdDir() {
 }
 
 func (s *Server) startWriteStatus(freq time.Duration) {
-	recorder := status.NewStatusRecorder(
+	recorder := newStatusRecorder(
 		s.mngrByStorage.EtcdCli, s.cfg.StoreDir.Path, s.cfg.Name, s.cfg)
 
 	// Do WriteStatus before ticker starts
-	if err := recorder.WriteStatus(context.Background()); err != nil {
+	if err := recorder.writeStatus(context.Background()); err != nil {
 		log.Println(err)
 		return
 	}
@@ -148,7 +147,7 @@ func (s *Server) startWriteStatus(freq time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := recorder.WriteStatus(context.Background()); err != nil {
+			if err := recorder.writeStatus(context.Background()); err != nil {
 				log.Println(err)
 			}
 		}

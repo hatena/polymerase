@@ -9,7 +9,9 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
 	"github.com/taku-k/polymerase/pkg/allocator"
+	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
@@ -22,7 +24,7 @@ func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobr
 }
 
 func getAppropriateStorageClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
-	cli, err := clientv3.New(clientv3.Config{
+	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,
 		DialTimeout: 5 * time.Second,
@@ -56,7 +58,7 @@ func getStorageClient(ctx context.Context, addr string) (storagepb.StorageServic
 }
 
 func getTempBackupClient(ctx context.Context, db string) (storagepb.StorageServiceClient, error) {
-	cli, err := clientv3.New(clientv3.Config{
+	cli, err := etcd.NewClient(clientv3.Config{
 		Endpoints:   []string{baseCfg.Addr},
 		Context:     ctx,
 		DialTimeout: 5 * time.Second,

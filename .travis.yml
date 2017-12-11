@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - 1.8
+  - 1.9
 
 sudo: required
 
@@ -23,6 +23,9 @@ before_install:
 
 script:
   - make test-all
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
   email:

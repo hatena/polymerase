@@ -21,11 +21,12 @@ import (
 	"github.com/elastic/gosigar"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.uber.org/ratelimit"
+
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 	"github.com/taku-k/polymerase/pkg/utils/dirutil"
 	pexec "github.com/taku-k/polymerase/pkg/utils/exec"
-	"go.uber.org/ratelimit"
 )
 
 const (
@@ -140,11 +141,11 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 	log.Printf("Restore data directory: %v\n", restoreDir)
 
 	pbs := make([]*pb.ProgressBar, len(res.Keys))
-	pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].Size)).Prefix("base | ")
+	pbs[len(res.Keys)-1] = pb.New64(int64(res.Keys[len(res.Keys)-1].FileSize)).Prefix("base | ")
 	for i := 0; i < len(res.Keys)-1; i += 1 {
 		inc := len(res.Keys) - i - 1
 		info := res.Keys[i]
-		pbs[i] = pb.New64(int64(info.Size)).Prefix(fmt.Sprintf("inc%d | ", inc))
+		pbs[i] = pb.New64(int64(info.FileSize)).Prefix(fmt.Sprintf("inc%d | ", inc))
 	}
 	for _, bar := range pbs {
 		bar.SetWidth(progressBarWidth)

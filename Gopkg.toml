@@ -49,3 +49,6 @@
 [[constraint]]
   name = "github.com/gogo/protobuf"
   version = "0.5.0"
+[[constraint]]
+  name = "github.com/rs/xid"
+  version = "1.1.0"

@@ -19,9 +19,8 @@ import (
 )
 
 type Server struct {
-	cfg  *base.ServerConfig
-	grpc *grpc.Server
-	//storage       storage.BackupStorage
+	cfg           *base.ServerConfig
+	grpc          *grpc.Server
 	backupManager *storage.BackupManager
 	mngrByStorage *storage.TempBackupManager
 	storageSvc    *storage.StorageService
@@ -34,35 +33,25 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 		cfg: cfg,
 	}
 
-	etcdCfg, err := etcd.NewEtcdEmbedConfig(&etcd.EtcdContext{
+	etcdCfg, err := etcd.NewEtcdEmbedConfig(&etcd.Context{
 		Host:       cfg.Host,
 		ClientPort: cfg.Port,
 		PeerPort:   cfg.EtcdPeerPort,
 		DataDir:    cfg.EtcdDataDir(),
 		JoinAddr:   cfg.JoinAddr,
-		Name:       cfg.Name,
+		NodeID:     cfg.NodeID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "etcd embed config cannot be created")
 	}
 	s.etcdCfg = etcdCfg
 
-	// For now, local storage only
-	//s.storage, err = storage.NewLocalBackupStorage(&storage.LocalStorageConfig{
-	//	Config:         cfg.Config,
-	//	BackupsDir:     cfg.BackupsDir(),
-	//	ServeRateLimit: cfg.ServeRateLimit,
-	//	NodeName:       cfg.Name,
-	//})
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "backup storage configuration is failed")
-	//}
 	s.backupManager = storage.NewBackupManager(s.cfg)
 
 	mngrByStorage, err := storage.NewTempBackupManager(s.backupManager, &storage.TempBackupManagerConfig{
 		Config:  cfg.Config,
 		TempDir: cfg.TempDir(),
-		Name:    cfg.Name,
+		NodeID:  cfg.NodeID,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
@@ -134,7 +123,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := newStatusRecorder(
-		s.mngrByStorage.EtcdCli, s.cfg.StoreDir.Path, s.cfg.Name, s.cfg)
+		s.mngrByStorage.EtcdCli, s.cfg.StoreDir.Path, s.cfg.NodeID, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.writeStatus(context.Background()); err != nil {

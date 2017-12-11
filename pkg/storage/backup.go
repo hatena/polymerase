@@ -14,6 +14,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupManager struct {
@@ -195,7 +196,7 @@ func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {
 		if cp.ToLSN == "" {
 			return errors.New("xtrabackup_checkpoints file is not found")
 		}
-		storedTime, err := time.Parse(base.DefaultTimeFormat, string(backupTP))
+		storedTime, err := time.Parse(utils.TimeFormat, string(backupTP))
 		if err != nil {
 			return err
 		}
@@ -204,7 +205,7 @@ func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {
 			&polypb.BackupMeta{
 				StoredTime:    &storedTime,
 				Host:          m.cfg.AdvertiseAddr,
-				NodeName:      m.cfg.Name,
+				NodeId:        m.cfg.NodeID,
 				BackupType:    backupType,
 				Db:            db,
 				ToLsn:         cp.ToLSN,

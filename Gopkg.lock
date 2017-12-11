@@ -32,7 +32,7 @@
 
 [[projects]]
   name = "github.com/coreos/etcd"
-  packages = ["alarm","auth","auth/authpb","client","clientv3","clientv3/concurrency","clientv3/namespace","clientv3/naming","compactor","discovery","embed","error","etcdserver","etcdserver/api","etcdserver/api/v2http","etcdserver/api/v2http/httptypes","etcdserver/api/v3client","etcdserver/api/v3election","etcdserver/api/v3election/v3electionpb","etcdserver/api/v3election/v3electionpb/gw","etcdserver/api/v3lock","etcdserver/api/v3lock/v3lockpb","etcdserver/api/v3lock/v3lockpb/gw","etcdserver/api/v3rpc","etcdserver/api/v3rpc/rpctypes","etcdserver/auth","etcdserver/etcdserverpb","etcdserver/etcdserverpb/gw","etcdserver/membership","etcdserver/stats","integration","lease","lease/leasehttp","lease/leasepb","mvcc","mvcc/backend","mvcc/mvccpb","pkg/adt","pkg/contention","pkg/cors","pkg/cpuutil","pkg/crc","pkg/debugutil","pkg/fileutil","pkg/httputil","pkg/idutil","pkg/ioutil","pkg/logutil","pkg/monotime","pkg/netutil","pkg/pathutil","pkg/pbutil","pkg/runtime","pkg/schedule","pkg/srv","pkg/testutil","pkg/tlsutil","pkg/transport","pkg/types","pkg/wait","proxy/grpcproxy","proxy/grpcproxy/adapter","proxy/grpcproxy/cache","raft","raft/raftpb","rafthttp","snap","snap/snappb","store","version","wal","wal/walpb"]
+  packages = ["alarm","auth","auth/authpb","client","clientv3","clientv3/concurrency","compactor","discovery","embed","error","etcdserver","etcdserver/api","etcdserver/api/v2http","etcdserver/api/v2http/httptypes","etcdserver/api/v3client","etcdserver/api/v3election","etcdserver/api/v3election/v3electionpb","etcdserver/api/v3election/v3electionpb/gw","etcdserver/api/v3lock","etcdserver/api/v3lock/v3lockpb","etcdserver/api/v3lock/v3lockpb/gw","etcdserver/api/v3rpc","etcdserver/api/v3rpc/rpctypes","etcdserver/auth","etcdserver/etcdserverpb","etcdserver/etcdserverpb/gw","etcdserver/membership","etcdserver/stats","lease","lease/leasehttp","lease/leasepb","mvcc","mvcc/backend","mvcc/mvccpb","pkg/adt","pkg/contention","pkg/cors","pkg/cpuutil","pkg/crc","pkg/debugutil","pkg/fileutil","pkg/httputil","pkg/idutil","pkg/ioutil","pkg/logutil","pkg/monotime","pkg/netutil","pkg/pathutil","pkg/pbutil","pkg/runtime","pkg/schedule","pkg/srv","pkg/tlsutil","pkg/transport","pkg/types","pkg/wait","proxy/grpcproxy/adapter","raft","raft/raftpb","rafthttp","snap","snap/snappb","store","version","wal","wal/walpb"]
   revision = "61fc123e7a8b14a0a258aa3f5c4159861b1ec2e7"
   version = "v3.2.1"
 
@@ -97,24 +97,13 @@
 
 [[projects]]
   name = "github.com/gogo/protobuf"
-  packages = ["proto"]
+  packages = ["gogoproto","proto","protoc-gen-gogo/descriptor","sortkeys","types"]
   revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
   version = "v0.5"
 
 [[projects]]
-  name = "github.com/golang/groupcache"
-  packages = ["lru"]
-  revision = "02826c3e79038b59d737d3b1c0a1d937f71a4433"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/golang/mock"
-  packages = ["gomock"]
-  revision = "93f6609a15b7de76bd49259f1f9a6b58df358936"
-
-[[projects]]
   name = "github.com/golang/protobuf"
-  packages = ["jsonpb","proto","ptypes","ptypes/any","ptypes/duration","ptypes/struct","ptypes/timestamp"]
+  packages = ["jsonpb","proto","ptypes/any","ptypes/struct","ptypes/timestamp"]
   revision = "6a1fa9404c0aebf36c879bc50152edcc953910d2"
 
 [[projects]]
@@ -199,6 +188,12 @@
   revision = "a1dba9ce8baed984a2495b658c82687f8157b98f"
 
 [[projects]]
+  name = "github.com/rs/xid"
+  packages = ["."]
+  revision = "02dd45c33376f85d1064355dc790dcc4850596b1"
+  version = "v1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
@@ -248,11 +243,6 @@
   revision = "2bf8f2a19ec09c670e931282edfe6567f6be21c9"
 
 [[projects]]
-  name = "golang.org/x/time"
-  packages = ["rate"]
-  revision = "c06e80d9300e4443158a03817b8a8cb37d230320"
-
-[[projects]]
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   revision = "aa2eb687b4d3e17154372564ad8d6bf11c3cf21f"
@@ -271,6 +261,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f490a6883dcc5a4365697c2497eddeaf2d0960afc4050b27262bdd4b091e7d3f"
+  inputs-digest = "2196b4fc45c79e2f9bc65997b5eabf4e1961d4e09fea03607139ce22f67c8789"
   solver-name = "gps-cdcl"
   solver-version = 1

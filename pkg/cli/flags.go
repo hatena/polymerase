@@ -123,13 +123,13 @@ func init() {
 	{
 		f := startCmd.Flags()
 
-		f.StringVar(&serverConnHost, "host", serverCfg.Name, "The hostname to listen on.")
-		f.StringVar(&serverAdvertiseHost, "advertise-host", serverCfg.Name, "The hostname to advertise to other nodes and clients.")
+		f.StringVar(&serverConnHost, "host", string(serverCfg.NodeID), "The hostname to listen on.")
+		f.StringVar(&serverAdvertiseHost, "advertise-host", string(serverCfg.NodeID), "The hostname to advertise to other nodes and clients.")
 		f.StringVar(&serverConnPort, "port", base.DefaultPort, "The port to bind to.")
 		f.Var(serverCfg.StoreDir, "store-dir", "The dir path to store data files.")
 		f.StringVar(&serverCfg.JoinAddr, "join", "", "The address of node which acts as bootstrap when joining an existing cluster.")
 		f.StringVar(&serverCfg.EtcdPeerPort, "etcd-peer-port", "2380", "The port to be used for etcd peer communication.")
-		f.StringVar(&serverCfg.Name, "name", serverCfg.Name, "The human-readable name.")
+		f.VarP(&serverCfg.NodeID, "name", string(serverCfg.NodeID), "The human-readable name.")
 	}
 
 	rootCmd.AddCommand(

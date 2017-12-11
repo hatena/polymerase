@@ -19,18 +19,21 @@ type statusRecorder struct {
 
 	cli etcd.ClientAPI
 
-	name string
+	nodeID polypb.NodeID
 
 	cfg *base.ServerConfig
 }
 
 func newStatusRecorder(
-	client etcd.ClientAPI, storeDir string, name string, cfg *base.ServerConfig,
+	client etcd.ClientAPI,
+	storeDir string,
+	nodeID polypb.NodeID,
+	cfg *base.ServerConfig,
 ) *statusRecorder {
 	return &statusRecorder{
 		cli:      client,
 		storeDir: storeDir,
-		name:     name,
+		nodeID:   nodeID,
 		cfg:      cfg,
 	}
 }
@@ -51,5 +54,5 @@ func (sr *statusRecorder) writeStatus(ctx context.Context) error {
 	meta.Disk.Total = fileSystemUsage.Total
 	meta.Disk.Avail = fileSystemUsage.Avail
 
-	return sr.cli.PutNodeMeta(keys.MakeNodeMetaKey(polypb.NodeID(sr.name)), meta)
+	return sr.cli.PutNodeMeta(keys.MakeNodeMetaKey(sr.nodeID), meta)
 }

@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/xid"
+
+	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
 const (
 	defaultStoraPath = "polymerase-data"
-
-	defaultName = "default"
 
 	defaultStatusSampleInterval = 10 * time.Second
 
@@ -30,7 +31,7 @@ type ServerConfig struct {
 
 	EtcdPeerPort string
 
-	Name string
+	NodeID polypb.NodeID
 
 	StatusSampleInterval time.Duration
 
@@ -52,10 +53,11 @@ func MakeServerConfig() *ServerConfig {
 	cfg.StoreDir = &StoreSpec{p}
 
 	// Name configuration
-	cfg.Name, err = os.Hostname()
+	host, err := os.Hostname()
 	if err != nil {
-		cfg.Name = defaultName
+		host = xid.New().String()
 	}
+	cfg.NodeID = polypb.NodeID(host)
 
 	// TODO: It can be changed by option
 	cfg.StatusSampleInterval = defaultStatusSampleInterval

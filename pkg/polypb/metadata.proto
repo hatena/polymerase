@@ -21,7 +21,7 @@ message NodeMeta {
 // BackupMeta is a metadata about a backup file.
 message BackupMeta {
   google.protobuf.Timestamp stored_time = 1 [(gogoproto.stdtime) = true];
-  string node_name = 2;
+  bytes node_id = 2 [(gogoproto.casttype) = "NodeID"];
   string host = 3;
   StorageType storage_type = 4;
   google.protobuf.Timestamp end_time = 5 [(gogoproto.stdtime) = true];

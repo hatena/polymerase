@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupMetaKey Key
@@ -15,6 +15,23 @@ type NodeMetaKey Key
 type Key []byte
 
 type NodeID []byte
+
+func (d *NodeID) String() string {
+	return string(*d)
+}
+
+func (d *NodeID) Set(v string) error {
+	if v == "" {
+		*d = nil
+	} else {
+		*d = NodeID(v)
+	}
+	return nil
+}
+
+func (d *NodeID) Type() string {
+	return "NodeID"
+}
 
 type DatabaseID []byte
 
@@ -38,11 +55,11 @@ func (d *DatabaseID) Type() string {
 type TimePoint []byte
 
 func NewTimePoint(t time.Time) TimePoint {
-	return TimePoint(t.Format(base.DefaultTimeFormat))
+	return TimePoint(t.Format(utils.TimeFormat))
 }
 
 func (t TimePoint) AsTime() time.Time {
-	ti, _ := time.Parse(base.DefaultTimeFormat, string(t))
+	ti, _ := time.Parse(utils.TimeFormat, string(t))
 	return ti
 }
 

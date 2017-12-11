@@ -9,27 +9,29 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+
+	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
-type EtcdContext struct {
+type Context struct {
 	Host       string
 	ClientPort string
 	PeerPort   string
 	DataDir    string
 	JoinAddr   string
-	Name       string
+	NodeID     polypb.NodeID
 }
 
-func (c *EtcdContext) isInitialCluster() bool {
+func (c *Context) isInitialCluster() bool {
 	return c.JoinAddr == ""
 }
 
-func (c *EtcdContext) existsDataDir() bool {
+func (c *Context) existsDataDir() bool {
 	_, err := os.Stat(c.DataDir)
 	return err == nil
 }
 
-func (c *EtcdContext) AddMember(peerUrl string) (string, error) {
+func (c *Context) AddMember(peerUrl string) (string, error) {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{c.JoinAddr},
 		// TODO: assign with default value, not hard coding
@@ -51,7 +53,7 @@ func (c *EtcdContext) AddMember(peerUrl string) (string, error) {
 		for _, u := range m.PeerURLs {
 			n := m.Name
 			if m.ID == newID {
-				n = c.Name
+				n = string(c.NodeID)
 			}
 			fmt.Fprintf(&buf, "%s=%s,", n, u)
 		}

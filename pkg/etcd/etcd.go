@@ -20,7 +20,7 @@ type EtcdServer struct {
 	ClientPort string
 }
 
-func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
+func NewEtcdEmbedConfig(ctx *Context) (*embed.Config, error) {
 	etcdCfg := embed.NewConfig()
 	lcurl, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", ctx.ClientPort))
 	if err != nil {
@@ -48,10 +48,10 @@ func NewEtcdEmbedConfig(ctx *EtcdContext) (*embed.Config, error) {
 
 	etcdCfg.Dir = ctx.DataDir
 
-	etcdCfg.Name = ctx.Name
+	etcdCfg.Name = string(ctx.NodeID)
 
 	if ctx.isInitialCluster() {
-		etcdCfg.InitialCluster = etcdCfg.InitialClusterFromName(ctx.Name)
+		etcdCfg.InitialCluster = etcdCfg.InitialClusterFromName(string(ctx.NodeID))
 	} else if !ctx.existsDataDir() {
 		// If data dir exists, it is launched with recovery mode.
 		cluster, err := ctx.AddMember(apurl.String())

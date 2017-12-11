@@ -1,6 +1,7 @@
 package polypb
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 	"time"
@@ -8,6 +9,43 @@ import (
 
 func toPtr(s time.Time) *time.Time {
 	return &s
+}
+
+func TestDatabaseIDConversions(t *testing.T) {
+	testCases := []struct {
+		in       string
+		expected DatabaseID
+	}{
+		{
+			in:       "db",
+			expected: DatabaseID("db"),
+		},
+		{
+			in:       "",
+			expected: nil,
+		},
+	}
+
+	for i, tc := range testCases {
+		var db DatabaseID
+		db.Set(tc.in)
+		if !bytes.Equal(db, tc.expected) {
+			t.Errorf("%d: got wrong DatabaseID %q; want %q",
+				i, db, tc.expected)
+		}
+	}
+}
+
+func TestDatabaseID(t *testing.T) {
+	in := "db"
+	var db DatabaseID
+	db.Set(in)
+	if db.Type() != "DatabaseID" {
+		t.Errorf("DatabaseID.Type() is mismatched expected type(DatabaseID)")
+	}
+	if db.String() != in {
+		t.Errorf("Got wrong string %s; want %s", db.String(), in)
+	}
 }
 
 func TestTimePoint_AsTime(t *testing.T) {

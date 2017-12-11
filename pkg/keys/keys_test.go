@@ -18,13 +18,13 @@ func TestMakeBackupMetaKey(t *testing.T) {
 			db:     polypb.DatabaseID("db1"),
 			baseTP: polypb.TimePoint("time1"),
 			backTP: polypb.TimePoint("time1"),
-			exp:    polypb.BackupMetaKey("meta/backup/db1/time1/time1"),
+			exp:    polypb.BackupMetaKey("meta-backup-db1time1time1"),
 		},
 		{
 			db:     polypb.DatabaseID("db/2"),
 			baseTP: polypb.TimePoint("time1"),
 			backTP: polypb.TimePoint("time2"),
-			exp:    polypb.BackupMetaKey(`meta/backup/db\/2/time1/time2`),
+			exp:    polypb.BackupMetaKey(`meta-backup-db/2time1time2`),
 		},
 	}
 
@@ -44,11 +44,11 @@ func TestMakeNodeMetaKey(t *testing.T) {
 	}{
 		{
 			node: polypb.NodeID("node1"),
-			exp:  polypb.NodeMetaKey("meta/node/node1"),
+			exp:  polypb.NodeMetaKey("meta-node-node1"),
 		},
 		{
 			node: polypb.NodeID("node/2"),
-			exp:  polypb.NodeMetaKey(`meta/node/node\/2`),
+			exp:  polypb.NodeMetaKey(`meta-node-node/2`),
 		},
 	}
 

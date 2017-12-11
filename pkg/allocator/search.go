@@ -9,7 +9,7 @@ import (
 )
 
 func SearchStoredAddr(cli etcd.ClientAPI, db polypb.DatabaseID) (string, error) {
-	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
+	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return "", err
 	}

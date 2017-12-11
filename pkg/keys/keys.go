@@ -2,7 +2,6 @@ package keys
 
 import (
 	"bytes"
-	"strings"
 	"time"
 
 	"github.com/taku-k/polymerase/pkg/polypb"
@@ -78,19 +77,4 @@ func MakeBackupKey(
 
 func MakeBackupMetaKeyFromKey(key polypb.Key) polypb.BackupMetaKey {
 	return polypb.BackupMetaKey(makeKey(makeBackupMetaPrefix(), key))
-}
-
-func ParseBackupKey(key, format string) *BackupKeyItem {
-	sp := strings.Split(key, "/")
-	if len(sp) != 3 {
-		return nil
-	}
-	t, err := time.Parse(format, sp[2])
-	if err != nil {
-		return nil
-	}
-	return &BackupKeyItem{
-		Db:         sp[1],
-		StoredTime: t,
-	}
 }

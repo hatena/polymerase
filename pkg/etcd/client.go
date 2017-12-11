@@ -2,15 +2,14 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
-
-	"fmt"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 

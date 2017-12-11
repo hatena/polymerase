@@ -73,7 +73,7 @@ test-integration:
 	./integration-test/test.sh
 
 .PHONY: test-all
-test-all: vet test-race test-integration
+test-all: vet test test-race test-integration
 
 .PHONY: fmt
 fmt:

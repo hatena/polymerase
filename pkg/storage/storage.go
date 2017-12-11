@@ -2,41 +2,13 @@ package storage
 
 import (
 	"io"
-	"time"
-
 	"os"
-
+	"path"
 	"path/filepath"
 
-	"path"
-
 	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
-
-type BackupStorage interface {
-	GetStorageType() string
-
-	SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn string) (polypb.TimePoint, error)
-
-	TransferTempFullBackup(tempDir string, key string) error
-
-	TransferTempIncBackup(tempDir string, key string) error
-
-	SearchConsecutiveIncBackups(db polypb.DatabaseID, from time.Time) ([]*storagepb.BackupFileInfo, error)
-
-	GetFileStream(key string) (io.Reader, error)
-
-	PostFile(key string, name string, r io.Reader) error
-
-	RemoveBackups(cli etcd.ClientAPI, key polypb.Key) error
-
-	GetKPastBackupPrefixKey(db polypb.DatabaseID, k int) (polypb.Key, error)
-
-	RestoreBackupInfo(cli etcd.ClientAPI) error
-}
 
 type PhysicalStorage interface {
 	Create(name string) (io.WriteCloser, error)
@@ -101,5 +73,6 @@ func (s *DiskStorage) Walk(f func(path string, info os.FileInfo, err error) erro
 	return filepath.Walk(s.backupsDir, f)
 }
 
+// TODO: implement it
 type MemStorage struct {
 }

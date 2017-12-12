@@ -33,7 +33,7 @@ func NewBackupManager(cfg *base.ServerConfig) *BackupManager {
 }
 
 func (m *BackupManager) GetLatestToLSN(db polypb.DatabaseID) (string, error) {
-	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
+	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +46,7 @@ func (m *BackupManager) GetLatestToLSN(db polypb.DatabaseID) (string, error) {
 
 // SearchBaseTimePointByLSN finds base time point matching with a given lsn.
 func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn string) (polypb.TimePoint, error) {
-	dbPrefix := keys.MakeDBBackupMetaPrefixKey(db)
+	dbPrefix := keys.MakeDBBackupMetaPrefix(db)
 	metas, err := m.EtcdCli.GetBackupMeta(dbPrefix)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 	db polypb.DatabaseID, from time.Time,
 ) ([]*storagepb.BackupFileInfo, error) {
 	files := make([]*storagepb.BackupFileInfo, 0)
-	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
+	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (m *BackupManager) RemoveBackups(key polypb.Key) error {
 
 // GetKPastBackupKey returns a key.
 func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.Key, error) {
-	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
+	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 		return nil, errors.New("not enough full backups to be removed")
 	}
 	fulls.Sort()
-	return keys.MakeBackupPrefixKey(db, fulls[len(fulls)-k].BaseTimePoint), nil
+	return keys.MakeBackupPrefix(db, fulls[len(fulls)-k].BaseTimePoint), nil
 }
 
 func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {

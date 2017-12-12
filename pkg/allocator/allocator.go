@@ -7,7 +7,7 @@ import (
 )
 
 func SelectAppropriateHost(cli etcd.ClientAPI, db polypb.DatabaseID) (polypb.NodeID, string, error) {
-	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefixKey(db))
+	metas, err := cli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return nil, "", err
 	}

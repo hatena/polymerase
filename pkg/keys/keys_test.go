@@ -18,13 +18,13 @@ func TestMakeBackupMetaKey(t *testing.T) {
 			db:     polypb.DatabaseID("db1"),
 			baseTP: polypb.TimePoint("time1"),
 			backTP: polypb.TimePoint("time1"),
-			exp:    polypb.BackupMetaKey("meta/backup/db1/time1/time1"),
+			exp:    polypb.BackupMetaKey("meta-backup-db1time1time1"),
 		},
 		{
 			db:     polypb.DatabaseID("db/2"),
 			baseTP: polypb.TimePoint("time1"),
 			backTP: polypb.TimePoint("time2"),
-			exp:    polypb.BackupMetaKey(`meta/backup/db\/2/time1/time2`),
+			exp:    polypb.BackupMetaKey(`meta-backup-db/2time1time2`),
 		},
 	}
 
@@ -44,11 +44,11 @@ func TestMakeNodeMetaKey(t *testing.T) {
 	}{
 		{
 			node: polypb.NodeID("node1"),
-			exp:  polypb.NodeMetaKey("meta/node/node1"),
+			exp:  polypb.NodeMetaKey("meta-node-node1"),
 		},
 		{
 			node: polypb.NodeID("node/2"),
-			exp:  polypb.NodeMetaKey(`meta/node/node\/2`),
+			exp:  polypb.NodeMetaKey(`meta-node-node/2`),
 		},
 	}
 
@@ -56,6 +56,60 @@ func TestMakeNodeMetaKey(t *testing.T) {
 		res := MakeNodeMetaKey(tc.node)
 		if !bytes.Equal(res, tc.exp) {
 			t.Errorf("%d: got wrong key %q, want key %q",
+				i, res, tc.exp)
+		}
+	}
+}
+
+func TestMakeBackupKey(t *testing.T) {
+	testCases := []struct {
+		db     polypb.DatabaseID
+		baseTP polypb.TimePoint
+		backTP polypb.TimePoint
+		exp    polypb.Key
+	}{
+		{
+			db:     polypb.DatabaseID("db1"),
+			baseTP: polypb.TimePoint("time1"),
+			backTP: polypb.TimePoint("time1"),
+			exp:    polypb.Key("db1/time1/time1"),
+		},
+		{
+			db:     polypb.DatabaseID("db/2"),
+			baseTP: polypb.TimePoint("time2"),
+			backTP: polypb.TimePoint("time2"),
+			exp:    polypb.Key(`db_2/time2/time2`),
+		},
+	}
+
+	for i, tc := range testCases {
+		res := MakeBackupKey(tc.db, tc.baseTP, tc.backTP)
+		if !bytes.Equal(res, tc.exp) {
+			t.Errorf("%d: got wrong key %q; want key %q",
+				i, res, tc.exp)
+		}
+	}
+}
+
+func TestMakeBackupMetaKeyFromKey(t *testing.T) {
+	testCases := []struct {
+		key polypb.Key
+		exp polypb.BackupMetaKey
+	}{
+		{
+			key: polypb.Key("db/time/time"),
+			exp: polypb.BackupMetaKey("meta-backup-dbtimetime"),
+		},
+		{
+			key: polypb.Key(`db_1/time/time`),
+			exp: polypb.BackupMetaKey(`meta-backup-db/1timetime`),
+		},
+	}
+
+	for i, tc := range testCases {
+		res := MakeBackupMetaKeyFromKey(tc.key)
+		if !bytes.Equal(res, tc.exp) {
+			t.Errorf("%d: got wrong key %q; want key %q",
 				i, res, tc.exp)
 		}
 	}

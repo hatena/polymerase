@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils/testutil"
 )
 
 func toPtr(s time.Time) *time.Time {
@@ -42,7 +44,7 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	}
 	/*
 	 Time order: t0 < t1 < t2 < t3 < t4 < t5
-	 DB
+	 db
 	 ├── t0
 	 │   ├── t0 (FULL)
 	 │   ├── t1 (INC)
@@ -54,6 +56,9 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	*/
 	c.FakeGetBackupMeta = func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
 		db, _, _, _ := keys.DecodeMetaKey(key)
+		if !bytes.Equal(db, []byte("db")) {
+			return make(polypb.BackupMetaSlice, 0), nil
+		}
 		return []*polypb.BackupMeta{
 			{
 				StoredTime:    toPtr(c.tAt(0)),
@@ -100,6 +105,47 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 		}, nil
 	}
 	return c
+}
+
+func TestBackupManager_GetLatestToLSN(t *testing.T) {
+	cli := newFakeClient(time.Now())
+	mngr := &BackupManager{
+		EtcdCli: cli,
+	}
+
+	testCases := []struct {
+		db       polypb.DatabaseID
+		expected string
+		errStr   string
+	}{
+		{
+			db:       polypb.DatabaseID("db"),
+			expected: "110",
+		},
+		{
+			db:     polypb.DatabaseID("db-nothing"),
+			errStr: "not found any backups",
+		},
+	}
+
+	for i, tc := range testCases {
+		lsn, err := mngr.GetLatestToLSN(tc.db)
+		if tc.errStr == "" {
+			if err != nil {
+				t.Errorf("#%d: GetLatestToLSN(%q): got error %q; want success",
+					i, tc.db, err)
+			}
+			if lsn != tc.expected {
+				t.Errorf("#%d: GetLatestToLSN(%q): got wrong lsn %s; want %s",
+					i, tc.db, lsn, tc.expected)
+			}
+		} else {
+			if !testutil.IsError(err, tc.errStr) {
+				t.Errorf("#%d: GetLatestToLSN(%q): got wrong error %q; want %q",
+					i, tc.db, err, tc.errStr)
+			}
+		}
+	}
 }
 
 func TestBackupManager_SearchBaseTimePointByLSN(t *testing.T) {

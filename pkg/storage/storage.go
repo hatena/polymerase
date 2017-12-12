@@ -28,7 +28,7 @@ type DiskStorage struct {
 }
 
 func (s *DiskStorage) StorageType() polypb.StorageType {
-	return polypb.StorageType_LOCAL
+	return polypb.StorageType_LOCAL_DISK
 }
 
 func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {
@@ -80,4 +80,44 @@ func (s *DiskStorage) Walk(f func(path string, info os.FileInfo, err error) erro
 
 // TODO: implement it
 type MemStorage struct {
+}
+
+func (s *MemStorage) StorageType() polypb.StorageType {
+	return polypb.StorageType_LOCAL_MEM
+}
+
+func (s *MemStorage) Create(name string) (io.WriteCloser, error) {
+	panic("implement me")
+}
+
+func (s *MemStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
+	panic("implement me")
+}
+
+func (s *MemStorage) Move(src string, dest polypb.Key) error {
+	panic("implement me")
+}
+
+func (s *MemStorage) Delete(name string) error {
+	panic("implement me")
+}
+
+func (s *MemStorage) DeleteBackup(key polypb.Key) error {
+	panic("implement me")
+}
+
+func (s *MemStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
+	panic("implement me")
+}
+
+func (s *MemStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
+	panic("implement me")
+}
+
+func (s *MemStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
+	panic("implement me")
+}
+
+func (s *MemStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
+	panic("implement me")
 }

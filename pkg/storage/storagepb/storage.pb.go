@@ -139,7 +139,7 @@ func (m *BackupFileInfo) GetStorageType() polypb.StorageType {
 	if m != nil {
 		return m.StorageType
 	}
-	return polypb.StorageType_LOCAL
+	return polypb.StorageType_LOCAL_DISK
 }
 
 func (m *BackupFileInfo) GetBackupType() polypb.BackupType {
@@ -184,7 +184,7 @@ func (m *GetFileByKeyRequest) GetStorageType() polypb.StorageType {
 	if m != nil {
 		return m.StorageType
 	}
-	return polypb.StorageType_LOCAL
+	return polypb.StorageType_LOCAL_DISK
 }
 
 type FileStream struct {
@@ -1136,24 +1136,6 @@ func (m *PostCheckpointsResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func encodeFixed64Storage(dAtA []byte, offset int, v uint64) int {
-	dAtA[offset] = uint8(v)
-	dAtA[offset+1] = uint8(v >> 8)
-	dAtA[offset+2] = uint8(v >> 16)
-	dAtA[offset+3] = uint8(v >> 24)
-	dAtA[offset+4] = uint8(v >> 32)
-	dAtA[offset+5] = uint8(v >> 40)
-	dAtA[offset+6] = uint8(v >> 48)
-	dAtA[offset+7] = uint8(v >> 56)
-	return offset + 8
-}
-func encodeFixed32Storage(dAtA []byte, offset int, v uint32) int {
-	dAtA[offset] = uint8(v)
-	dAtA[offset+1] = uint8(v >> 8)
-	dAtA[offset+2] = uint8(v >> 16)
-	dAtA[offset+3] = uint8(v >> 24)
-	return offset + 4
-}
 func encodeVarintStorage(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)

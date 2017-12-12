@@ -113,7 +113,7 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	}
 	return &polypb.BackupMeta{
 		StoredTime:    &b.start,
-		StorageType:   polypb.StorageType_LOCAL,
+		StorageType:   polypb.StorageType_LOCAL_DISK,
 		NodeId:        b.manager.cfg.NodeID,
 		Host:          b.manager.cfg.AdvertiseAddr,
 		BackupType:    b.backupType,

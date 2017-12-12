@@ -20,7 +20,11 @@ func makeKey(keys ...[]byte) []byte {
 }
 
 func escapeSlash(s []byte) []byte {
-	return bytes.Replace(s, []byte("/"), []byte(`\/`), -1)
+	return bytes.Replace(s, []byte("/"), []byte(`_`), -1)
+}
+
+func unescapeSlash(s []byte) []byte {
+	return bytes.Replace(s, []byte(`_`), []byte("/"), -1)
 }
 
 type BackupKeyItem struct {
@@ -28,7 +32,7 @@ type BackupKeyItem struct {
 	StoredTime time.Time
 }
 
-func makePrefixWithDB(
+func makeMetaPrefixWithDB(
 	db polypb.DatabaseID, baseTime, backupTime polypb.TimePoint,
 ) polypb.BackupMetaKey {
 	buf := make(polypb.BackupMetaKey, 0, len(backupMetaPrefix)+len(db)+1)
@@ -41,21 +45,21 @@ func makePrefixWithDB(
 
 // MakeDBBackupMetaPrefix
 func MakeDBBackupMetaPrefix(db polypb.DatabaseID) polypb.BackupMetaKey {
-	return makePrefixWithDB(db, nil, nil)
+	return makeMetaPrefixWithDB(db, nil, nil)
 }
 
 func MakeSeriesBackupMetaPrefix(
 	db polypb.DatabaseID,
 	baseTime polypb.TimePoint,
 ) polypb.BackupMetaKey {
-	return makePrefixWithDB(db, baseTime, nil)
+	return makeMetaPrefixWithDB(db, baseTime, nil)
 }
 
 func MakeBackupMetaKey(
 	db polypb.DatabaseID,
 	baseTime, backupTime polypb.TimePoint,
 ) polypb.BackupMetaKey {
-	return makePrefixWithDB(db, baseTime, backupTime)
+	return makeMetaPrefixWithDB(db, baseTime, backupTime)
 }
 
 func MakeNodeMetaPrefix() polypb.NodeMetaKey {
@@ -67,19 +71,20 @@ func MakeNodeMetaKey(node polypb.NodeID) polypb.NodeMetaKey {
 		makeKey(MakeNodeMetaPrefix(), node))
 }
 
-func MakeBackupPrefixKey(
+func MakeBackupPrefix(
 	db polypb.DatabaseID,
 	baseTime polypb.TimePoint,
 ) polypb.Key {
 	return polypb.Key(
-		makeKey(escapeSlash(db), baseTime))
+		bytes.Join([][]byte{escapeSlash(db), baseTime}, []byte("/")))
 }
 
 func MakeBackupKey(
 	db polypb.DatabaseID,
 	baseTime, backupTime polypb.TimePoint,
 ) polypb.Key {
-	return polypb.Key(makeKey(escapeSlash(db), baseTime, backupTime))
+	return polypb.Key(
+		bytes.Join([][]byte{escapeSlash(db), baseTime, backupTime}, []byte("/")))
 }
 
 func MakeBackupMetaKeyFromKey(key polypb.Key) polypb.BackupMetaKey {
@@ -87,7 +92,7 @@ func MakeBackupMetaKeyFromKey(key polypb.Key) polypb.BackupMetaKey {
 	if err != nil {
 		panic(err)
 	}
-	return makePrefixWithDB(db, base, backup)
+	return makeMetaPrefixWithDB(db, base, backup)
 }
 
 func decodeKey(
@@ -97,5 +102,5 @@ func decodeKey(
 	if len(sp) != 3 {
 		return nil, nil, nil, errors.Errorf("key (%s) is invalid", key)
 	}
-	return sp[0], sp[1], sp[2], nil
+	return unescapeSlash(sp[0]), sp[1], sp[2], nil
 }

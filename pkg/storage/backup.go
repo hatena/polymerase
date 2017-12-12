@@ -173,7 +173,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 		return nil, errors.New("not enough full backups to be removed")
 	}
 	fulls.Sort()
-	return keys.MakeBackupPrefixKey(db, fulls[len(fulls)-k].BaseTimePoint), nil
+	return keys.MakeBackupPrefix(db, fulls[len(fulls)-k].BaseTimePoint), nil
 }
 
 func (m *BackupManager) RestoreBackupInfo(cli etcd.ClientAPI) error {

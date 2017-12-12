@@ -1,7 +1,7 @@
 package base
 
 const (
-	DefaultTimeFormat = "2006-01-02_15-04-05_Z0700"
+	DefaultTimeFormat = "2006-01-02_15-04-05_-0700"
 
 	// From IANA Service Name and Transport Protocol Port Number Registry
 	// This port is unregistered for now.

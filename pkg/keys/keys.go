@@ -82,8 +82,11 @@ func MakeNodeMetaPrefix() polypb.NodeMetaKey {
 }
 
 func MakeNodeMetaKey(node polypb.NodeID) polypb.NodeMetaKey {
-	return polypb.NodeMetaKey(
-		makeKey(MakeNodeMetaPrefix(), node))
+	buf := make(polypb.NodeMetaKey, 0, len(nodeMetaPrefix)+4+len(node)+1)
+	buf = append(buf, nodeMetaPrefix...)
+	buf = encodeUint32(buf, uint32(len(node)))
+	buf = append(buf, node...)
+	return buf
 }
 
 func MakeBackupPrefix(

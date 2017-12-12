@@ -46,11 +46,11 @@ func TestMakeNodeMetaKey(t *testing.T) {
 	}{
 		{
 			node: polypb.NodeID("node1"),
-			exp:  polypb.NodeMetaKey("meta-node-node1"),
+			exp:  polypb.NodeMetaKey("meta-node-\x00\x00\x00\x05node1"),
 		},
 		{
 			node: polypb.NodeID("node/2"),
-			exp:  polypb.NodeMetaKey(`meta-node-node/2`),
+			exp:  polypb.NodeMetaKey("meta-node-\x00\x00\x00\x06node/2"),
 		},
 	}
 

@@ -35,7 +35,8 @@ message BackupMeta {
 
 // StorageType
 enum StorageType {
-  LOCAL = 0;
+  LOCAL_DISK = 0;
+  LOCAL_MEM = 1;
 }
 
 // BackupType

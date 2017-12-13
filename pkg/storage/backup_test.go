@@ -361,3 +361,50 @@ func TestBackupManager_PostFile(t *testing.T) {
 		t.Errorf("Got wrong content %q; want %q", buf.String(), input)
 	}
 }
+
+func TestBackupManager_GetKPastBackupKey(t *testing.T) {
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+	cli := newFakeClient(tn)
+
+	mngr := &BackupManager{
+		EtcdCli: cli,
+	}
+
+	testCases := []struct {
+		past     int
+		expected polypb.Key
+		errStr   string
+	}{
+		{
+			past:     1,
+			expected: keys.MakeBackupPrefix(db, cli.tpAt(3)),
+		},
+		{
+			past:     2,
+			expected: keys.MakeBackupPrefix(db, cli.tpAt(0)),
+		},
+		{
+			past: 0,
+			errStr: "negative number 0 is invalid",
+		},
+	}
+
+	for i, tc := range testCases {
+		key, err := mngr.GetKPastBackupKey(db, tc.past)
+		if tc.errStr == "" {
+			if err != nil {
+				t.Errorf("#%d: got error %q; want success", i, err)
+			}
+			if !bytes.Equal(key, tc.expected) {
+				t.Errorf("#%d: got wrong key %q; want key %q",
+					i, key, tc.expected)
+			}
+		} else {
+			if !testutil.IsError(err, tc.errStr) {
+				t.Errorf("#%d: get wrong error %q; want error string %q",
+					i, err, tc.errStr)
+			}
+		}
+	}
+}

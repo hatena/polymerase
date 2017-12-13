@@ -159,6 +159,9 @@ func (m *BackupManager) RemoveBackups(key polypb.Key) error {
 
 // GetKPastBackupKey returns a key.
 func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.Key, error) {
+	if k <= 0 {
+		return nil, errors.Errorf("negative number %d is invalid", k)
+	}
 	metas, err := m.EtcdCli.GetBackupMeta(keys.MakeDBBackupMetaPrefix(db))
 	if err != nil {
 		return nil, err

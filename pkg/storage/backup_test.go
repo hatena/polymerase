@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"reflect"
 	"testing"
 	"time"
@@ -111,10 +112,15 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 type fakePhysicalStorage struct {
 	PhysicalStorage
 	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
+	FakeIncBackupStream  func(key polypb.Key) (io.Reader, error)
 }
 
 func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
 	return s.FakeFullBackupStream(key)
+}
+
+func (s *fakePhysicalStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
+	return s.FakeIncBackupStream(key)
 }
 
 func TestBackupManager_GetLatestToLSN(t *testing.T) {
@@ -277,31 +283,62 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 func TestBackupManager_GetFileStream(t *testing.T) {
 	tn := time.Now()
 	db := polypb.DatabaseID("db")
-	c := &fakeEtcdCli{
-		FakeGetBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
-			return []*polypb.BackupMeta{
-				{},
-			}, nil
+
+	testCases := []struct {
+		getBackupMeta func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error)
+		storage       *fakePhysicalStorage
+		expected      string
+	}{
+		{
+			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
+				return []*polypb.BackupMeta{
+					{
+						BackupType: polypb.BackupType_FULL,
+					},
+				}, nil
+			},
+			storage: &fakePhysicalStorage{
+				FakeFullBackupStream: func(key polypb.Key) (io.Reader, error) {
+					return bytes.NewBufferString("full"), nil
+				},
+			},
+			expected: "full",
 		},
-	}
-	st := &fakePhysicalStorage{
-		FakeFullBackupStream: func(key polypb.Key) (io.Reader, error) {
-			return bytes.NewBufferString("full"), nil
+		{
+			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
+				return []*polypb.BackupMeta{
+					{
+						BackupType: polypb.BackupType_INC,
+					},
+				}, nil
+			},
+			storage: &fakePhysicalStorage{
+				FakeIncBackupStream: func(key polypb.Key) (io.Reader, error) {
+					return bytes.NewBufferString("inc"), nil
+				},
+			},
+			expected: "inc",
 		},
 	}
 
-	mngr := &BackupManager{
-		EtcdCli: c,
-		storage: st,
-	}
+	for i, tc := range testCases {
+		mngr := &BackupManager{
+			EtcdCli: &fakeEtcdCli{
+				FakeGetBackupMeta: tc.getBackupMeta,
+			},
+			storage: tc.storage,
+		}
 
-	stream, err := mngr.GetFileStream(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)))
-	if err != nil {
-		t.Errorf("Got error %q; want success", err)
-	}
-	buf := make([]byte, 4)
-	stream.Read(buf)
-	if string(buf) != "full" {
-		t.Errorf("Got wrong stream %q; want full", buf)
+		stream, err := mngr.GetFileStream(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)))
+		if err != nil {
+			t.Errorf("#%d: Got error %q; want success", i, err)
+		}
+		buf, err := ioutil.ReadAll(stream)
+		if err != nil {
+			t.Errorf("#%d: ioutil.ReadAll returns error %q; want success", i, err)
+		}
+		if string(buf) != tc.expected {
+			t.Errorf("#%d: Got wrong stream %q; want %s", i, buf, tc.expected)
+		}
 	}
 }

@@ -109,20 +109,6 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	return c
 }
 
-type fakePhysicalStorage struct {
-	PhysicalStorage
-	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
-	FakeIncBackupStream  func(key polypb.Key) (io.Reader, error)
-}
-
-func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
-	return s.FakeFullBackupStream(key)
-}
-
-func (s *fakePhysicalStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
-	return s.FakeIncBackupStream(key)
-}
-
 func TestBackupManager_GetLatestToLSN(t *testing.T) {
 	cli := newFakeClient(time.Now())
 	mngr := &BackupManager{
@@ -340,5 +326,38 @@ func TestBackupManager_GetFileStream(t *testing.T) {
 		if string(buf) != tc.expected {
 			t.Errorf("#%d: Got wrong stream %q; want %s", i, buf, tc.expected)
 		}
+	}
+}
+
+type ClosingBuffer struct {
+	*bytes.Buffer
+}
+
+func (cb *ClosingBuffer) Close() (err error) {
+	return
+}
+
+func TestBackupManager_PostFile(t *testing.T) {
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+
+	buf := &bytes.Buffer{}
+	storage := &fakePhysicalStorage{
+		FakeCreateBackup: func(key polypb.Key, name string) (io.WriteCloser, error) {
+			return &ClosingBuffer{buf}, nil
+		},
+	}
+
+	mngr := &BackupManager{
+		storage: storage,
+	}
+	input := "content"
+	inbuf := bytes.NewBufferString(input)
+	err := mngr.PostFile(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)), "", inbuf)
+	if err != nil {
+		t.Errorf("Got error %q; want success", err)
+	}
+	if buf.String() != input {
+		t.Errorf("Got wrong content %q; want %q", buf.String(), input)
 	}
 }

@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bytes"
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -100,6 +102,15 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 		}, nil
 	}
 	return c
+}
+
+type fakePhysicalStorage struct {
+	PhysicalStorage
+	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
+}
+
+func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
+	return s.FakeFullBackupStream(key)
 }
 
 func TestBackupManager_SearchBaseTimePointByLSN(t *testing.T) {
@@ -214,5 +225,37 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 			t.Errorf("#%d: got wrong BackupFileInfo %q; want %q",
 				i, res, tc.expected)
 		}
+	}
+}
+
+func TestBackupManager_GetFileStream(t *testing.T) {
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+	c := &fakeEtcdCli{
+		FakeGetBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
+			return []*polypb.BackupMeta{
+				{},
+			}, nil
+		},
+	}
+	st := &fakePhysicalStorage{
+		FakeFullBackupStream: func(key polypb.Key) (io.Reader, error) {
+			return bytes.NewBufferString("full"), nil
+		},
+	}
+
+	mngr := &BackupManager{
+		EtcdCli: c,
+		storage: st,
+	}
+
+	stream, err := mngr.GetFileStream(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)))
+	if err != nil {
+		t.Errorf("Got error %q; want success", err)
+	}
+	buf := make([]byte, 4)
+	stream.Read(buf)
+	if string(buf) != "full" {
+		t.Errorf("Got wrong stream %q; want full", buf)
 	}
 }

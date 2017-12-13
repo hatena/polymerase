@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -75,44 +74,68 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(0)),
 				BaseTimePoint: c.tpAt(0),
-				ToLsn:         "10",
-				BackupType:    polypb.BackupType_FULL,
-				Key:           keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(0)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "10",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_FULL,
+				Key:        keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(0)),
 			},
 			{
 				StoredTime:    toPtr(c.tAt(1)),
 				BaseTimePoint: c.tpAt(0),
-				ToLsn:         "20",
-				BackupType:    polypb.BackupType_INC,
-				Key:           keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(1)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "20",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_INC,
+				Key:        keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(1)),
 			},
 			{
 				StoredTime:    toPtr(c.tAt(2)),
 				BaseTimePoint: c.tpAt(0),
-				ToLsn:         "30",
-				BackupType:    polypb.BackupType_INC,
-				Key:           keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(2)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "30",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_INC,
+				Key:        keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(2)),
 			},
 			{
 				StoredTime:    toPtr(c.tAt(4)),
 				BaseTimePoint: c.tpAt(0),
-				ToLsn:         "110",
-				BackupType:    polypb.BackupType_INC,
-				Key:           keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(4)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "110",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_INC,
+				Key:        keys.MakeBackupKey(db, c.tpAt(0), c.tpAt(4)),
 			},
 			{
 				StoredTime:    toPtr(c.tAt(3)),
 				BaseTimePoint: c.tpAt(3),
-				ToLsn:         "100",
-				BackupType:    polypb.BackupType_FULL,
-				Key:           keys.MakeBackupKey(db, c.tpAt(3), c.tpAt(3)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "100",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_FULL,
+				Key:        keys.MakeBackupKey(db, c.tpAt(3), c.tpAt(3)),
 			},
 			{
 				StoredTime:    toPtr(c.tAt(5)),
 				BaseTimePoint: c.tpAt(3),
-				ToLsn:         "110",
-				BackupType:    polypb.BackupType_INC,
-				Key:           keys.MakeBackupKey(db, c.tpAt(3), c.tpAt(5)),
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: "110",
+					},
+				},
+				BackupType: polypb.BackupType_XTRABACKUP_INC,
+				Key:        keys.MakeBackupKey(db, c.tpAt(3), c.tpAt(5)),
 			},
 		}, nil
 	}
@@ -218,12 +241,12 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 			expected: []*storagepb.BackupFileInfo{
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_INC,
+					BackupType:  polypb.BackupType_XTRABACKUP_INC,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(3), cli.tpAt(5)),
 				},
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_FULL,
+					BackupType:  polypb.BackupType_XTRABACKUP_FULL,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(3), cli.tpAt(3)),
 				},
 			},
@@ -233,17 +256,17 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 			expected: []*storagepb.BackupFileInfo{
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_INC,
+					BackupType:  polypb.BackupType_XTRABACKUP_INC,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(0), cli.tpAt(2)),
 				},
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_INC,
+					BackupType:  polypb.BackupType_XTRABACKUP_INC,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(0), cli.tpAt(1)),
 				},
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_FULL,
+					BackupType:  polypb.BackupType_XTRABACKUP_FULL,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(0), cli.tpAt(0)),
 				},
 			},
@@ -253,7 +276,7 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 			expected: []*storagepb.BackupFileInfo{
 				{
 					StorageType: polypb.StorageType_LOCAL_MEM,
-					BackupType:  polypb.BackupType_FULL,
+					BackupType:  polypb.BackupType_XTRABACKUP_FULL,
 					Key:         keys.MakeBackupKey(db, cli.tpAt(0), cli.tpAt(0)),
 				},
 			},
@@ -269,10 +292,14 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 		if err != nil {
 			t.Errorf("#%d: got error %q; want success", i, err)
 		}
-		if !reflect.DeepEqual(res, tc.expected) {
-			t.Errorf("#%d: got wrong BackupFileInfo %q; want %q",
-				i, res, tc.expected)
+		if diff := pretty.Compare(tc.expected, res); diff != "" {
+			t.Errorf("#%d: got wrong BackupFileInfo\n%s",
+				i, diff)
 		}
+		//if !reflect.DeepEqual(res, tc.expected) {
+		//	t.Errorf("#%d: got wrong BackupFileInfo %q; want %q",
+		//		i, res, tc.expected)
+		//}
 	}
 }
 
@@ -289,7 +316,7 @@ func TestBackupManager_GetFileStream(t *testing.T) {
 			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
 				return []*polypb.BackupMeta{
 					{
-						BackupType: polypb.BackupType_FULL,
+						BackupType: polypb.BackupType_XTRABACKUP_FULL,
 					},
 				}, nil
 			},
@@ -304,7 +331,7 @@ func TestBackupManager_GetFileStream(t *testing.T) {
 			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
 				return []*polypb.BackupMeta{
 					{
-						BackupType: polypb.BackupType_INC,
+						BackupType: polypb.BackupType_XTRABACKUP_INC,
 					},
 				}, nil
 			},
@@ -452,12 +479,16 @@ func TestBackupManager_RestoreBackupInfo(t *testing.T) {
 			info: fakeFileInfo{size: 100},
 			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
 				return &polypb.BackupMeta{
-					StoredTime:    &tn,
-					Host:          cfg.AdvertiseAddr,
-					NodeId:        cfg.NodeID,
-					BackupType:    polypb.BackupType_FULL,
-					Db:            db,
-					ToLsn:         lsn,
+					StoredTime: &tn,
+					Host:       cfg.AdvertiseAddr,
+					NodeId:     cfg.NodeID,
+					BackupType: polypb.BackupType_XTRABACKUP_FULL,
+					Db:         db,
+					Details: &polypb.BackupMeta_Xtrabackup{
+						Xtrabackup: &polypb.XtrabackupMeta{
+							ToLsn: lsn,
+						},
+					},
 					FileSize:      info.Size(),
 					Key:           key,
 					BaseTimePoint: pt,
@@ -474,12 +505,16 @@ func TestBackupManager_RestoreBackupInfo(t *testing.T) {
 			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
 				st := tn.Add(time.Hour)
 				return &polypb.BackupMeta{
-					StoredTime:    &st,
-					Host:          cfg.AdvertiseAddr,
-					NodeId:        cfg.NodeID,
-					BackupType:    polypb.BackupType_INC,
-					Db:            db,
-					ToLsn:         lsn,
+					StoredTime: &st,
+					Host:       cfg.AdvertiseAddr,
+					NodeId:     cfg.NodeID,
+					BackupType: polypb.BackupType_XTRABACKUP_INC,
+					Db:         db,
+					Details: &polypb.BackupMeta_Xtrabackup{
+						Xtrabackup: &polypb.XtrabackupMeta{
+							ToLsn: lsn,
+						},
+					},
 					FileSize:      info.Size(),
 					Key:           key,
 					BaseTimePoint: pt,

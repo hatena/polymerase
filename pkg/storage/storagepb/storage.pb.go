@@ -146,7 +146,7 @@ func (m *BackupFileInfo) GetBackupType() polypb.BackupType {
 	if m != nil {
 		return m.BackupType
 	}
-	return polypb.BackupType_FULL
+	return polypb.BackupType_XTRABACKUP_FULL
 }
 
 func (m *BackupFileInfo) GetKey() github_com_taku_k_polymerase_pkg_polypb.Key {

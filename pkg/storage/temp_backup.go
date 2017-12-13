@@ -58,10 +58,10 @@ func (m *TempBackupManager) openTempBackup(db polypb.DatabaseID, lsn string) (Ap
 	var backupType polypb.BackupType
 	if lsn == "" {
 		artifact = filepath.Join(tempDir, "base.tar.gz")
-		backupType = polypb.BackupType_FULL
+		backupType = polypb.BackupType_XTRABACKUP_FULL
 	} else {
 		artifact = filepath.Join(tempDir, "inc.xb.gz")
-		backupType = polypb.BackupType_INC
+		backupType = polypb.BackupType_XTRABACKUP_INC
 	}
 	writer, err := m.pstorage.Create(artifact)
 	if err != nil {
@@ -94,10 +94,10 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	db := polypb.DatabaseID(b.db)
 	var baseTime, backupTime polypb.TimePoint
 	switch b.backupType {
-	case polypb.BackupType_FULL:
+	case polypb.BackupType_XTRABACKUP_FULL:
 		baseTime = polypb.NewTimePoint(b.start)
 		backupTime = baseTime
-	case polypb.BackupType_INC:
+	case polypb.BackupType_XTRABACKUP_INC:
 		baseTime, err = b.manager.backupManager.SearchBaseTimePointByLSN(db, b.lsn)
 		if err != nil {
 			return nil, err

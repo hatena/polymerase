@@ -3,14 +3,21 @@ package storage
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/kylelemons/godebug/pretty"
+
+	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils"
+	"github.com/taku-k/polymerase/pkg/utils/testutil"
 )
 
 func toPtr(s time.Time) *time.Time {
@@ -20,12 +27,17 @@ func toPtr(s time.Time) *time.Time {
 type fakeEtcdCli struct {
 	etcd.ClientAPI
 	FakeGetBackupMeta func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error)
+	FakePutBackupMeta func(key polypb.BackupMetaKey, meta *polypb.BackupMeta) error
 
 	ts []time.Time
 }
 
 func (c *fakeEtcdCli) GetBackupMeta(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
 	return c.FakeGetBackupMeta(key)
+}
+
+func (c *fakeEtcdCli) PutBackupMeta(key polypb.BackupMetaKey, meta *polypb.BackupMeta) error {
+	return c.FakePutBackupMeta(key, meta)
 }
 
 func (c *fakeEtcdCli) tpAt(i int) polypb.TimePoint {
@@ -44,7 +56,7 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	}
 	/*
 	 Time order: t0 < t1 < t2 < t3 < t4 < t5
-	 DB
+	 db
 	 ├── t0
 	 │   ├── t0 (FULL)
 	 │   ├── t1 (INC)
@@ -56,6 +68,9 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	*/
 	c.FakeGetBackupMeta = func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
 		db, _, _, _ := keys.DecodeMetaKey(key)
+		if !bytes.Equal(db, []byte("db")) {
+			return make(polypb.BackupMetaSlice, 0), nil
+		}
 		return []*polypb.BackupMeta{
 			{
 				StoredTime:    toPtr(c.tAt(0)),
@@ -104,13 +119,46 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 	return c
 }
 
-type fakePhysicalStorage struct {
-	PhysicalStorage
-	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
-}
+func TestBackupManager_GetLatestToLSN(t *testing.T) {
+	cli := newFakeClient(time.Now())
+	mngr := &BackupManager{
+		EtcdCli: cli,
+	}
 
-func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
-	return s.FakeFullBackupStream(key)
+	testCases := []struct {
+		db       polypb.DatabaseID
+		expected string
+		errStr   string
+	}{
+		{
+			db:       polypb.DatabaseID("db"),
+			expected: "110",
+		},
+		{
+			db:     polypb.DatabaseID("db-nothing"),
+			errStr: "not found any backups",
+		},
+	}
+
+	for i, tc := range testCases {
+		lsn, err := mngr.GetLatestToLSN(tc.db)
+		if tc.errStr == "" {
+			if err != nil {
+				t.Errorf("#%d: GetLatestToLSN(%q): got error %q; want success",
+					i, tc.db, err)
+			}
+			if lsn != tc.expected {
+				t.Errorf("#%d: GetLatestToLSN(%q): got wrong lsn %s; want %s",
+					i, tc.db, lsn, tc.expected)
+			}
+		} else {
+			if !testutil.IsError(err, tc.errStr) {
+				t.Errorf("#%d: GetLatestToLSN(%q): got wrong error %q; want %q",
+					i, tc.db, err, tc.errStr)
+			}
+		}
+	}
+
 }
 
 func TestBackupManager_SearchBaseTimePointByLSN(t *testing.T) {
@@ -231,31 +279,262 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 func TestBackupManager_GetFileStream(t *testing.T) {
 	tn := time.Now()
 	db := polypb.DatabaseID("db")
-	c := &fakeEtcdCli{
-		FakeGetBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
-			return []*polypb.BackupMeta{
-				{},
-			}, nil
+
+	testCases := []struct {
+		getBackupMeta func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error)
+		storage       *fakePhysicalStorage
+		expected      string
+	}{
+		{
+			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
+				return []*polypb.BackupMeta{
+					{
+						BackupType: polypb.BackupType_FULL,
+					},
+				}, nil
+			},
+			storage: &fakePhysicalStorage{
+				FakeFullBackupStream: func(key polypb.Key) (io.Reader, error) {
+					return bytes.NewBufferString("full"), nil
+				},
+			},
+			expected: "full",
+		},
+		{
+			getBackupMeta: func(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
+				return []*polypb.BackupMeta{
+					{
+						BackupType: polypb.BackupType_INC,
+					},
+				}, nil
+			},
+			storage: &fakePhysicalStorage{
+				FakeIncBackupStream: func(key polypb.Key) (io.Reader, error) {
+					return bytes.NewBufferString("inc"), nil
+				},
+			},
+			expected: "inc",
 		},
 	}
-	st := &fakePhysicalStorage{
-		FakeFullBackupStream: func(key polypb.Key) (io.Reader, error) {
-			return bytes.NewBufferString("full"), nil
+
+	for i, tc := range testCases {
+		mngr := &BackupManager{
+			EtcdCli: &fakeEtcdCli{
+				FakeGetBackupMeta: tc.getBackupMeta,
+			},
+			storage: tc.storage,
+		}
+
+		stream, err := mngr.GetFileStream(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)))
+		if err != nil {
+			t.Errorf("#%d: Got error %q; want success", i, err)
+		}
+		buf, err := ioutil.ReadAll(stream)
+		if err != nil {
+			t.Errorf("#%d: ioutil.ReadAll returns error %q; want success", i, err)
+		}
+		if string(buf) != tc.expected {
+			t.Errorf("#%d: Got wrong stream %q; want %s", i, buf, tc.expected)
+		}
+	}
+}
+
+type ClosingBuffer struct {
+	*bytes.Buffer
+}
+
+func (cb *ClosingBuffer) Close() (err error) {
+	return
+}
+
+func TestBackupManager_PostFile(t *testing.T) {
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+
+	buf := &bytes.Buffer{}
+	storage := &fakePhysicalStorage{
+		FakeCreateBackup: func(key polypb.Key, name string) (io.WriteCloser, error) {
+			return &ClosingBuffer{buf}, nil
 		},
 	}
 
 	mngr := &BackupManager{
-		EtcdCli: c,
-		storage: st,
+		storage: storage,
 	}
-
-	stream, err := mngr.GetFileStream(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)))
+	input := "content"
+	inbuf := bytes.NewBufferString(input)
+	err := mngr.PostFile(keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn)), "", inbuf)
 	if err != nil {
 		t.Errorf("Got error %q; want success", err)
 	}
-	buf := make([]byte, 4)
-	stream.Read(buf)
-	if string(buf) != "full" {
-		t.Errorf("Got wrong stream %q; want full", buf)
+	if buf.String() != input {
+		t.Errorf("Got wrong content %q; want %q", buf.String(), input)
+	}
+}
+
+func TestBackupManager_GetKPastBackupKey(t *testing.T) {
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+	cli := newFakeClient(tn)
+
+	mngr := &BackupManager{
+		EtcdCli: cli,
+	}
+
+	testCases := []struct {
+		past     int
+		expected polypb.Key
+		errStr   string
+	}{
+		{
+			past:     1,
+			expected: keys.MakeBackupPrefix(db, cli.tpAt(3)),
+		},
+		{
+			past:     2,
+			expected: keys.MakeBackupPrefix(db, cli.tpAt(0)),
+		},
+		{
+			past:   0,
+			errStr: "negative number 0 is invalid",
+		},
+		{
+			past:   3,
+			errStr: "not enough full backups to be removed",
+		},
+	}
+
+	for i, tc := range testCases {
+		key, err := mngr.GetKPastBackupKey(db, tc.past)
+		if tc.errStr == "" {
+			if err != nil {
+				t.Errorf("#%d: got error %q; want success", i, err)
+			}
+			if !bytes.Equal(key, tc.expected) {
+				t.Errorf("#%d: got wrong key %q; want key %q",
+					i, key, tc.expected)
+			}
+		} else {
+			if !testutil.IsError(err, tc.errStr) {
+				t.Errorf("#%d: get wrong error %q; want error string %q",
+					i, err, tc.errStr)
+			}
+		}
+	}
+}
+
+type fakeFileInfo struct {
+	os.FileInfo
+	size int64
+}
+
+func (f fakeFileInfo) Size() int64 { return f.size }
+
+func TestBackupManager_RestoreBackupInfo(t *testing.T) {
+	tn, _ := time.Parse(utils.TimeFormat, "2017-12-13_17-22-44_+0000")
+	db := polypb.DatabaseID("db")
+	pt := polypb.NewTimePoint(tn)
+	cfg := base.MakeServerConfig()
+
+	golden := []struct {
+		lsn     string
+		key     polypb.Key
+		genPath func(key polypb.Key) string
+		info    os.FileInfo
+		genMeta func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta
+	}{
+		{
+			lsn: "100",
+			key: keys.MakeBackupKey(db, pt, pt),
+			genPath: func(key polypb.Key) string {
+				return string(key) + "/base.tar.gz"
+			},
+			info: fakeFileInfo{size: 100},
+			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
+				return &polypb.BackupMeta{
+					StoredTime:    &tn,
+					Host:          cfg.AdvertiseAddr,
+					NodeId:        cfg.NodeID,
+					BackupType:    polypb.BackupType_FULL,
+					Db:            db,
+					ToLsn:         lsn,
+					FileSize:      info.Size(),
+					Key:           key,
+					BaseTimePoint: pt,
+				}
+			},
+		},
+		{
+			lsn: "110",
+			key: keys.MakeBackupKey(db, pt, polypb.NewTimePoint(tn.Add(time.Hour))),
+			genPath: func(key polypb.Key) string {
+				return string(key) + "/inc.xb.gz"
+			},
+			info: fakeFileInfo{size: 110},
+			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
+				st := tn.Add(time.Hour)
+				return &polypb.BackupMeta{
+					StoredTime:    &st,
+					Host:          cfg.AdvertiseAddr,
+					NodeId:        cfg.NodeID,
+					BackupType:    polypb.BackupType_INC,
+					Db:            db,
+					ToLsn:         lsn,
+					FileSize:      info.Size(),
+					Key:           key,
+					BaseTimePoint: pt,
+				}
+			},
+		},
+	}
+
+	walkIndex := 0
+	storage := &fakePhysicalStorage{
+		FakeLoadXtrabackupCP: func(key polypb.Key) base.XtrabackupCheckpoints {
+			return base.XtrabackupCheckpoints{
+				ToLSN: golden[walkIndex].lsn,
+			}
+		},
+		FakeWalk: func(f func(path string, info os.FileInfo, err error) error) error {
+			for ; walkIndex < len(golden); walkIndex++ {
+				g := golden[walkIndex]
+				err := f(g.genPath(g.key), g.info, nil)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+
+	result := make([]*polypb.BackupMeta, 0)
+	cli := &fakeEtcdCli{
+		FakePutBackupMeta: func(key polypb.BackupMetaKey, meta *polypb.BackupMeta) error {
+			result = append(result, meta)
+			return nil
+		},
+	}
+
+	mngr := &BackupManager{
+		EtcdCli: cli,
+		storage: storage,
+		cfg:     cfg,
+	}
+
+	err := mngr.RestoreBackupInfo()
+	if err != nil {
+		t.Errorf("Got error %q; want success", err)
+	}
+	if len(result) != len(golden) {
+		t.Errorf("Got the wrong number of metadata %d", len(result))
+	}
+
+	for i := 0; i < len(golden); i++ {
+		g := golden[i]
+		expected := g.genMeta(g.key, g.info, g.lsn)
+		if diff := pretty.Compare(expected, result[i]); diff != "" {
+			t.Errorf("#%d: got wrong metadata\n%s",
+				i, diff)
+		}
 	}
 }

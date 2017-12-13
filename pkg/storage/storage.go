@@ -121,3 +121,32 @@ func (s *MemStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints
 func (s *MemStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
 	panic("implement me")
 }
+
+type fakePhysicalStorage struct {
+	PhysicalStorage
+	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
+	FakeIncBackupStream  func(key polypb.Key) (io.Reader, error)
+	FakeCreateBackup     func(key polypb.Key, name string) (io.WriteCloser, error)
+	FakeLoadXtrabackupCP func(key polypb.Key) base.XtrabackupCheckpoints
+	FakeWalk             func(f func(path string, info os.FileInfo, err error) error) error
+}
+
+func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
+	return s.FakeFullBackupStream(key)
+}
+
+func (s *fakePhysicalStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
+	return s.FakeIncBackupStream(key)
+}
+
+func (s *fakePhysicalStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
+	return s.FakeCreateBackup(key, name)
+}
+
+func (s *fakePhysicalStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
+	return s.FakeLoadXtrabackupCP(key)
+}
+
+func (s *fakePhysicalStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
+	return s.FakeWalk(f)
+}

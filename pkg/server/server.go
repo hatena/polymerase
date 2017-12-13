@@ -98,7 +98,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
-	if err := s.backupManager.RestoreBackupInfo(cli); err != nil {
+	if err := s.backupManager.RestoreBackupInfo(); err != nil {
 		return err
 	}
 

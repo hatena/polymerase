@@ -98,7 +98,13 @@ func (c *Client) UpdateLSN(key polypb.BackupMetaKey, lsn string) error {
 		return errors.New(fmt.Sprintf("fetched wrong metadata: %q", metas))
 	}
 	m := metas[0]
-	if details := m.GetXtrabackup(); details != nil {
+	if m.Details == nil {
+		m.Details = &polypb.BackupMeta_Xtrabackup{
+			Xtrabackup: &polypb.XtrabackupMeta{
+				ToLsn: lsn,
+			},
+		}
+	} else if details := m.GetXtrabackup(); details != nil {
 		details.ToLsn = lsn
 	}
 	return c.PutBackupMeta(key, m)

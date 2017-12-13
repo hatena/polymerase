@@ -388,6 +388,10 @@ func TestBackupManager_GetKPastBackupKey(t *testing.T) {
 			past: 0,
 			errStr: "negative number 0 is invalid",
 		},
+		{
+			past: 3,
+			errStr: "not enough full backups to be removed",
+		},
 	}
 
 	for i, tc := range testCases {

@@ -136,6 +136,12 @@
   version = "v0.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/kylelemons/godebug"
+  packages = ["diff","pretty"]
+  revision = "d65d576e9348f5982d7f6d83682b694e731a45c6"
+
+[[projects]]
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
@@ -261,6 +267,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2196b4fc45c79e2f9bc65997b5eabf4e1961d4e09fea03607139ce22f67c8789"
+  inputs-digest = "320786c7a94a624b002a2ad773bb24d5a7abb6a05c6974e0baee753e55b58f02"
   solver-name = "gps-cdcl"
   solver-version = 1

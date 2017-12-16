@@ -79,3 +79,14 @@ func (s BackupMetaSlice) Sort() {
 		return bti.Before(btj)
 	})
 }
+
+func NewBackupMeta(
+	db DatabaseID,
+	host string,
+	nodeID NodeID,
+) *BackupMeta {
+	now := time.Now()
+	return &BackupMeta{
+		StoredTime: &now,
+	}
+}

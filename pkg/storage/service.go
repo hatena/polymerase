@@ -109,7 +109,7 @@ func (s *StorageService) PurgePrevBackup(
 func (s *StorageService) TransferFullBackup(
 	stream storagepb.StorageService_TransferFullBackupServer,
 ) error {
-	var tempBackup AppendCloser
+	var tempBackup appendCloser
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
@@ -138,7 +138,7 @@ func (s *StorageService) TransferFullBackup(
 			if content.Db == nil {
 				return errors.New("empty db is not acceptable")
 			}
-			tempBackup, err = s.tempMngr.openTempBackup(content.Db, "")
+			tempBackup, err = s.tempMngr.openTempBackup(content.Db, &xtrabackupFullRequest{})
 			if err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func (s *StorageService) TransferFullBackup(
 func (s *StorageService) TransferIncBackup(
 	stream storagepb.StorageService_TransferIncBackupServer,
 ) error {
-	var tempBackup AppendCloser
+	var tempBackup appendCloser
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
@@ -185,7 +185,11 @@ func (s *StorageService) TransferIncBackup(
 			if content.Lsn == "" {
 				return errors.New("empty lsn is not acceptable")
 			}
-			tempBackup, err = s.tempMngr.openTempBackup(content.Db, content.Lsn)
+			tempBackup, err = s.tempMngr.openTempBackup(
+				content.Db,
+				&xtrabackupIncRequest{
+					LSN: content.Lsn,
+				})
 			if err != nil {
 				return err
 			}

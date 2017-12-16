@@ -87,6 +87,9 @@ func NewBackupMeta(
 ) *BackupMeta {
 	now := time.Now()
 	return &BackupMeta{
+		Db:         db,
 		StoredTime: &now,
+		Host:       host,
+		NodeId:     nodeID,
 	}
 }

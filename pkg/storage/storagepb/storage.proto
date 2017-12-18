@@ -1,6 +1,7 @@
 syntax = "proto3";
 package storagepb;
 
+import "google/protobuf/timestamp.proto";
 import "github.com/taku-k/polymerase/pkg/polypb/metadata.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
@@ -32,7 +33,7 @@ message GetLatestToLSNResponse {
 
 message GetKeysAtPointRequest {
   bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  string from = 2;
+  google.protobuf.Timestamp from = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 message GetKeysAtPointResponse {

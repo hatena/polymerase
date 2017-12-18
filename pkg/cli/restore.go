@@ -34,6 +34,8 @@ const (
 
 	defaultApplyPrepare = false
 	defaultUseMemory    = "100MB"
+
+	fromTimeFormat = "2006-01-02"
 )
 
 type restoreContext struct {
@@ -94,7 +96,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	// If `from` is not specified and `latest` option is added,
 	// restoreCtx.from is set as tomorrow.
 	if restoreCtx.from == "" && restoreCtx.latest {
-		restoreCtx.from = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+		restoreCtx.from = time.Now().Format(fromTimeFormat)
 	}
 
 	// Signal
@@ -124,9 +126,16 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 		errCh <- err
 		return
 	}
+
+	from, err := time.Parse(fromTimeFormat, restoreCtx.from)
+	if err != nil {
+		errCh <- err
+		return
+	}
+
 	res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
 		Db:   db,
-		From: restoreCtx.from,
+		From: from,
 	})
 
 	restoreDir, err := filepath.Abs("polymerase-restore")

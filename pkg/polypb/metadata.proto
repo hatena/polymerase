@@ -28,9 +28,20 @@ message BackupMeta {
   int64 file_size = 6;
   BackupType backup_type = 7;
   bytes db = 8 [(gogoproto.casttype) = "DatabaseID"];
-  string to_lsn = 9;
+//  string to_lsn = 9;
   bytes key = 10 [(gogoproto.casttype) = "Key"];
   bytes base_time_point = 11 [(gogoproto.casttype) = "TimePoint"];
+  oneof details {
+    XtrabackupMeta xtrabackup = 12;
+    MysqldumpMeta mysqldump = 13;
+  }
+}
+
+message XtrabackupMeta {
+  string to_lsn = 1;
+}
+
+message MysqldumpMeta {
 }
 
 // StorageType
@@ -41,6 +52,7 @@ enum StorageType {
 
 // BackupType
 enum BackupType {
-  FULL = 0;
-  INC = 1;
+  XTRABACKUP_FULL = 0;
+  XTRABACKUP_INC = 1;
+  MYSQLDUMP = 2;
 }

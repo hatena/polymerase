@@ -41,15 +41,21 @@ func init() {
 
 	fullBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		backupCtx.backupType = base.FULL
+		backupCtx.backupType = polypb.BackupType_XTRABACKUP_FULL
 		initXtrabackupConfig()
 		return nil
 	}
 
 	incBackupCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
-		backupCtx.backupType = base.INC
+		backupCtx.backupType = polypb.BackupType_XTRABACKUP_INC
 		initXtrabackupConfig()
+		return nil
+	}
+
+	mysqldumpCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
+		backupCtx.backupType = polypb.BackupType_MYSQLDUMP
 		return nil
 	}
 
@@ -64,6 +70,7 @@ func init() {
 	clientCmds := []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
+		mysqldumpCmd,
 		restoreCmd,
 	}
 
@@ -98,6 +105,16 @@ func init() {
 		f.BoolVar(&xtrabackupCfg.InsecureAuth, "insecure-auth", xtrabackupCfg.InsecureAuth, "Connect with insecure auth. It is useful when server uses old protocol.")
 		f.IntVar(&xtrabackupCfg.Parallel, "parallel", xtrabackupCfg.Parallel, "The number of threads to use to copy multiple data files concurrently when creating a backup.")
 		f.StringVar(&backupCtx.compressCmd, "compress-cmd", "gzip -c", "Use external compression program command.")
+	}
+
+	{
+		f := mysqldumpCmd.PersistentFlags()
+
+		f.VarP(&db, "db", "d", "Database ID")
+		f.StringVar(&xtrabackupCfg.Host, "mysql-host", xtrabackupCfg.Host, "The MySQL hostname to connect with.")
+		f.StringVarP(&xtrabackupCfg.Port, "mysql-port", "p", xtrabackupCfg.Port, "The MySQL port to connect with.")
+		f.StringVarP(&xtrabackupCfg.User, "mysql-user", "u", xtrabackupCfg.User, "The MySQL username to connect with.")
+		f.StringVarP(&xtrabackupCfg.Password, "mysql-password", "P", xtrabackupCfg.Password, "The MySQL password to connect with.")
 	}
 
 	// Full-backup command specific
@@ -136,6 +153,7 @@ func init() {
 		startCmd,
 		fullBackupCmd,
 		incBackupCmd,
+		mysqldumpCmd,
 		restoreCmd,
 		versionCmd)
 }

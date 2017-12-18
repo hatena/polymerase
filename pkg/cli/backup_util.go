@@ -21,7 +21,7 @@ import (
 type backupContext struct {
 	*base.Config
 
-	backupType base.BackupType
+	backupType polypb.BackupType
 
 	purgePrev bool
 
@@ -29,17 +29,22 @@ type backupContext struct {
 }
 
 func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Reader, error) {
-	var xtrabackupCmd *exec.Cmd
+	var backupCmd *exec.Cmd
 	var err error
 
 	switch backupCtx.backupType {
-	case base.FULL:
-		xtrabackupCmd, err = cmdexec.BuildFullBackupCmd(ctx, xtrabackupCfg)
+	case polypb.BackupType_XTRABACKUP_FULL:
+		backupCmd, err = cmdexec.BuildFullBackupCmd(ctx, xtrabackupCfg)
 		if err != nil {
 			return nil, err
 		}
-	case base.INC:
-		xtrabackupCmd, err = cmdexec.BuildIncBackupCmd(ctx, xtrabackupCfg)
+	case polypb.BackupType_XTRABACKUP_INC:
+		backupCmd, err = cmdexec.BuildIncBackupCmd(ctx, xtrabackupCfg)
+		if err != nil {
+			return nil, err
+		}
+	case polypb.BackupType_MYSQLDUMP:
+		backupCmd, err = cmdexec.BuildMysqldumpCmd(ctx, xtrabackupCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -47,17 +52,17 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 		return nil, errors.New("Not found such a backup type")
 	}
 
-	log.Println(cmdexec.StringWithMaskPassword(xtrabackupCmd))
+	log.Println(cmdexec.StringWithMaskPassword(backupCmd))
 
 	gzipCmd := exec.Command("sh", "-c", backupCtx.compressCmd)
 
-	xtrabackupCmdStdout, err := xtrabackupCmd.StdoutPipe()
+	xtrabackupCmdStdout, err := backupCmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
 
 	gzipCmd.Stdin = xtrabackupCmdStdout
-	xtrabackupCmd.Stderr = os.Stderr
+	backupCmd.Stderr = os.Stderr
 
 	r, w := io.Pipe()
 
@@ -65,12 +70,12 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 	gzipCmd.Stderr = os.Stderr
 
 	go func() {
-		err := xtrabackupCmd.Start()
+		err := backupCmd.Start()
 		if err != nil {
 			xtrabackupCmdStdout.Close()
 			errCh <- err
 		}
-		xtrabackupCmd.Wait()
+		backupCmd.Wait()
 		xtrabackupCmdStdout.Close()
 	}()
 

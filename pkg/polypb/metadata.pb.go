@@ -11,6 +11,8 @@
 		DiskMeta
 		NodeMeta
 		BackupMeta
+		XtrabackupMeta
+		MysqldumpMeta
 */
 package polypb
 
@@ -64,17 +66,20 @@ func (StorageType) EnumDescriptor() ([]byte, []int) { return fileDescriptorMetad
 type BackupType int32
 
 const (
-	BackupType_FULL BackupType = 0
-	BackupType_INC  BackupType = 1
+	BackupType_XTRABACKUP_FULL BackupType = 0
+	BackupType_XTRABACKUP_INC  BackupType = 1
+	BackupType_MYSQLDUMP       BackupType = 2
 )
 
 var BackupType_name = map[int32]string{
-	0: "FULL",
-	1: "INC",
+	0: "XTRABACKUP_FULL",
+	1: "XTRABACKUP_INC",
+	2: "MYSQLDUMP",
 }
 var BackupType_value = map[string]int32{
-	"FULL": 0,
-	"INC":  1,
+	"XTRABACKUP_FULL": 0,
+	"XTRABACKUP_INC":  1,
+	"MYSQLDUMP":       2,
 }
 
 func (x BackupType) String() string {
@@ -150,23 +155,50 @@ func (m *NodeMeta) GetNodeId() NodeID {
 
 // BackupMeta is a metadata about a backup file.
 type BackupMeta struct {
-	StoredTime    *time.Time  `protobuf:"bytes,1,opt,name=stored_time,json=storedTime,stdtime" json:"stored_time,omitempty"`
-	NodeId        NodeID      `protobuf:"bytes,2,opt,name=node_id,json=nodeId,proto3,casttype=NodeID" json:"node_id,omitempty"`
-	Host          string      `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
-	StorageType   StorageType `protobuf:"varint,4,opt,name=storage_type,json=storageType,proto3,enum=polypb.StorageType" json:"storage_type,omitempty"`
-	EndTime       *time.Time  `protobuf:"bytes,5,opt,name=end_time,json=endTime,stdtime" json:"end_time,omitempty"`
-	FileSize      int64       `protobuf:"varint,6,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"`
-	BackupType    BackupType  `protobuf:"varint,7,opt,name=backup_type,json=backupType,proto3,enum=polypb.BackupType" json:"backup_type,omitempty"`
-	Db            DatabaseID  `protobuf:"bytes,8,opt,name=db,proto3,casttype=DatabaseID" json:"db,omitempty"`
-	ToLsn         string      `protobuf:"bytes,9,opt,name=to_lsn,json=toLsn,proto3" json:"to_lsn,omitempty"`
-	Key           Key         `protobuf:"bytes,10,opt,name=key,proto3,casttype=Key" json:"key,omitempty"`
-	BaseTimePoint TimePoint   `protobuf:"bytes,11,opt,name=base_time_point,json=baseTimePoint,proto3,casttype=TimePoint" json:"base_time_point,omitempty"`
+	StoredTime  *time.Time  `protobuf:"bytes,1,opt,name=stored_time,json=storedTime,stdtime" json:"stored_time,omitempty"`
+	NodeId      NodeID      `protobuf:"bytes,2,opt,name=node_id,json=nodeId,proto3,casttype=NodeID" json:"node_id,omitempty"`
+	Host        string      `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
+	StorageType StorageType `protobuf:"varint,4,opt,name=storage_type,json=storageType,proto3,enum=polypb.StorageType" json:"storage_type,omitempty"`
+	EndTime     *time.Time  `protobuf:"bytes,5,opt,name=end_time,json=endTime,stdtime" json:"end_time,omitempty"`
+	FileSize    int64       `protobuf:"varint,6,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"`
+	BackupType  BackupType  `protobuf:"varint,7,opt,name=backup_type,json=backupType,proto3,enum=polypb.BackupType" json:"backup_type,omitempty"`
+	Db          DatabaseID  `protobuf:"bytes,8,opt,name=db,proto3,casttype=DatabaseID" json:"db,omitempty"`
+	//  string to_lsn = 9;
+	Key           Key       `protobuf:"bytes,10,opt,name=key,proto3,casttype=Key" json:"key,omitempty"`
+	BaseTimePoint TimePoint `protobuf:"bytes,11,opt,name=base_time_point,json=baseTimePoint,proto3,casttype=TimePoint" json:"base_time_point,omitempty"`
+	// Types that are valid to be assigned to Details:
+	//	*BackupMeta_Xtrabackup
+	//	*BackupMeta_Mysqldump
+	Details isBackupMeta_Details `protobuf_oneof:"details"`
 }
 
 func (m *BackupMeta) Reset()                    { *m = BackupMeta{} }
 func (m *BackupMeta) String() string            { return proto.CompactTextString(m) }
 func (*BackupMeta) ProtoMessage()               {}
 func (*BackupMeta) Descriptor() ([]byte, []int) { return fileDescriptorMetadata, []int{2} }
+
+type isBackupMeta_Details interface {
+	isBackupMeta_Details()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type BackupMeta_Xtrabackup struct {
+	Xtrabackup *XtrabackupMeta `protobuf:"bytes,12,opt,name=xtrabackup,oneof"`
+}
+type BackupMeta_Mysqldump struct {
+	Mysqldump *MysqldumpMeta `protobuf:"bytes,13,opt,name=mysqldump,oneof"`
+}
+
+func (*BackupMeta_Xtrabackup) isBackupMeta_Details() {}
+func (*BackupMeta_Mysqldump) isBackupMeta_Details()  {}
+
+func (m *BackupMeta) GetDetails() isBackupMeta_Details {
+	if m != nil {
+		return m.Details
+	}
+	return nil
+}
 
 func (m *BackupMeta) GetStoredTime() *time.Time {
 	if m != nil {
@@ -214,7 +246,7 @@ func (m *BackupMeta) GetBackupType() BackupType {
 	if m != nil {
 		return m.BackupType
 	}
-	return BackupType_FULL
+	return BackupType_XTRABACKUP_FULL
 }
 
 func (m *BackupMeta) GetDb() DatabaseID {
@@ -222,13 +254,6 @@ func (m *BackupMeta) GetDb() DatabaseID {
 		return m.Db
 	}
 	return nil
-}
-
-func (m *BackupMeta) GetToLsn() string {
-	if m != nil {
-		return m.ToLsn
-	}
-	return ""
 }
 
 func (m *BackupMeta) GetKey() Key {
@@ -245,10 +270,124 @@ func (m *BackupMeta) GetBaseTimePoint() TimePoint {
 	return nil
 }
 
+func (m *BackupMeta) GetXtrabackup() *XtrabackupMeta {
+	if x, ok := m.GetDetails().(*BackupMeta_Xtrabackup); ok {
+		return x.Xtrabackup
+	}
+	return nil
+}
+
+func (m *BackupMeta) GetMysqldump() *MysqldumpMeta {
+	if x, ok := m.GetDetails().(*BackupMeta_Mysqldump); ok {
+		return x.Mysqldump
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*BackupMeta) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _BackupMeta_OneofMarshaler, _BackupMeta_OneofUnmarshaler, _BackupMeta_OneofSizer, []interface{}{
+		(*BackupMeta_Xtrabackup)(nil),
+		(*BackupMeta_Mysqldump)(nil),
+	}
+}
+
+func _BackupMeta_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*BackupMeta)
+	// details
+	switch x := m.Details.(type) {
+	case *BackupMeta_Xtrabackup:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Xtrabackup); err != nil {
+			return err
+		}
+	case *BackupMeta_Mysqldump:
+		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Mysqldump); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("BackupMeta.Details has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _BackupMeta_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*BackupMeta)
+	switch tag {
+	case 12: // details.xtrabackup
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(XtrabackupMeta)
+		err := b.DecodeMessage(msg)
+		m.Details = &BackupMeta_Xtrabackup{msg}
+		return true, err
+	case 13: // details.mysqldump
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(MysqldumpMeta)
+		err := b.DecodeMessage(msg)
+		m.Details = &BackupMeta_Mysqldump{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _BackupMeta_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*BackupMeta)
+	// details
+	switch x := m.Details.(type) {
+	case *BackupMeta_Xtrabackup:
+		s := proto.Size(x.Xtrabackup)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *BackupMeta_Mysqldump:
+		s := proto.Size(x.Mysqldump)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type XtrabackupMeta struct {
+	ToLsn string `protobuf:"bytes,1,opt,name=to_lsn,json=toLsn,proto3" json:"to_lsn,omitempty"`
+}
+
+func (m *XtrabackupMeta) Reset()                    { *m = XtrabackupMeta{} }
+func (m *XtrabackupMeta) String() string            { return proto.CompactTextString(m) }
+func (*XtrabackupMeta) ProtoMessage()               {}
+func (*XtrabackupMeta) Descriptor() ([]byte, []int) { return fileDescriptorMetadata, []int{3} }
+
+func (m *XtrabackupMeta) GetToLsn() string {
+	if m != nil {
+		return m.ToLsn
+	}
+	return ""
+}
+
+type MysqldumpMeta struct {
+}
+
+func (m *MysqldumpMeta) Reset()                    { *m = MysqldumpMeta{} }
+func (m *MysqldumpMeta) String() string            { return proto.CompactTextString(m) }
+func (*MysqldumpMeta) ProtoMessage()               {}
+func (*MysqldumpMeta) Descriptor() ([]byte, []int) { return fileDescriptorMetadata, []int{4} }
+
 func init() {
 	proto.RegisterType((*DiskMeta)(nil), "polypb.DiskMeta")
 	proto.RegisterType((*NodeMeta)(nil), "polypb.NodeMeta")
 	proto.RegisterType((*BackupMeta)(nil), "polypb.BackupMeta")
+	proto.RegisterType((*XtrabackupMeta)(nil), "polypb.XtrabackupMeta")
+	proto.RegisterType((*MysqldumpMeta)(nil), "polypb.MysqldumpMeta")
 	proto.RegisterEnum("polypb.StorageType", StorageType_name, StorageType_value)
 	proto.RegisterEnum("polypb.BackupType", BackupType_name, BackupType_value)
 }
@@ -394,12 +533,6 @@ func (m *BackupMeta) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintMetadata(dAtA, i, uint64(len(m.Db)))
 		i += copy(dAtA[i:], m.Db)
 	}
-	if len(m.ToLsn) > 0 {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintMetadata(dAtA, i, uint64(len(m.ToLsn)))
-		i += copy(dAtA[i:], m.ToLsn)
-	}
 	if len(m.Key) > 0 {
 		dAtA[i] = 0x52
 		i++
@@ -412,9 +545,104 @@ func (m *BackupMeta) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintMetadata(dAtA, i, uint64(len(m.BaseTimePoint)))
 		i += copy(dAtA[i:], m.BaseTimePoint)
 	}
+	if m.Details != nil {
+		nn4, err := m.Details.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn4
+	}
 	return i, nil
 }
 
+func (m *BackupMeta_Xtrabackup) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.Xtrabackup != nil {
+		dAtA[i] = 0x62
+		i++
+		i = encodeVarintMetadata(dAtA, i, uint64(m.Xtrabackup.Size()))
+		n5, err := m.Xtrabackup.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	return i, nil
+}
+func (m *BackupMeta_Mysqldump) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.Mysqldump != nil {
+		dAtA[i] = 0x6a
+		i++
+		i = encodeVarintMetadata(dAtA, i, uint64(m.Mysqldump.Size()))
+		n6, err := m.Mysqldump.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	return i, nil
+}
+func (m *XtrabackupMeta) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *XtrabackupMeta) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ToLsn) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintMetadata(dAtA, i, uint64(len(m.ToLsn)))
+		i += copy(dAtA[i:], m.ToLsn)
+	}
+	return i, nil
+}
+
+func (m *MysqldumpMeta) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MysqldumpMeta) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func encodeFixed64Metadata(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
+	return offset + 8
+}
+func encodeFixed32Metadata(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	return offset + 4
+}
 func encodeVarintMetadata(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -490,10 +718,6 @@ func (m *BackupMeta) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMetadata(uint64(l))
 	}
-	l = len(m.ToLsn)
-	if l > 0 {
-		n += 1 + l + sovMetadata(uint64(l))
-	}
 	l = len(m.Key)
 	if l > 0 {
 		n += 1 + l + sovMetadata(uint64(l))
@@ -502,6 +726,43 @@ func (m *BackupMeta) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMetadata(uint64(l))
 	}
+	if m.Details != nil {
+		n += m.Details.Size()
+	}
+	return n
+}
+
+func (m *BackupMeta_Xtrabackup) Size() (n int) {
+	var l int
+	_ = l
+	if m.Xtrabackup != nil {
+		l = m.Xtrabackup.Size()
+		n += 1 + l + sovMetadata(uint64(l))
+	}
+	return n
+}
+func (m *BackupMeta_Mysqldump) Size() (n int) {
+	var l int
+	_ = l
+	if m.Mysqldump != nil {
+		l = m.Mysqldump.Size()
+		n += 1 + l + sovMetadata(uint64(l))
+	}
+	return n
+}
+func (m *XtrabackupMeta) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ToLsn)
+	if l > 0 {
+		n += 1 + l + sovMetadata(uint64(l))
+	}
+	return n
+}
+
+func (m *MysqldumpMeta) Size() (n int) {
+	var l int
+	_ = l
 	return n
 }
 
@@ -1021,35 +1282,6 @@ func (m *BackupMeta) Unmarshal(dAtA []byte) error {
 				m.Db = []byte{}
 			}
 			iNdEx = postIndex
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToLsn", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMetadata
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthMetadata
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToLsn = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
@@ -1112,6 +1344,199 @@ func (m *BackupMeta) Unmarshal(dAtA []byte) error {
 				m.BaseTimePoint = []byte{}
 			}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Xtrabackup", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetadata
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetadata
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &XtrabackupMeta{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Details = &BackupMeta_Xtrabackup{v}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mysqldump", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetadata
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetadata
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &MysqldumpMeta{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Details = &BackupMeta_Mysqldump{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetadata(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMetadata
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *XtrabackupMeta) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetadata
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: XtrabackupMeta: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: XtrabackupMeta: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToLsn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetadata
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMetadata
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToLsn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetadata(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMetadata
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MysqldumpMeta) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetadata
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MysqldumpMeta: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MysqldumpMeta: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMetadata(dAtA[iNdEx:])
@@ -1241,40 +1666,46 @@ var (
 func init() { proto.RegisterFile("polypb/metadata.proto", fileDescriptorMetadata) }
 
 var fileDescriptorMetadata = []byte{
-	// 551 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x4e, 0xdb, 0x40,
-	0x10, 0xc5, 0x89, 0x71, 0xec, 0x31, 0x50, 0x6b, 0x5b, 0x24, 0x17, 0xa4, 0x18, 0xd1, 0x1e, 0x10,
-	0x6a, 0x1d, 0x09, 0x54, 0x2e, 0x3d, 0x11, 0xd2, 0x4a, 0x11, 0x81, 0x56, 0x86, 0x9e, 0xad, 0x35,
-	0xbb, 0x98, 0x55, 0x1c, 0xaf, 0x15, 0x2f, 0x95, 0xc2, 0x07, 0xf4, 0xdc, 0x63, 0x3f, 0xa9, 0xc7,
-	0x1e, 0x7b, 0x4a, 0x2b, 0xfa, 0x17, 0x39, 0x55, 0x3b, 0x8b, 0x81, 0x4b, 0xa5, 0xde, 0xe6, 0xbd,
-	0x99, 0xd9, 0x79, 0xef, 0x69, 0x61, 0xbd, 0x92, 0xc5, 0xac, 0xca, 0x7a, 0x13, 0xae, 0x28, 0xa3,
-	0x8a, 0xc6, 0xd5, 0x54, 0x2a, 0x49, 0x1c, 0x43, 0x6f, 0x44, 0xb9, 0x94, 0x79, 0xc1, 0x7b, 0xc8,
-	0x66, 0xd7, 0x97, 0x3d, 0x25, 0x26, 0xbc, 0x56, 0x74, 0x52, 0x99, 0xc1, 0x8d, 0xd7, 0xb9, 0x50,
-	0x57, 0xd7, 0x59, 0x7c, 0x21, 0x27, 0xbd, 0x5c, 0xe6, 0xf2, 0x61, 0x52, 0x23, 0x04, 0x58, 0x99,
-	0xf1, 0xed, 0x03, 0x70, 0x07, 0xa2, 0x1e, 0x9f, 0x70, 0x45, 0xc9, 0x33, 0x58, 0x56, 0x52, 0xd1,
-	0x22, 0xb4, 0xb6, 0xac, 0x1d, 0x3b, 0x31, 0x40, 0xb3, 0xf4, 0x33, 0x15, 0x45, 0xd8, 0x32, 0x2c,
-	0x82, 0xed, 0x2f, 0x16, 0xb8, 0xa7, 0x92, 0x71, 0x5c, 0x7c, 0x09, 0x36, 0x13, 0xf5, 0x18, 0xf7,
-	0xfc, 0xbd, 0x20, 0x36, 0x5a, 0xe3, 0xe6, 0xe1, 0x04, 0xbb, 0x84, 0x80, 0x4d, 0x19, 0x9b, 0xe2,
-	0x3b, 0x5e, 0x82, 0x35, 0xd9, 0x04, 0xaf, 0x56, 0x72, 0xca, 0x53, 0x26, 0xa6, 0x61, 0x1b, 0x1b,
-	0x2e, 0x12, 0x03, 0x31, 0x25, 0x2f, 0xa0, 0x53, 0x4a, 0xc6, 0x53, 0xc1, 0x42, 0x7b, 0xcb, 0xda,
-	0x59, 0xe9, 0xc3, 0x62, 0x1e, 0x39, 0xfa, 0xea, 0x70, 0x90, 0x38, 0xba, 0x35, 0x64, 0xdb, 0x3f,
-	0xdb, 0x00, 0x7d, 0x7a, 0x31, 0xbe, 0xae, 0x50, 0xca, 0x21, 0xf8, 0xb8, 0xcf, 0x52, 0x1d, 0xcc,
-	0x9d, 0xa2, 0x8d, 0xd8, 0xa4, 0x16, 0x37, 0x59, 0xc4, 0xe7, 0x4d, 0x6a, 0x7d, 0xfb, 0xeb, 0xaf,
-	0xc8, 0x4a, 0xc0, 0x2c, 0x69, 0xfa, 0xf1, 0xd9, 0xd6, 0xbf, 0xce, 0x6a, 0x33, 0x57, 0xb2, 0x56,
-	0x77, 0x9a, 0xb1, 0x26, 0x07, 0xb0, 0xa2, 0x9f, 0xa1, 0x39, 0x4f, 0xd5, 0xac, 0xe2, 0x28, 0x7a,
-	0x6d, 0xef, 0x69, 0x13, 0xc7, 0x99, 0xe9, 0x9d, 0xcf, 0x2a, 0x9e, 0xf8, 0xf5, 0x03, 0x20, 0x6f,
-	0xc1, 0xe5, 0xe5, 0x9d, 0xe0, 0xe5, 0xff, 0x14, 0xdc, 0xe1, 0xa5, 0x51, 0xbb, 0x09, 0xde, 0xa5,
-	0x28, 0x78, 0x5a, 0x8b, 0x1b, 0x1e, 0x3a, 0x5b, 0xd6, 0x4e, 0x3b, 0x71, 0x35, 0x71, 0x26, 0x6e,
-	0x38, 0xd9, 0x07, 0x3f, 0xc3, 0x6c, 0x8c, 0xa0, 0x0e, 0x0a, 0x22, 0x8d, 0x20, 0x13, 0x1b, 0xea,
-	0x81, 0xec, 0xbe, 0x26, 0x5d, 0x68, 0xb1, 0x2c, 0x74, 0xd1, 0xfa, 0xda, 0x62, 0x1e, 0xc1, 0x80,
-	0x2a, 0x9a, 0xd1, 0x5a, 0xdb, 0x6f, 0xb1, 0x8c, 0xac, 0x83, 0xa3, 0x64, 0x5a, 0xd4, 0x65, 0xe8,
-	0xa1, 0xf9, 0x65, 0x25, 0x47, 0x75, 0x49, 0x9e, 0x43, 0x7b, 0xcc, 0x67, 0x21, 0xe0, 0x5e, 0x67,
-	0x31, 0x8f, 0xda, 0xc7, 0x7c, 0x96, 0x68, 0x8e, 0xbc, 0x81, 0x27, 0x7a, 0x1f, 0x1d, 0xa6, 0x95,
-	0x14, 0xa5, 0x0a, 0x7d, 0x1c, 0x5b, 0x5d, 0xcc, 0x23, 0x4f, 0xdb, 0xf8, 0xa8, 0xc9, 0x64, 0x55,
-	0x4f, 0xdd, 0xc3, 0xdd, 0x57, 0xe0, 0x3f, 0xca, 0x8c, 0xac, 0x01, 0x8c, 0x3e, 0x1c, 0x1d, 0x8e,
-	0xd2, 0xc1, 0xf0, 0xec, 0x38, 0x58, 0x22, 0xab, 0xe0, 0x19, 0x7c, 0xf2, 0xee, 0x24, 0xb0, 0x76,
-	0xa3, 0xe6, 0x1f, 0xe0, 0xb0, 0x0b, 0xf6, 0xfb, 0x4f, 0xa3, 0x51, 0xb0, 0x44, 0x3a, 0xd0, 0x1e,
-	0x9e, 0x1e, 0x05, 0x56, 0x3f, 0xf8, 0x7e, 0xdb, 0xb5, 0x7e, 0xdc, 0x76, 0xad, 0xdf, 0xb7, 0x5d,
-	0xeb, 0xdb, 0x9f, 0xee, 0x52, 0xe6, 0x60, 0xbc, 0xfb, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xe7,
-	0xbd, 0x63, 0x4f, 0x74, 0x03, 0x00, 0x00,
+	// 649 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xc1, 0x6e, 0xda, 0x4c,
+	0x10, 0xc6, 0x40, 0x00, 0x0f, 0x81, 0xa0, 0xcd, 0x9f, 0x5f, 0x6e, 0x22, 0x41, 0x44, 0x2b, 0x35,
+	0x8a, 0x5a, 0x23, 0x25, 0x4a, 0x54, 0xa9, 0x27, 0x88, 0x5b, 0x15, 0x05, 0xd2, 0xd4, 0x24, 0x52,
+	0x7a, 0xb2, 0xd6, 0xd9, 0x0d, 0xb1, 0x30, 0xac, 0x8b, 0x97, 0xaa, 0xe4, 0x01, 0x7a, 0xee, 0xb1,
+	0x2f, 0xd3, 0x7b, 0x8f, 0x7d, 0x02, 0x5a, 0xa5, 0x6f, 0xc1, 0xa9, 0xda, 0x59, 0x9c, 0x90, 0x43,
+	0xa5, 0xde, 0x66, 0xbe, 0xf9, 0x66, 0xe6, 0x9b, 0xcf, 0x6b, 0xd8, 0x88, 0x44, 0x38, 0x8d, 0xfc,
+	0xc6, 0x90, 0x4b, 0xca, 0xa8, 0xa4, 0x76, 0x34, 0x16, 0x52, 0x90, 0x9c, 0x86, 0x37, 0x6b, 0x7d,
+	0x21, 0xfa, 0x21, 0x6f, 0x20, 0xea, 0x4f, 0xae, 0x1a, 0x32, 0x18, 0xf2, 0x58, 0xd2, 0x61, 0xa4,
+	0x89, 0x9b, 0xcf, 0xfb, 0x81, 0xbc, 0x9e, 0xf8, 0xf6, 0xa5, 0x18, 0x36, 0xfa, 0xa2, 0x2f, 0xee,
+	0x99, 0x2a, 0xc3, 0x04, 0x23, 0x4d, 0xaf, 0x1f, 0x42, 0xc1, 0x09, 0xe2, 0x41, 0x97, 0x4b, 0x4a,
+	0xfe, 0x83, 0x15, 0x29, 0x24, 0x0d, 0x2d, 0x63, 0xdb, 0xd8, 0xc9, 0xba, 0x3a, 0x51, 0x28, 0xfd,
+	0x48, 0x83, 0xd0, 0x4a, 0x6b, 0x14, 0x93, 0xfa, 0x67, 0x03, 0x0a, 0x27, 0x82, 0x71, 0x6c, 0x7c,
+	0x02, 0x59, 0x16, 0xc4, 0x03, 0xec, 0x2b, 0xee, 0x55, 0x6c, 0xad, 0xd5, 0x4e, 0x06, 0xbb, 0x58,
+	0x25, 0x04, 0xb2, 0x94, 0xb1, 0x31, 0xce, 0x31, 0x5d, 0x8c, 0xc9, 0x16, 0x98, 0xb1, 0x14, 0x63,
+	0xee, 0xb1, 0x60, 0x6c, 0x65, 0xb0, 0x50, 0x40, 0xc0, 0x09, 0xc6, 0xe4, 0x31, 0xe4, 0x47, 0x82,
+	0x71, 0x2f, 0x60, 0x56, 0x76, 0xdb, 0xd8, 0x59, 0x6d, 0xc1, 0x7c, 0x56, 0xcb, 0xa9, 0xad, 0x6d,
+	0xc7, 0xcd, 0xa9, 0x52, 0x9b, 0xd5, 0xbf, 0x65, 0x01, 0x5a, 0xf4, 0x72, 0x30, 0x89, 0x50, 0x4a,
+	0x13, 0x8a, 0xd8, 0xcf, 0x3c, 0x65, 0xcc, 0x42, 0xd1, 0xa6, 0xad, 0x5d, 0xb3, 0x13, 0x2f, 0xec,
+	0xb3, 0xc4, 0xb5, 0x56, 0xf6, 0xcb, 0xcf, 0x9a, 0xe1, 0x82, 0x6e, 0x52, 0xf0, 0xf2, 0xda, 0xf4,
+	0xdf, 0xd6, 0xaa, 0x63, 0xae, 0x45, 0x2c, 0x17, 0x9a, 0x31, 0x26, 0x87, 0xb0, 0xaa, 0xc6, 0xd0,
+	0x3e, 0xf7, 0xe4, 0x34, 0xe2, 0x28, 0xba, 0xbc, 0xb7, 0x9e, 0xd8, 0xd1, 0xd3, 0xb5, 0xb3, 0x69,
+	0xc4, 0xdd, 0x62, 0x7c, 0x9f, 0x90, 0x97, 0x50, 0xe0, 0xa3, 0x85, 0xe0, 0x95, 0x7f, 0x14, 0x9c,
+	0xe7, 0x23, 0xad, 0x76, 0x0b, 0xcc, 0xab, 0x20, 0xe4, 0x5e, 0x1c, 0xdc, 0x70, 0x2b, 0xb7, 0x6d,
+	0xec, 0x64, 0xdc, 0x82, 0x02, 0x7a, 0xc1, 0x0d, 0x27, 0xfb, 0x50, 0xf4, 0xd1, 0x1b, 0x2d, 0x28,
+	0x8f, 0x82, 0x48, 0x22, 0x48, 0xdb, 0x86, 0x7a, 0xc0, 0xbf, 0x8b, 0x49, 0x15, 0xd2, 0xcc, 0xb7,
+	0x0a, 0x78, 0x7a, 0x79, 0x3e, 0xab, 0x81, 0x43, 0x25, 0xf5, 0x69, 0xac, 0xce, 0x4f, 0x33, 0x9f,
+	0x3c, 0x82, 0xcc, 0x80, 0x4f, 0x2d, 0x40, 0x42, 0x7e, 0x3e, 0xab, 0x65, 0x8e, 0xf9, 0xd4, 0x55,
+	0x18, 0x39, 0x80, 0x35, 0x45, 0xc4, 0x53, 0xbc, 0x48, 0x04, 0x23, 0x69, 0x15, 0x91, 0x56, 0x9a,
+	0xcf, 0x6a, 0xa6, 0xd2, 0x7b, 0xaa, 0x40, 0xb7, 0xa4, 0x58, 0x77, 0x29, 0x79, 0x01, 0xf0, 0x49,
+	0x8e, 0xa9, 0xd6, 0x60, 0xad, 0xa2, 0x05, 0xff, 0x27, 0x2a, 0x2f, 0xee, 0x2a, 0xea, 0x03, 0xbf,
+	0x49, 0xb9, 0x4b, 0x5c, 0x72, 0x00, 0xe6, 0x70, 0x1a, 0x7f, 0x08, 0xd9, 0x64, 0x18, 0x59, 0x25,
+	0x6c, 0xdc, 0x48, 0x1a, 0xbb, 0x49, 0x61, 0xd1, 0x77, 0xcf, 0x6c, 0x99, 0x90, 0x67, 0x5c, 0xd2,
+	0x20, 0x8c, 0xeb, 0x4f, 0xa1, 0xfc, 0x70, 0x03, 0xd9, 0x80, 0x9c, 0x14, 0x5e, 0x18, 0x8f, 0xf0,
+	0xf5, 0x98, 0xea, 0x3f, 0xe8, 0xc4, 0xa3, 0xfa, 0x1a, 0x94, 0x1e, 0x4c, 0xdc, 0x7d, 0x06, 0xc5,
+	0xa5, 0x4f, 0x4a, 0xca, 0x00, 0x9d, 0xb7, 0x47, 0xcd, 0x8e, 0xe7, 0xb4, 0x7b, 0xc7, 0x95, 0x14,
+	0x29, 0x81, 0xa9, 0xf3, 0xee, 0xab, 0x6e, 0xc5, 0xd8, 0x75, 0x92, 0x67, 0x8a, 0xe4, 0x75, 0x58,
+	0xbb, 0x38, 0x73, 0x9b, 0xad, 0xe6, 0xd1, 0xf1, 0xf9, 0xa9, 0xf7, 0xfa, 0xbc, 0xd3, 0xa9, 0xa4,
+	0x08, 0x81, 0xf2, 0x12, 0xd8, 0x3e, 0x39, 0xaa, 0x18, 0x6a, 0x4a, 0xf7, 0x7d, 0xef, 0x5d, 0xc7,
+	0x39, 0xef, 0x9e, 0x56, 0xd2, 0xad, 0xca, 0xf7, 0xdb, 0xaa, 0xf1, 0xe3, 0xb6, 0x6a, 0xfc, 0xba,
+	0xad, 0x1a, 0x5f, 0x7f, 0x57, 0x53, 0x7e, 0x0e, 0x9f, 0xc8, 0xfe, 0x9f, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0xae, 0x37, 0xab, 0xa4, 0x38, 0x04, 0x00, 0x00,
 }

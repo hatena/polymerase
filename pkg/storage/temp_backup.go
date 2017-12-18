@@ -4,7 +4,6 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,57 +31,96 @@ type TempBackupManager struct {
 	EtcdCli etcd.ClientAPI
 }
 
-type AppendCloser interface {
+type backupRequest interface {
+	backupRequest()
+}
+
+type xtrabackupFullRequest struct {
+}
+
+type xtrabackupIncRequest struct {
+	LSN string
+}
+
+type mysqldumpRequest struct {
+}
+
+func (*xtrabackupFullRequest) backupRequest() {}
+func (*xtrabackupIncRequest) backupRequest()  {}
+func (*mysqldumpRequest) backupRequest()      {}
+
+type appendCloser interface {
 	Append(data []byte) error
 	CloseTransfer() (*polypb.BackupMeta, error)
 }
 
 type tempBackup struct {
-	db         polypb.DatabaseID
-	writer     io.WriteCloser
-	start      time.Time
-	manager    *TempBackupManager
-	lsn        string
-	backupType polypb.BackupType
-	tempDir    string
-	fileSize   int64
+	writer  io.WriteCloser
+	manager *TempBackupManager
+	tempDir string
+	meta    *polypb.BackupMeta
 }
 
-func (m *TempBackupManager) openTempBackup(db polypb.DatabaseID, lsn string) (AppendCloser, error) {
-	now := time.Now()
+func (m *TempBackupManager) openTempBackup(
+	db polypb.DatabaseID,
+	req backupRequest,
+) (appendCloser, error) {
 	tempDir, err := ioutil.TempDir(m.cfg.TempDir, "polymerase-backup-dir")
 	if err != nil {
 		return nil, err
 	}
 	var artifact string
-	var backupType polypb.BackupType
-	if lsn == "" {
+	var baseTime, backupTime polypb.TimePoint
+	meta := polypb.NewBackupMeta(db, m.cfg.AdvertiseAddr, m.cfg.NodeID)
+	switch r := req.(type) {
+	case *xtrabackupFullRequest:
 		artifact = filepath.Join(tempDir, "base.tar.gz")
-		backupType = polypb.BackupType_FULL
-	} else {
+		baseTime = polypb.NewTimePoint(*meta.StoredTime)
+		backupTime = baseTime
+		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
+		meta.Details = &polypb.BackupMeta_Xtrabackup{
+			Xtrabackup: &polypb.XtrabackupMeta{},
+		}
+	case *xtrabackupIncRequest:
 		artifact = filepath.Join(tempDir, "inc.xb.gz")
-		backupType = polypb.BackupType_INC
+		baseTime, err = m.backupManager.SearchBaseTimePointByLSN(db, r.LSN)
+		if err != nil {
+			return nil, err
+		}
+		backupTime = polypb.NewTimePoint(*meta.StoredTime)
+		meta.BackupType = polypb.BackupType_XTRABACKUP_INC
+		meta.Details = &polypb.BackupMeta_Xtrabackup{
+			Xtrabackup: &polypb.XtrabackupMeta{},
+		}
+	case *mysqldumpRequest:
+		artifact = filepath.Join(tempDir, "dump.sql")
+		baseTime = polypb.NewTimePoint(*meta.StoredTime)
+		backupTime = baseTime
+		meta.BackupType = polypb.BackupType_MYSQLDUMP
+		meta.Details = &polypb.BackupMeta_Mysqldump{
+			Mysqldump: &polypb.MysqldumpMeta{},
+		}
+	default:
+		return nil, errors.New("not supported such a backup type")
 	}
+	meta.BaseTimePoint = baseTime
+	meta.Key = keys.MakeBackupKey(db, baseTime, backupTime)
 	writer, err := m.pstorage.Create(artifact)
 	if err != nil {
 		m.pstorage.Delete(tempDir)
 		return nil, err
 	}
 	return &tempBackup{
-		db:         db,
-		writer:     writer,
-		start:      now,
-		manager:    m,
-		lsn:        lsn,
-		backupType: backupType,
-		tempDir:    tempDir,
-		fileSize:   0,
+		writer:  writer,
+		manager: m,
+		tempDir: tempDir,
+		meta:    meta,
 	}, nil
 }
 
 func (b *tempBackup) Append(data []byte) error {
 	n, err := b.writer.Write(data)
-	b.fileSize += int64(n)
+	b.meta.FileSize += int64(n)
 	return err
 }
 
@@ -91,40 +129,18 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	if err != nil {
 		return nil, err
 	}
-	db := polypb.DatabaseID(b.db)
-	var baseTime, backupTime polypb.TimePoint
-	switch b.backupType {
-	case polypb.BackupType_FULL:
-		baseTime = polypb.NewTimePoint(b.start)
-		backupTime = baseTime
-	case polypb.BackupType_INC:
-		baseTime, err = b.manager.backupManager.SearchBaseTimePointByLSN(db, b.lsn)
-		if err != nil {
-			return nil, err
-		}
-		backupTime = polypb.NewTimePoint(b.start)
-	default:
-		return nil, errors.New("not supported such a backup type")
-	}
-	key := keys.MakeBackupKey(db, baseTime, backupTime)
-	if err := b.manager.backupManager.TransferTempBackup(b.tempDir, key); err != nil {
+	if err := b.manager.backupManager.TransferTempBackup(b.tempDir, b.meta.Key); err != nil {
 		b.manager.pstorage.Delete(b.tempDir)
 		return nil, err
 	}
-	return &polypb.BackupMeta{
-		StoredTime:    &b.start,
-		StorageType:   polypb.StorageType_LOCAL_DISK,
-		NodeId:        b.manager.cfg.NodeID,
-		Host:          b.manager.cfg.AdvertiseAddr,
-		BackupType:    b.backupType,
-		Db:            db,
-		Key:           key,
-		FileSize:      b.fileSize,
-		BaseTimePoint: baseTime,
-	}, nil
+	b.meta.StorageType = polypb.StorageType_LOCAL_DISK
+	return b.meta, nil
 }
 
-func NewTempBackupManager(backupManager *BackupManager, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
+func NewTempBackupManager(
+	backupManager *BackupManager,
+	cfg *TempBackupManagerConfig,
+) (*TempBackupManager, error) {
 	if err := dirutil.MkdirAllWithLog(cfg.TempDir); err != nil {
 		return nil, errors.Wrap(err, "Cannot create temporary directory")
 	}

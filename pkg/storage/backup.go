@@ -41,7 +41,12 @@ func (m *BackupManager) GetLatestToLSN(db polypb.DatabaseID) (string, error) {
 		return "", errors.New("not found any backups")
 	}
 	metas.Sort()
-	return metas[len(metas)-1].ToLsn, nil
+	meta := metas[len(metas)-1]
+	details := meta.GetXtrabackup()
+	if details == nil {
+		return "", errors.Errorf("db %s is not Xtrabackup", db)
+	}
+	return details.ToLsn, nil
 }
 
 // SearchBaseTimePointByLSN finds base time point matching with a given lsn.
@@ -57,7 +62,11 @@ func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn strin
 	metas.Sort()
 	for i := len(metas) - 1; i >= 0; i-- {
 		m := metas[i]
-		if m.ToLsn == lsn {
+		details := m.GetXtrabackup()
+		if details == nil {
+			return nil, errors.Errorf("db %s id not Xtrabackup", db)
+		}
+		if details.ToLsn == lsn {
 			return m.BaseTimePoint, nil
 		}
 	}
@@ -92,7 +101,7 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 					Key:         mj.Key,
 					FileSize:    mj.FileSize,
 				})
-				if mj.BackupType == polypb.BackupType_FULL {
+				if mj.BackupType == polypb.BackupType_XTRABACKUP_FULL {
 					return files, nil
 				}
 			}
@@ -113,10 +122,12 @@ func (m *BackupManager) GetFileStream(key polypb.Key) (io.Reader, error) {
 	meta := metas[0]
 	var r io.Reader
 	switch meta.BackupType {
-	case polypb.BackupType_FULL:
+	case polypb.BackupType_XTRABACKUP_FULL:
 		r, err = m.storage.FullBackupStream(meta.Key)
-	case polypb.BackupType_INC:
+	case polypb.BackupType_XTRABACKUP_INC:
 		r, err = m.storage.IncBackupStream(meta.Key)
+	case polypb.BackupType_MYSQLDUMP:
+		panic("implement me!")
 	default:
 		err = errors.New("not found such a backup type")
 	}
@@ -168,7 +179,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 	}
 	fulls := make(polypb.BackupMetaSlice, 0)
 	for _, meta := range metas {
-		if meta.BackupType == polypb.BackupType_FULL {
+		if meta.BackupType == polypb.BackupType_XTRABACKUP_FULL {
 			fulls = append(fulls, meta)
 		}
 	}
@@ -183,9 +194,9 @@ func (m *BackupManager) RestoreBackupInfo() error {
 	return m.storage.Walk(func(path string, info os.FileInfo, err error) error {
 		var backupType polypb.BackupType
 		if strings.HasSuffix(path, "base.tar.gz") {
-			backupType = polypb.BackupType_FULL
+			backupType = polypb.BackupType_XTRABACKUP_FULL
 		} else if strings.HasSuffix(path, "inc.xb.gz") {
-			backupType = polypb.BackupType_INC
+			backupType = polypb.BackupType_XTRABACKUP_INC
 		} else {
 			return nil
 		}
@@ -206,12 +217,15 @@ func (m *BackupManager) RestoreBackupInfo() error {
 		if err := m.EtcdCli.PutBackupMeta(
 			keys.MakeBackupMetaKeyFromKey(key),
 			&polypb.BackupMeta{
-				StoredTime:    &storedTime,
-				Host:          m.cfg.AdvertiseAddr,
-				NodeId:        m.cfg.NodeID,
-				BackupType:    backupType,
-				Db:            db,
-				ToLsn:         cp.ToLSN,
+				StoredTime: &storedTime,
+				Host:       m.cfg.AdvertiseAddr,
+				NodeId:     m.cfg.NodeID,
+				BackupType: backupType,
+				Db:         db,
+				Details: &polypb.BackupMeta_Xtrabackup{
+					Xtrabackup: &polypb.XtrabackupMeta{
+						ToLsn: cp.ToLSN,
+					}},
 				FileSize:      info.Size(),
 				Key:           key,
 				BaseTimePoint: baseTP,

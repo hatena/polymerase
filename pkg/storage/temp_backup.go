@@ -137,7 +137,10 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	return b.meta, nil
 }
 
-func NewTempBackupManager(backupManager *BackupManager, cfg *TempBackupManagerConfig) (*TempBackupManager, error) {
+func NewTempBackupManager(
+	backupManager *BackupManager,
+	cfg *TempBackupManagerConfig,
+) (*TempBackupManager, error) {
 	if err := dirutil.MkdirAllWithLog(cfg.TempDir); err != nil {
 		return nil, errors.Wrap(err, "Cannot create temporary directory")
 	}

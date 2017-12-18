@@ -201,6 +201,51 @@ func (s *StorageService) TransferIncBackup(
 	}
 }
 
+func (s *StorageService) TransferMysqldump(
+	stream storagepb.StorageService_TransferMysqldumpServer,
+) error {
+	var tempBackup appendCloser
+
+	if p, ok := peer.FromContext(stream.Context()); ok {
+		log.Printf("Established peer: %v\n", p.Addr)
+	}
+
+	for {
+		content, err := stream.Recv()
+		if err == io.EOF {
+			meta, err := tempBackup.CloseTransfer()
+			if err != nil {
+				return err
+			}
+			key := keys.MakeBackupMetaKeyFromKey(meta.Key)
+			if err := s.EtcdCli.PutBackupMeta(key, meta); err != nil {
+				return err
+			}
+			return stream.SendAndClose(&storagepb.BackupReply{
+				Message: "success",
+				Key:     meta.Key,
+			})
+		}
+		if err != nil {
+			return err
+		}
+		if tempBackup == nil {
+			if content.Db == nil {
+				return errors.New("empty db is not acceptable")
+			}
+			tempBackup, err = s.tempMngr.openTempBackup(
+				content.Db, &mysqldumpRequest{})
+			if err != nil {
+				return err
+			}
+			log.Printf("Start mysqldump: db=%s\n", content.Db)
+		}
+		if err := tempBackup.Append(content.Content); err != nil {
+			return err
+		}
+	}
+}
+
 func (s *StorageService) PostCheckpoints(
 	ctx context.Context,
 	req *storagepb.PostCheckpointsRequest,

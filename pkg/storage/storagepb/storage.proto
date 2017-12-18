@@ -17,6 +17,8 @@ service StorageService {
 
   rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
 
+  rpc TransferMysqldump(stream MysqldumpContentStream) returns (BackupReply) {};
+
   rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
 }
 
@@ -70,6 +72,11 @@ message IncBackupContentStream {
   bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
   string lsn = 2;
   bytes content = 3;
+}
+
+message MysqldumpContentStream {
+  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  bytes content = 2;
 }
 
 message BackupReply {

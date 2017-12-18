@@ -23,7 +23,7 @@ type Server struct {
 	grpc          *grpc.Server
 	backupManager *storage.BackupManager
 	mngrByStorage *storage.TempBackupManager
-	storageSvc    *storage.StorageService
+	storageSvc    *storage.Service
 	etcdServer    *etcd.EtcdServer
 	etcdCfg       *embed.Config
 }
@@ -58,7 +58,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 	}
 	s.mngrByStorage = mngrByStorage
 
-	s.storageSvc = storage.NewStorageService(s.backupManager, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
+	s.storageSvc = storage.NewService(s.backupManager, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)

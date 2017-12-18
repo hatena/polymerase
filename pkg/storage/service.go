@@ -5,10 +5,11 @@ import (
 	"errors"
 	"io"
 	"log"
-	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
@@ -17,7 +18,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
 
-type StorageService struct {
+type Service struct {
 	manager   *BackupManager
 	rateLimit float64
 	EtcdCli   etcd.ClientAPI
@@ -25,13 +26,13 @@ type StorageService struct {
 	cfg       *base.ServerConfig
 }
 
-func NewStorageService(
+func NewService(
 	manager *BackupManager,
 	rateLimit uint64,
 	tempMngr *TempBackupManager,
 	cfg *base.ServerConfig,
-) *StorageService {
-	return &StorageService{
+) *Service {
+	return &Service{
 		manager:   manager,
 		rateLimit: float64(rateLimit),
 		tempMngr:  tempMngr,
@@ -39,7 +40,7 @@ func NewStorageService(
 	}
 }
 
-func (s *StorageService) GetLatestToLSN(
+func (s *Service) GetLatestToLSN(
 	ctx context.Context, req *storagepb.GetLatestToLSNRequest,
 ) (*storagepb.GetLatestToLSNResponse, error) {
 	db := polypb.DatabaseID(req.Db)
@@ -49,25 +50,23 @@ func (s *StorageService) GetLatestToLSN(
 	}, err
 }
 
-func (s *StorageService) GetKeysAtPoint(
+func (s *Service) GetKeysAtPoint(
 	ctx context.Context, req *storagepb.GetKeysAtPointRequest,
 ) (*storagepb.GetKeysAtPointResponse, error) {
-	t, err := time.Parse("2006-01-02", req.From)
+	bfiles, err := s.manager.SearchConsecutiveIncBackups(req.Db, req.From)
 	if err != nil {
-		return &storagepb.GetKeysAtPointResponse{}, err
+		return nil, status.Errorf(
+			codes.Internal, "GetKeysAtPoint is failed: %s", err)
 	}
-	t = t.AddDate(0, 0, 1)
-	db := polypb.DatabaseID(req.Db)
-	bfiles, _ := s.manager.SearchConsecutiveIncBackups(db, t)
 	return &storagepb.GetKeysAtPointResponse{
 		Keys: bfiles,
 	}, nil
 }
 
-func (s *StorageService) GetFileByKey(
+func (s *Service) GetFileByKey(
 	req *storagepb.GetFileByKeyRequest, stream storagepb.StorageService_GetFileByKeyServer,
 ) error {
-	r, err := s.manager.GetFileStream(polypb.Key(req.Key))
+	r, err := s.manager.GetFileStream(req.Key)
 	if err != nil {
 		return err
 	}
@@ -86,11 +85,10 @@ func (s *StorageService) GetFileByKey(
 	}
 }
 
-func (s *StorageService) PurgePrevBackup(
+func (s *Service) PurgePrevBackup(
 	ctx context.Context, req *storagepb.PurgePrevBackupRequest,
 ) (*storagepb.PurgePrevBackupResponse, error) {
-	key, err := s.manager.GetKPastBackupKey(
-		polypb.DatabaseID(req.Db), 2)
+	key, err := s.manager.GetKPastBackupKey(req.Db, 2)
 	if err != nil {
 		return &storagepb.PurgePrevBackupResponse{
 			Message: "There is no backup to purge.",
@@ -106,7 +104,7 @@ func (s *StorageService) PurgePrevBackup(
 	}, nil
 }
 
-func (s *StorageService) TransferFullBackup(
+func (s *Service) TransferFullBackup(
 	stream storagepb.StorageService_TransferFullBackupServer,
 ) error {
 	var tempBackup appendCloser
@@ -150,7 +148,7 @@ func (s *StorageService) TransferFullBackup(
 	}
 }
 
-func (s *StorageService) TransferIncBackup(
+func (s *Service) TransferIncBackup(
 	stream storagepb.StorageService_TransferIncBackupServer,
 ) error {
 	var tempBackup appendCloser
@@ -201,7 +199,7 @@ func (s *StorageService) TransferIncBackup(
 	}
 }
 
-func (s *StorageService) TransferMysqldump(
+func (s *Service) TransferMysqldump(
 	stream storagepb.StorageService_TransferMysqldumpServer,
 ) error {
 	var tempBackup appendCloser
@@ -246,20 +244,19 @@ func (s *StorageService) TransferMysqldump(
 	}
 }
 
-func (s *StorageService) PostCheckpoints(
+func (s *Service) PostCheckpoints(
 	ctx context.Context,
 	req *storagepb.PostCheckpointsRequest,
 ) (*storagepb.PostCheckpointsResponse, error) {
 	r := bytes.NewReader(req.Content)
-	key := polypb.Key(req.Key)
-	if err := s.manager.PostFile(key, "xtrabackup_checkpoints", r); err != nil {
+	if err := s.manager.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
 		return &storagepb.PostCheckpointsResponse{}, err
 	}
 	cp := base.LoadXtrabackupCP(req.Content)
 	if cp.ToLSN == "" {
 		return nil, errors.New("failed to load")
 	}
-	err := s.EtcdCli.UpdateLSN(keys.MakeBackupMetaKeyFromKey(key), cp.ToLSN)
+	err := s.EtcdCli.UpdateLSN(keys.MakeBackupMetaKeyFromKey(req.Key), cp.ToLSN)
 	if err != nil {
 		return nil, err
 	}

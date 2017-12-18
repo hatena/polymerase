@@ -41,7 +41,9 @@ const (
 type restoreContext struct {
 	*base.Config
 
-	from string
+	fromStr string
+
+	from time.Time
 
 	applyPrepare bool
 
@@ -86,7 +88,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 		return usageAndError(cmd)
 	}
 
-	if restoreCtx.from == "" && !restoreCtx.latest {
+	if restoreCtx.fromStr == "" && !restoreCtx.latest {
 		return errors.New("You must specify `from` option or `latest` flag.")
 	}
 	if db == nil {
@@ -95,8 +97,14 @@ func runRestore(cmd *cobra.Command, args []string) error {
 
 	// If `from` is not specified and `latest` option is added,
 	// restoreCtx.from is set as tomorrow.
-	if restoreCtx.from == "" && restoreCtx.latest {
-		restoreCtx.from = time.Now().Format(fromTimeFormat)
+	if restoreCtx.fromStr == "" && restoreCtx.latest {
+		restoreCtx.from = time.Now()
+	} else {
+		from, err := time.Parse(fromTimeFormat, restoreCtx.fromStr)
+		if err != nil {
+			return err
+		}
+		restoreCtx.from = from
 	}
 
 	// Signal
@@ -127,16 +135,14 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 		return
 	}
 
-	from, err := time.Parse(fromTimeFormat, restoreCtx.from)
+	res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
+		Db:   db,
+		From: restoreCtx.from,
+	})
 	if err != nil {
 		errCh <- err
 		return
 	}
-
-	res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
-		Db:   db,
-		From: from,
-	})
 
 	restoreDir, err := filepath.Abs("polymerase-restore")
 	if err != nil {

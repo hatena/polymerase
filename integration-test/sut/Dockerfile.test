@@ -1,62 +1,6 @@
-FROM buildpack-deps:xenial-scm
+FROM takuk/polymerase-test-base:latest
 
 MAINTAINER Takuya Kuwahara <taakuu19@gmail.com>
-
-# Make sure apt-get is up to date and dependent packages are installed
-RUN \
-  apt-get update && \
-  apt-get install -y make libaio1 software-properties-common \
-    --no-install-recommends
-RUN \
-  add-apt-repository -y ppa:openjdk-r/ppa && \
-  apt-get update && \
-  apt-get install -y openjdk-8-jdk \
-    --no-install-recommends
-
-# Setup MySQL Sandbox
-ENV SANDBOX_AS_ROOT 1
-RUN \
-  wget -q http://search.cpan.org/CPAN/authors/id/G/GM/GMAX/MySQL-Sandbox-3.2.10.tar.gz && \
-  tar zxf MySQL-Sandbox-3.2.10.tar.gz && \
-  cd MySQL-Sandbox-3.2.10 && \
-  perl Makefile.PL && make && make install && \
-  mkdir /sandbox && cd /sandbox && \
-  wget -q https://downloads.mysql.com/archives/get/file/mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
-  tar zxf mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz && \
-  mv mysql-5.6.35-linux-glibc2.5-x86_64 5.6.35 && \
-  make_replication_sandbox --how_many_nodes=1 5.6.35 && \
-  rm mysql-5.6.35-linux-glibc2.5-x86_64.tar.gz /MySQL-Sandbox-3.2.10.tar.gz
-
-# Install go 1.8.3
-RUN \
-  wget -q https://golang.org/dl/go1.8.3.linux-amd64.tar.gz && \
-  tar -C /usr/local -xzf `basename https://golang.org/dl/go1.8.3.linux-amd64.tar.gz` && \
-  rm /go1.8.3.linux-amd64.tar.gz
-ENV PATH   /go/bin:/usr/local/go/bin:$PATH
-ENV GOPATH /go
-ENV GOROOT /usr/local/go
-
-# Install Xtrabackup 2.3.10
-RUN \
-  wget -q https://repo.percona.com/apt/percona-release_0.1-4.xenial_all.deb && \
-  dpkg -i percona-release_0.1-4.xenial_all.deb && \
-  apt-get update && \
-  apt-get install -y percona-xtrabackup=2.3.10-1.xenial
-
-# Setup ycsb
-RUN \
-  wget -q https://github.com/brianfrankcooper/YCSB/releases/download/0.12.0/ycsb-0.12.0.tar.gz && \
-  tar zxf ycsb-0.12.0.tar.gz && \
-  rm ycsb-0.12.0.tar.gz && \
-  cd ycsb-0.12.0 && \
-  wget -q https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.42.tar.gz && \
-  tar zxf mysql-connector-java-5.1.42.tar.gz && \
-  mv mysql-connector-java-5.1.42/mysql-connector-java-5.1.42-bin.jar jdbc-binding/lib/ && \
-  mkdir /ycsb && \
-  mv LICENSE.txt bin jdbc-binding lib workloads /ycsb && \
-  cd /ycsb && \
-  rm -rf /ycsb-0.12.0*
-ENV PATH /ycsb/bin:$PATH
 
 # Setup polymerase
 ENV PKG github.com/taku-k/polymerase

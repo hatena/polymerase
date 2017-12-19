@@ -56,3 +56,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/kylelemons/godebug"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/looplab/fsm"

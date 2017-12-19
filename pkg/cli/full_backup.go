@@ -9,6 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
 )
@@ -77,37 +80,48 @@ func transferFullBackup(
 
 	chunk := make([]byte, 1<<20)
 	buf := bufio.NewReader(r)
-	var key polypb.Key
 
 	for {
 		n, err := buf.Read(chunk)
 		if err == io.EOF {
-			reply, err := stream.CloseAndRecv()
-			if err != nil {
-				errCh <- err
-				return
-			}
-			log.Println(reply)
-			key = reply.Key
 			break
 		}
 		if err != nil {
+			stream.Send(errClient(err.Error()))
 			errCh <- err
 			return
 		}
-		stream.Send(&storagepb.FullBackupContentStream{
-			Content: chunk[:n],
-			Db:      db,
+		stream.Send(&storagepb.XtrabackupContentStream{
+			Request: &storagepb.XtrabackupContentStream_BackupRequest{
+				BackupRequest: &storagepb.BackupRequest{
+					Content: chunk[:n],
+					Db:      db,
+				},
+			},
 		})
 	}
 
 	// Post xtrabackup_checkpoints
-	res, err := postXtrabackupCP(ctx, cli, key)
+	b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
+	if err != nil {
+		stream.Send(errClient(err.Error()))
+		errCh <- err
+		return
+	}
+	stream.Send(&storagepb.XtrabackupContentStream{
+		Request: &storagepb.XtrabackupContentStream_CheckpointRequest{
+			CheckpointRequest: &storagepb.CheckpointRequest{
+				Body: b,
+			},
+		},
+	})
+
+	reply, err := stream.CloseAndRecv()
 	if err != nil {
 		errCh <- err
 		return
 	}
-	log.Println(res)
+	log.Println(reply)
 	finishCh <- struct{}{}
 	return
 }

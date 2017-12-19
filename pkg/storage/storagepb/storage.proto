@@ -14,13 +14,13 @@ service StorageService {
 
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 
-  rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
+  rpc TransferFullBackup(stream XtrabackupContentStream) returns (BackupReply) {};
 
-  rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
+  rpc TransferIncBackup(stream XtrabackupContentStream) returns (BackupReply) {};
 
   rpc TransferMysqldump(stream MysqldumpContentStream) returns (BackupReply) {};
 
-  rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
+//  rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
 }
 
 message GetLatestToLSNRequest {
@@ -64,15 +64,26 @@ message PurgePrevBackupResponse {
   string message = 1;
 }
 
-message FullBackupContentStream {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  bytes content = 2;
+message XtrabackupContentStream {
+  oneof request {
+    BackupRequest backup_request = 1;
+    CheckpointRequest checkpoint_request = 2;
+    ClientErrorRequest client_error_request = 3;
+  }
 }
 
-message IncBackupContentStream {
+message BackupRequest {
   bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  string lsn = 2;
-  bytes content = 3;
+  bytes content = 2;
+  string lsn = 3;
+}
+
+message CheckpointRequest {
+  bytes body = 2;
+}
+
+message ClientErrorRequest {
+  string message = 1;
 }
 
 message MysqldumpContentStream {
@@ -83,13 +94,4 @@ message MysqldumpContentStream {
 message BackupReply {
   string message = 1;
   bytes key = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
-}
-
-message PostCheckpointsRequest {
-  bytes key = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
-  bytes content = 2;
-}
-
-message PostCheckpointsResponse {
-  string message = 1;
 }

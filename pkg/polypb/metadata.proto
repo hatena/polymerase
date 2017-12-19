@@ -38,10 +38,19 @@ message BackupMeta {
 }
 
 message XtrabackupMeta {
-  string to_lsn = 1;
+  XtrabackupCheckpoints checkpoints = 1;
 }
 
 message MysqldumpMeta {
+}
+
+message XtrabackupCheckpoints {
+  string backup_type = 1 [(gogoproto.moretags) = "ini:\"backup_type\""];
+  string from_lsn = 2 [(gogoproto.moretags) = "ini:\"from_lsn\""];
+  string to_lsn = 3 [(gogoproto.moretags) = "ini:\"to_lsn\""];
+  string last_lsn = 4 [(gogoproto.moretags) = "ini:\"last_lsn\""];
+  int32 compact = 5 [(gogoproto.moretags) = "ini:\"compact\""];
+  int32 recover_binlog_info = 6 [(gogoproto.moretags) = "ini:\"recover_binlog_info\""];
 }
 
 // StorageType

@@ -14,7 +14,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupManager struct {
@@ -46,7 +45,10 @@ func (m *BackupManager) GetLatestToLSN(db polypb.DatabaseID) (string, error) {
 	if details == nil {
 		return "", errors.Errorf("db %s is not Xtrabackup", db)
 	}
-	return details.ToLsn, nil
+	if details.Checkpoints == nil {
+		return "", errors.Errorf("This meta (key=%s) has no checkpoint metadata", meta.Key)
+	}
+	return details.Checkpoints.ToLsn, nil
 }
 
 // SearchBaseTimePointByLSN finds base time point matching with a given lsn.
@@ -61,13 +63,16 @@ func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn strin
 	}
 	metas.Sort()
 	for i := len(metas) - 1; i >= 0; i-- {
-		m := metas[i]
-		details := m.GetXtrabackup()
+		mi := metas[i]
+		details := mi.GetXtrabackup()
 		if details == nil {
 			return nil, errors.Errorf("db %s id not Xtrabackup", db)
 		}
-		if details.ToLsn == lsn {
-			return m.BaseTimePoint, nil
+		if details.Checkpoints == nil {
+			return nil, errors.Errorf("This meta (key=%s) has no checkpoint metadata", mi.Key)
+		}
+		if details.Checkpoints.ToLsn == lsn {
+			return mi.BaseTimePoint, nil
 		}
 	}
 	return nil, errors.New("backup matching with a given LSN is not found")
@@ -96,7 +101,7 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 			for j := i; j >= 0; j-- {
 				mj := metas[j]
 				files = append(files, &storagepb.BackupFileInfo{
-					StorageType: m.storage.StorageType(),
+					StorageType: m.storage.Type(),
 					BackupType:  mj.BackupType,
 					Key:         mj.Key,
 					FileSize:    mj.FileSize,
@@ -120,17 +125,7 @@ func (m *BackupManager) GetFileStream(key polypb.Key) (io.Reader, error) {
 		return nil, errors.New("too many metadata to be fetched")
 	}
 	meta := metas[0]
-	var r io.Reader
-	switch meta.BackupType {
-	case polypb.BackupType_XTRABACKUP_FULL:
-		r, err = m.storage.FullBackupStream(meta.Key)
-	case polypb.BackupType_XTRABACKUP_INC:
-		r, err = m.storage.IncBackupStream(meta.Key)
-	case polypb.BackupType_MYSQLDUMP:
-		panic("implement me!")
-	default:
-		err = errors.New("not found such a backup type")
-	}
+	r, err := m.storage.BackupStream(meta.Key, meta.BackupType)
 	if err != nil {
 		return nil, err
 	}
@@ -201,21 +196,8 @@ func (m *BackupManager) RestoreBackupInfo() error {
 			return err
 		}
 		key := keys.MakeBackupKey(db, baseTP, backupTP)
-		storedTime, err := time.Parse(utils.TimeFormat, string(backupTP))
+		meta, err := m.storage.LoadMeta(key)
 		if err != nil {
-			return err
-		}
-		meta := &polypb.BackupMeta{
-			StoredTime:    &storedTime,
-			Host:          m.cfg.AdvertiseAddr,
-			NodeId:        m.cfg.NodeID,
-			Db:            db,
-			FileSize:      info.Size(),
-			Key:           key,
-			BaseTimePoint: baseTP,
-		}
-
-		if err := m.restoreBackupMeta(path, meta); err != nil {
 			return err
 		}
 
@@ -245,34 +227,4 @@ func isBackupedFile(path string) bool {
 	return strings.HasSuffix(path, "base.tar.gz") ||
 		strings.HasSuffix(path, "inc.xb.gz") ||
 		strings.HasSuffix(path, "dump.sql")
-}
-
-func (m *BackupManager) restoreBackupMeta(path string, meta *polypb.BackupMeta) error {
-	if strings.HasSuffix(path, "base.tar.gz") {
-		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
-		return m.restoreXtrabackupMeta(meta)
-	} else if strings.HasSuffix(path, "inc.xb.gz") {
-		meta.BackupType = polypb.BackupType_XTRABACKUP_INC
-		return m.restoreXtrabackupMeta(meta)
-	} else if strings.HasSuffix(path, "dump.sql") {
-		meta.BackupType = polypb.BackupType_MYSQLDUMP
-		meta.Details = &polypb.BackupMeta_Mysqldump{
-			Mysqldump: &polypb.MysqldumpMeta{},
-		}
-		return nil
-	}
-	return nil
-}
-
-func (m *BackupManager) restoreXtrabackupMeta(meta *polypb.BackupMeta) error {
-	cp := m.storage.LoadXtrabackupCP(meta.Key)
-	if cp.ToLSN == "" {
-		return errors.New("xtrabackup_checkpoints file is not found")
-	}
-	meta.Details = &polypb.BackupMeta_Xtrabackup{
-		Xtrabackup: &polypb.XtrabackupMeta{
-			ToLsn: cp.ToLSN,
-		},
-	}
-	return nil
 }

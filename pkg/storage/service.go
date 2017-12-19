@@ -1,11 +1,11 @@
 package storage
 
 import (
-	"bytes"
-	"errors"
 	"io"
 	"log"
 
+	"github.com/looplab/fsm"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -107,14 +107,68 @@ func (s *Service) PurgePrevBackup(
 func (s *Service) TransferFullBackup(
 	stream storagepb.StorageService_TransferFullBackupServer,
 ) error {
-	var tempBackup appendCloser
+	var tempBackup *tempBackup
+	var err error
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
 	}
 
+	backupFsm := fsm.NewFSM(
+		"uninitialized",
+		fsm.Events{
+			{Name: "receive", Src: []string{"uninitialized", "receiving"}, Dst: "receiving"},
+			{Name: "post_checkpoint", Src: []string{"receiving"}, Dst: "finished"},
+			{Name: "client_error", Src: []string{"uninitialized", "receiving", "finished"}, Dst: "error"},
+		},
+		fsm.Callbacks{
+			"leave_uninitialized": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.BackupRequest)
+				if req.Db == nil {
+					e.Cancel(errors.New("empty db is not acceptable"))
+					return
+				}
+				tempBackup, err = s.tempMngr.openTempBackup(req.Db, &xtrabackupFullRequest{})
+				if err != nil {
+					e.Cancel(err)
+					return
+				}
+				log.Printf("Start full-backup: db=%s\n", req.Db)
+			},
+			"enter_receiving": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.BackupRequest)
+				if err := tempBackup.Append(req.Content); err != nil {
+					e.Cancel(err)
+				}
+			},
+			"after_post_checkpoint": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.CheckpointRequest)
+				cp, err := polypb.LoadXtrabackupCP(req.Body)
+				if err != nil {
+					e.Cancel(err)
+					return
+				}
+				backupMeta := tempBackup.meta.GetXtrabackup()
+				if backupMeta == nil {
+					e.Cancel(errors.Errorf("XtrabackupMeta is not initialized"))
+					return
+				}
+				backupMeta.Checkpoints = cp
+			},
+			"enter_error": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.ClientErrorRequest)
+				log.Print(req.Message)
+				if tempBackup != nil {
+					if err := tempBackup.remove(); err != nil {
+						e.Cancel(err)
+					}
+				}
+			},
+		},
+	)
+
 	for {
-		content, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			meta, err := tempBackup.CloseTransfer()
 			if err != nil {
@@ -132,18 +186,26 @@ func (s *Service) TransferFullBackup(
 		if err != nil {
 			return err
 		}
-		if tempBackup == nil {
-			if content.Db == nil {
-				return errors.New("empty db is not acceptable")
+		if request.GetBackupRequest() != nil {
+			if err := backupFsm.Event("receive", request.GetBackupRequest()); err != nil {
+				switch err.(type) {
+				case fsm.NoTransitionError:
+				default:
+					return err
+				}
 			}
-			tempBackup, err = s.tempMngr.openTempBackup(content.Db, &xtrabackupFullRequest{})
-			if err != nil {
+		}
+		if request.GetCheckpointRequest() != nil {
+			if err := backupFsm.Event(
+				"post_checkpoint", request.GetCheckpointRequest()); err != nil {
 				return err
 			}
-			log.Printf("Start full-backup: db=%s\n", content.Db)
 		}
-		if err := tempBackup.Append(content.Content); err != nil {
-			return err
+		if request.GetClientErrorRequest() != nil {
+			if err := backupFsm.Event(
+				"client_error", request.GetClientErrorRequest()); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -151,14 +213,76 @@ func (s *Service) TransferFullBackup(
 func (s *Service) TransferIncBackup(
 	stream storagepb.StorageService_TransferIncBackupServer,
 ) error {
-	var tempBackup appendCloser
+	var tempBackup *tempBackup
+	var err error
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
 	}
 
+	backupFsm := fsm.NewFSM(
+		"uninitialized",
+		fsm.Events{
+			{Name: "receive", Src: []string{"uninitialized", "receiving"}, Dst: "receiving"},
+			{Name: "post_checkpoint", Src: []string{"receiving"}, Dst: "finished"},
+			{Name: "client_error", Src: []string{"uninitialized", "receiving", "finished"}, Dst: "error"},
+		},
+		fsm.Callbacks{
+			"leave_uninitialized": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.BackupRequest)
+				if req.Db == nil {
+					e.Cancel(errors.New("empty db is not acceptable"))
+					return
+				}
+				if req.Lsn == "" {
+					e.Cancel(errors.New("empty lsn is not acceptable"))
+					return
+				}
+				tempBackup, err = s.tempMngr.openTempBackup(
+					req.Db,
+					&xtrabackupIncRequest{
+						LSN: req.Lsn,
+					})
+				if err != nil {
+					e.Cancel(err)
+					return
+				}
+				log.Printf("Start inc-backup: db=%s\n", req.Db)
+			},
+			"enter_receiving": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.BackupRequest)
+				if err := tempBackup.Append(req.Content); err != nil {
+					e.Cancel(err)
+				}
+			},
+			"after_post_checkpoint": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.CheckpointRequest)
+				cp, err := polypb.LoadXtrabackupCP(req.Body)
+				if err != nil {
+					e.Cancel(err)
+					return
+				}
+				backupMeta := tempBackup.meta.GetXtrabackup()
+				if backupMeta == nil {
+					e.Cancel(errors.Errorf("XtrabackupMeta is not initialized"))
+					return
+				}
+				backupMeta.Checkpoints = cp
+			},
+			"enter_error": func(e *fsm.Event) {
+				req := e.Args[0].(*storagepb.ClientErrorRequest)
+				log.Print(req.Message)
+				if tempBackup != nil {
+					if err := tempBackup.remove(); err != nil {
+						e.Cancel(err)
+					}
+				}
+			},
+		},
+	)
+
 	for {
-		content, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			meta, err := tempBackup.CloseTransfer()
 			if err != nil {
@@ -176,25 +300,26 @@ func (s *Service) TransferIncBackup(
 		if err != nil {
 			return err
 		}
-		if tempBackup == nil {
-			if content.Db == nil {
-				return errors.New("empty db is not acceptable")
+		if request.GetBackupRequest() != nil {
+			if err := backupFsm.Event("receive", request.GetBackupRequest()); err != nil {
+				switch err.(type) {
+				case fsm.NoTransitionError:
+				default:
+					return err
+				}
 			}
-			if content.Lsn == "" {
-				return errors.New("empty lsn is not acceptable")
-			}
-			tempBackup, err = s.tempMngr.openTempBackup(
-				content.Db,
-				&xtrabackupIncRequest{
-					LSN: content.Lsn,
-				})
-			if err != nil {
+		}
+		if request.GetCheckpointRequest() != nil {
+			if err := backupFsm.Event(
+				"post_checkpoint", request.GetCheckpointRequest()); err != nil {
 				return err
 			}
-			log.Printf("Start inc-backup: db=%s\n", content.Db)
 		}
-		if err := tempBackup.Append(content.Content); err != nil {
-			return err
+		if request.GetClientErrorRequest() != nil {
+			if err := backupFsm.Event(
+				"client_error", request.GetClientErrorRequest()); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -242,25 +367,4 @@ func (s *Service) TransferMysqldump(
 			return err
 		}
 	}
-}
-
-func (s *Service) PostCheckpoints(
-	ctx context.Context,
-	req *storagepb.PostCheckpointsRequest,
-) (*storagepb.PostCheckpointsResponse, error) {
-	r := bytes.NewReader(req.Content)
-	if err := s.manager.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
-		return &storagepb.PostCheckpointsResponse{}, err
-	}
-	cp := base.LoadXtrabackupCP(req.Content)
-	if cp.ToLSN == "" {
-		return nil, errors.New("failed to load")
-	}
-	err := s.EtcdCli.UpdateLSN(keys.MakeBackupMetaKeyFromKey(req.Key), cp.ToLSN)
-	if err != nil {
-		return nil, err
-	}
-	return &storagepb.PostCheckpointsResponse{
-		Message: "success",
-	}, nil
 }

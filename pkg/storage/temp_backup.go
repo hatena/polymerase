@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"os"
+
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/etcd"
 	"github.com/taku-k/polymerase/pkg/keys"
@@ -64,7 +66,7 @@ type tempBackup struct {
 func (m *TempBackupManager) openTempBackup(
 	db polypb.DatabaseID,
 	req backupRequest,
-) (appendCloser, error) {
+) (*tempBackup, error) {
 	tempDir, err := ioutil.TempDir(m.cfg.TempDir, "polymerase-backup-dir")
 	if err != nil {
 		return nil, err
@@ -129,12 +131,25 @@ func (b *tempBackup) CloseTransfer() (*polypb.BackupMeta, error) {
 	if err != nil {
 		return nil, err
 	}
+	b.meta.StorageType = polypb.StorageType_LOCAL_DISK
 	if err := b.manager.backupManager.TransferTempBackup(b.tempDir, b.meta.Key); err != nil {
 		b.manager.pstorage.Delete(b.tempDir)
 		return nil, err
 	}
-	b.meta.StorageType = polypb.StorageType_LOCAL_DISK
+	if err := b.manager.pstorage.StoreMeta(b.meta.Key, b.meta); err != nil {
+		return nil, err
+	}
 	return b.meta, nil
+}
+
+func (b *tempBackup) remove() error {
+	if err := b.writer.Close(); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(b.tempDir); err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewTempBackupManager(
@@ -147,6 +162,8 @@ func NewTempBackupManager(
 	return &TempBackupManager{
 		backupManager: backupManager,
 		cfg:           cfg,
-		pstorage:      &DiskStorage{},
+		pstorage:      &DiskStorage{
+
+		},
 	}, nil
 }

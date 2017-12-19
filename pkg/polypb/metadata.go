@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/go-ini/ini"
 	"github.com/taku-k/polymerase/pkg/utils"
 )
 
@@ -98,3 +99,14 @@ func NewBackupMeta(
 		NodeId:     nodeID,
 	}
 }
+
+func LoadXtrabackupCP(source interface{}) (*XtrabackupCheckpoints, error) {
+	var cp XtrabackupCheckpoints
+	err := ini.MapTo(&cp, source)
+	if err != nil {
+		return nil, err
+	}
+	return &cp, nil
+}
+
+type DetailsMeta isBackupMeta_Details

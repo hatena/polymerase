@@ -3,11 +3,9 @@ package cli
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -101,21 +99,12 @@ func connectGRPC(ctx context.Context, addr string) (*grpc.ClientConn, error) {
 	return conn, err
 }
 
-func postXtrabackupCP(
-	ctx context.Context,
-	cli storagepb.StorageServiceClient,
-	key polypb.Key,
-) (*storagepb.PostCheckpointsResponse, error) {
-	b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
-	if err != nil {
-		return nil, err
+func errClient(msg string) *storagepb.XtrabackupContentStream {
+	return &storagepb.XtrabackupContentStream{
+		Request: &storagepb.XtrabackupContentStream_ClientErrorRequest{
+			ClientErrorRequest: &storagepb.ClientErrorRequest{
+				Message: msg,
+			},
+		},
 	}
-	res, err := cli.PostCheckpoints(ctx, &storagepb.PostCheckpointsRequest{
-		Key:     key,
-		Content: b,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
 }

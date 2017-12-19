@@ -84,3 +84,8 @@ fmt:
 imports:
 	goimports -w $$(find . -type f -name '*.go' | grep -v -e vendor)
 
+.PHONY: docker-test-base
+docker-test-base:
+	docker build -t takuk/polymerase-test-base -f integration-test/sut/Dockerfile.testbase .
+	docker push takuk/polymerase-test-base
+

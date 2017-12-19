@@ -65,6 +65,11 @@ func (t TimePoint) Equal(ot TimePoint) bool {
 	return bytes.Equal(t, ot)
 }
 
+func (t TimePoint) Add(d time.Duration) TimePoint {
+	ti, _ := time.Parse(utils.TimeFormat, string(t))
+	return NewTimePoint(ti.Add(d))
+}
+
 type BackupMetaSlice []*BackupMeta
 
 func (s BackupMetaSlice) Sort() {

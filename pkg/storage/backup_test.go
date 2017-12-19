@@ -497,7 +497,7 @@ func TestBackupManager_RestoreBackupInfo(t *testing.T) {
 		},
 		{
 			lsn: "110",
-			key: keys.MakeBackupKey(db, pt, polypb.NewTimePoint(tn.Add(time.Hour))),
+			key: keys.MakeBackupKey(db, pt, pt.Add(time.Hour)),
 			genPath: func(key polypb.Key) string {
 				return string(key) + "/inc.xb.gz"
 			},
@@ -518,6 +518,29 @@ func TestBackupManager_RestoreBackupInfo(t *testing.T) {
 					FileSize:      info.Size(),
 					Key:           key,
 					BaseTimePoint: pt,
+				}
+			},
+		},
+		{
+			key: keys.MakeBackupKey(db, pt.Add(2*time.Hour), pt.Add(2*time.Hour)),
+			genPath: func(key polypb.Key) string {
+				return string(key) + "/dump.sql"
+			},
+			info: fakeFileInfo{size: 300},
+			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
+				st := tn.Add(2 * time.Hour)
+				return &polypb.BackupMeta{
+					StoredTime: &st,
+					Host:       cfg.AdvertiseAddr,
+					NodeId:     cfg.NodeID,
+					BackupType: polypb.BackupType_MYSQLDUMP,
+					Db:         db,
+					Details: &polypb.BackupMeta_Mysqldump{
+						Mysqldump: &polypb.MysqldumpMeta{},
+					},
+					FileSize:      info.Size(),
+					Key:           key,
+					BaseTimePoint: pt.Add(2 * time.Hour),
 				}
 			},
 		},

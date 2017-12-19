@@ -192,12 +192,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 
 func (m *BackupManager) RestoreBackupInfo() error {
 	return m.storage.Walk(func(path string, info os.FileInfo, err error) error {
-		var backupType polypb.BackupType
-		if strings.HasSuffix(path, "base.tar.gz") {
-			backupType = polypb.BackupType_XTRABACKUP_FULL
-		} else if strings.HasSuffix(path, "inc.xb.gz") {
-			backupType = polypb.BackupType_XTRABACKUP_INC
-		} else {
+		if !isBackupedFile(path) {
 			return nil
 		}
 
@@ -206,34 +201,29 @@ func (m *BackupManager) RestoreBackupInfo() error {
 			return err
 		}
 		key := keys.MakeBackupKey(db, baseTP, backupTP)
-		cp := m.storage.LoadXtrabackupCP(key)
-		if cp.ToLSN == "" {
-			return errors.New("xtrabackup_checkpoints file is not found")
-		}
 		storedTime, err := time.Parse(utils.TimeFormat, string(backupTP))
 		if err != nil {
 			return err
 		}
-		if err := m.EtcdCli.PutBackupMeta(
-			keys.MakeBackupMetaKeyFromKey(key),
-			&polypb.BackupMeta{
-				StoredTime: &storedTime,
-				Host:       m.cfg.AdvertiseAddr,
-				NodeId:     m.cfg.NodeID,
-				BackupType: backupType,
-				Db:         db,
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
-						ToLsn: cp.ToLSN,
-					}},
-				FileSize:      info.Size(),
-				Key:           key,
-				BaseTimePoint: baseTP,
-			},
-		); err != nil {
+		meta := &polypb.BackupMeta{
+			StoredTime:    &storedTime,
+			Host:          m.cfg.AdvertiseAddr,
+			NodeId:        m.cfg.NodeID,
+			Db:            db,
+			FileSize:      info.Size(),
+			Key:           key,
+			BaseTimePoint: baseTP,
+		}
+
+		if err := m.restoreBackupMeta(path, meta); err != nil {
 			return err
 		}
-		log.Printf("Restore %s backup: %s", backupType, path)
+
+		if err := m.EtcdCli.PutBackupMeta(
+			keys.MakeBackupMetaKeyFromKey(key), meta); err != nil {
+			return err
+		}
+		log.Printf("Restore %s backup: %s", meta.BackupType, path)
 		return nil
 	})
 }
@@ -249,4 +239,40 @@ func parseBackupPath(
 	base := polypb.TimePoint(sp[len(sp)-3])
 	backup := polypb.TimePoint(sp[len(sp)-2])
 	return db, base, backup, nil
+}
+
+func isBackupedFile(path string) bool {
+	return strings.HasSuffix(path, "base.tar.gz") ||
+		strings.HasSuffix(path, "inc.xb.gz") ||
+		strings.HasSuffix(path, "dump.sql")
+}
+
+func (m *BackupManager) restoreBackupMeta(path string, meta *polypb.BackupMeta) error {
+	if strings.HasSuffix(path, "base.tar.gz") {
+		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
+		return m.restoreXtrabackupMeta(meta)
+	} else if strings.HasSuffix(path, "inc.xb.gz") {
+		meta.BackupType = polypb.BackupType_XTRABACKUP_INC
+		return m.restoreXtrabackupMeta(meta)
+	} else if strings.HasSuffix(path, "dump.sql") {
+		meta.BackupType = polypb.BackupType_MYSQLDUMP
+		meta.Details = &polypb.BackupMeta_Mysqldump{
+			Mysqldump: &polypb.MysqldumpMeta{},
+		}
+		return nil
+	}
+	return nil
+}
+
+func (m *BackupManager) restoreXtrabackupMeta(meta *polypb.BackupMeta) error {
+	cp := m.storage.LoadXtrabackupCP(meta.Key)
+	if cp.ToLSN == "" {
+		return errors.New("xtrabackup_checkpoints file is not found")
+	}
+	meta.Details = &polypb.BackupMeta_Xtrabackup{
+		Xtrabackup: &polypb.XtrabackupMeta{
+			ToLsn: cp.ToLSN,
+		},
+	}
+	return nil
 }

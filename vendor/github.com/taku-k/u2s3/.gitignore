@@ -1,0 +1,5 @@
+*.test
+.idea
+dist
+bin
+.vagrant

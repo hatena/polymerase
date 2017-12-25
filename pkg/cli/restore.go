@@ -91,7 +91,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	if restoreCtx.fromStr == "" && !restoreCtx.latest {
 		return errors.New("You must specify `from` option or `latest` flag.")
 	}
-	if db == nil {
+	if backupCtx.db == nil {
 		return errors.New("You must specify `db`")
 	}
 
@@ -129,14 +129,14 @@ func runRestore(cmd *cobra.Command, args []string) error {
 }
 
 func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
-	scli, err := getAppropriateStorageClient(ctx, db)
+	scli, err := getAppropriateStorageClient(ctx, backupCtx.db)
 	if err != nil {
 		errCh <- err
 		return
 	}
 
 	res, err := scli.GetKeysAtPoint(context.Background(), &storagepb.GetKeysAtPointRequest{
-		Db:   db,
+		Db:   backupCtx.db,
 		From: restoreCtx.from,
 	})
 	if err != nil {
@@ -189,7 +189,13 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 		}
 		idx += 1
 	}
-	if err := getFullBackup(scli, res.Keys[len(res.Keys)-1], restoreDir, pbs[len(res.Keys)-1], maxBandWidth); err != nil {
+	if err := getFullBackup(
+		scli,
+		res.Keys[len(res.Keys)-1],
+		restoreDir,
+		pbs[len(res.Keys)-1],
+		maxBandWidth,
+	); err != nil {
 		pool.Stop()
 		errCh <- err
 		return

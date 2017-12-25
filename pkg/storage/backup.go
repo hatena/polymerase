@@ -14,7 +14,6 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupManager struct {
@@ -42,11 +41,14 @@ func (m *BackupManager) GetLatestToLSN(db polypb.DatabaseID) (string, error) {
 	}
 	metas.Sort()
 	meta := metas[len(metas)-1]
-	details := meta.GetXtrabackup()
+	details := meta.GetXtrabackupMeta()
 	if details == nil {
 		return "", errors.Errorf("db %s is not Xtrabackup", db)
 	}
-	return details.ToLsn, nil
+	if details.Checkpoints == nil {
+		return "", errors.Errorf("This meta (key=%s) has no checkpoint metadata", meta.Key)
+	}
+	return details.Checkpoints.ToLsn, nil
 }
 
 // SearchBaseTimePointByLSN finds base time point matching with a given lsn.
@@ -61,13 +63,16 @@ func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn strin
 	}
 	metas.Sort()
 	for i := len(metas) - 1; i >= 0; i-- {
-		m := metas[i]
-		details := m.GetXtrabackup()
+		mi := metas[i]
+		details := mi.GetXtrabackupMeta()
 		if details == nil {
 			return nil, errors.Errorf("db %s id not Xtrabackup", db)
 		}
-		if details.ToLsn == lsn {
-			return m.BaseTimePoint, nil
+		if details.Checkpoints == nil {
+			return nil, errors.Errorf("This meta (key=%s) has no checkpoint metadata", mi.Key)
+		}
+		if details.Checkpoints.ToLsn == lsn {
+			return mi.BaseTimePoint, nil
 		}
 	}
 	return nil, errors.New("backup matching with a given LSN is not found")
@@ -96,7 +101,7 @@ func (m *BackupManager) SearchConsecutiveIncBackups(
 			for j := i; j >= 0; j-- {
 				mj := metas[j]
 				files = append(files, &storagepb.BackupFileInfo{
-					StorageType: m.storage.StorageType(),
+					StorageType: m.storage.Type(),
 					BackupType:  mj.BackupType,
 					Key:         mj.Key,
 					FileSize:    mj.FileSize,
@@ -120,17 +125,7 @@ func (m *BackupManager) GetFileStream(key polypb.Key) (io.Reader, error) {
 		return nil, errors.New("too many metadata to be fetched")
 	}
 	meta := metas[0]
-	var r io.Reader
-	switch meta.BackupType {
-	case polypb.BackupType_XTRABACKUP_FULL:
-		r, err = m.storage.FullBackupStream(meta.Key)
-	case polypb.BackupType_XTRABACKUP_INC:
-		r, err = m.storage.IncBackupStream(meta.Key)
-	case polypb.BackupType_MYSQLDUMP:
-		panic("implement me!")
-	default:
-		err = errors.New("not found such a backup type")
-	}
+	r, err := m.storage.BackupStream(meta.Key, meta.BackupType)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +134,7 @@ func (m *BackupManager) GetFileStream(key polypb.Key) (io.Reader, error) {
 
 // PostFile creates a file.
 func (m *BackupManager) PostFile(key polypb.Key, name string, r io.Reader) error {
-	w, err := m.storage.CreateBackup(key, name)
+	w, err := m.storage.Create(key, name)
 	if err != nil {
 		return err
 	}
@@ -165,7 +160,7 @@ func (m *BackupManager) RemoveBackups(key polypb.Key) error {
 	if err != nil {
 		return err
 	}
-	return m.storage.DeleteBackup(key)
+	return m.storage.Delete(key)
 }
 
 // GetKPastBackupKey returns a key.
@@ -201,21 +196,8 @@ func (m *BackupManager) RestoreBackupInfo() error {
 			return err
 		}
 		key := keys.MakeBackupKey(db, baseTP, backupTP)
-		storedTime, err := time.Parse(utils.TimeFormat, string(backupTP))
+		meta, err := m.storage.LoadMeta(key)
 		if err != nil {
-			return err
-		}
-		meta := &polypb.BackupMeta{
-			StoredTime:    &storedTime,
-			Host:          m.cfg.AdvertiseAddr,
-			NodeId:        m.cfg.NodeID,
-			Db:            db,
-			FileSize:      info.Size(),
-			Key:           key,
-			BaseTimePoint: baseTP,
-		}
-
-		if err := m.restoreBackupMeta(path, meta); err != nil {
 			return err
 		}
 
@@ -247,32 +229,106 @@ func isBackupedFile(path string) bool {
 		strings.HasSuffix(path, "dump.sql")
 }
 
-func (m *BackupManager) restoreBackupMeta(path string, meta *polypb.BackupMeta) error {
-	if strings.HasSuffix(path, "base.tar.gz") {
-		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
-		return m.restoreXtrabackupMeta(meta)
-	} else if strings.HasSuffix(path, "inc.xb.gz") {
-		meta.BackupType = polypb.BackupType_XTRABACKUP_INC
-		return m.restoreXtrabackupMeta(meta)
-	} else if strings.HasSuffix(path, "dump.sql") {
-		meta.BackupType = polypb.BackupType_MYSQLDUMP
-		meta.Details = &polypb.BackupMeta_Mysqldump{
-			Mysqldump: &polypb.MysqldumpMeta{},
-		}
-		return nil
-	}
-	return nil
+type inBackup struct {
+	writer  io.WriteCloser
+	manager *BackupManager
+	meta    *polypb.BackupMeta
 }
 
-func (m *BackupManager) restoreXtrabackupMeta(meta *polypb.BackupMeta) error {
-	cp := m.storage.LoadXtrabackupCP(meta.Key)
-	if cp.ToLSN == "" {
-		return errors.New("xtrabackup_checkpoints file is not found")
+type backupRequest interface {
+	backupRequest()
+}
+
+type xtrabackupFullRequest struct {
+}
+
+type xtrabackupIncRequest struct {
+	LSN string
+}
+
+type mysqldumpRequest struct {
+}
+
+func (*xtrabackupFullRequest) backupRequest() {}
+func (*xtrabackupIncRequest) backupRequest()  {}
+func (*mysqldumpRequest) backupRequest()      {}
+
+func (m *BackupManager) openBackup(
+	db polypb.DatabaseID,
+	req backupRequest,
+) (*inBackup, error) {
+	var artifact string
+	var baseTime, backupTime polypb.TimePoint
+	var err error
+	meta := polypb.NewBackupMeta(db, m.cfg.AdvertiseAddr, m.cfg.NodeID)
+
+	switch r := req.(type) {
+	case *xtrabackupFullRequest:
+		artifact = "base.tar.gz"
+		baseTime = polypb.NewTimePoint(*meta.StoredTime)
+		backupTime = baseTime
+		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
+		meta.Details = &polypb.BackupMeta_XtrabackupMeta{
+			XtrabackupMeta: &polypb.XtrabackupMeta{},
+		}
+	case *xtrabackupIncRequest:
+		artifact = "inc.xb.gz"
+		baseTime, err = m.SearchBaseTimePointByLSN(db, r.LSN)
+		if err != nil {
+			return nil, err
+		}
+		backupTime = polypb.NewTimePoint(*meta.StoredTime)
+		meta.BackupType = polypb.BackupType_XTRABACKUP_INC
+		meta.Details = &polypb.BackupMeta_XtrabackupMeta{
+			XtrabackupMeta: &polypb.XtrabackupMeta{},
+		}
+	case *mysqldumpRequest:
+		artifact = "dump.sql"
+		baseTime = polypb.NewTimePoint(*meta.StoredTime)
+		backupTime = baseTime
+		meta.BackupType = polypb.BackupType_MYSQLDUMP
+		meta.Details = &polypb.BackupMeta_MysqldumpMeta{
+			MysqldumpMeta: &polypb.MysqldumpMeta{},
+		}
+	default:
+		return nil, errors.New("not supported such a backup type")
 	}
-	meta.Details = &polypb.BackupMeta_Xtrabackup{
-		Xtrabackup: &polypb.XtrabackupMeta{
-			ToLsn: cp.ToLSN,
-		},
+	meta.StorageType = m.storage.Type()
+	meta.BaseTimePoint = baseTime
+	meta.Key = keys.MakeBackupKey(db, baseTime, backupTime)
+	writer, err := m.storage.Create(meta.Key, artifact)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create a file to store backup")
+	}
+	return &inBackup{
+		writer:  writer,
+		manager: m,
+		meta:    meta,
+	}, nil
+}
+
+func (b *inBackup) append(data []byte) error {
+	n, err := b.writer.Write(data)
+	b.meta.FileSize += int64(n)
+	return err
+}
+
+func (b *inBackup) close() (*polypb.BackupMeta, error) {
+	if err := b.writer.Close(); err != nil {
+		return nil, err
+	}
+	if err := b.manager.storage.StoreMeta(b.meta.Key, b.meta); err != nil {
+		return nil, err
+	}
+	return b.meta, nil
+}
+
+func (b *inBackup) remove() error {
+	if err := b.writer.Close(); err != nil {
+		return err
+	}
+	if err := b.manager.storage.Delete(b.meta.Key); err != nil {
+		return err
 	}
 	return nil
 }

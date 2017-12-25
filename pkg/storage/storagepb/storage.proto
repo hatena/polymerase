@@ -14,13 +14,7 @@ service StorageService {
 
   rpc PurgePrevBackup(PurgePrevBackupRequest) returns (PurgePrevBackupResponse) {};
 
-  rpc TransferFullBackup(stream FullBackupContentStream) returns (BackupReply) {};
-
-  rpc TransferIncBackup(stream IncBackupContentStream) returns (BackupReply) {};
-
-  rpc TransferMysqldump(stream MysqldumpContentStream) returns (BackupReply) {};
-
-  rpc PostCheckpoints(PostCheckpointsRequest) returns (PostCheckpointsResponse) {};
+  rpc TransferBackup(stream BackupStream) returns (BackupReply) {};
 }
 
 message GetLatestToLSNRequest {
@@ -64,32 +58,34 @@ message PurgePrevBackupResponse {
   string message = 1;
 }
 
-message FullBackupContentStream {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  bytes content = 2;
+message BackupStream {
+  oneof request {
+    InitializeRequest initialize_request = 1;
+    BackupRequest backup_request = 2;
+    CheckpointRequest checkpoint_request = 3;
+    ClientErrorRequest client_error_request = 4;
+  }
 }
 
-message IncBackupContentStream {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  string lsn = 2;
-  bytes content = 3;
+message InitializeRequest {
+  polypb.BackupType backup_type = 1;
+  bytes db = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  string lsn = 3;
 }
 
-message MysqldumpContentStream {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
-  bytes content = 2;
+message BackupRequest {
+  bytes content = 1;
+}
+
+message CheckpointRequest {
+  bytes body = 1;
+}
+
+message ClientErrorRequest {
+  string message = 1;
 }
 
 message BackupReply {
   string message = 1;
   bytes key = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
-}
-
-message PostCheckpointsRequest {
-  bytes key = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
-  bytes content = 2;
-}
-
-message PostCheckpointsResponse {
-  string message = 1;
 }

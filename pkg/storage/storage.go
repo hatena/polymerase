@@ -2,45 +2,45 @@ package storage
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
 type PhysicalStorage interface {
-	StorageType() polypb.StorageType
-	Create(name string) (io.WriteCloser, error)
-	CreateBackup(key polypb.Key, name string) (io.WriteCloser, error)
+	Type() polypb.StorageType
+	Create(key polypb.Key, name string) (io.WriteCloser, error)
 	Move(src string, dest polypb.Key) error
-	Delete(name string) error
-	DeleteBackup(key polypb.Key) error
-	FullBackupStream(key polypb.Key) (io.Reader, error)
-	IncBackupStream(key polypb.Key) (io.Reader, error)
-	LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints
+	Delete(prefixOrKey polypb.Key) error
+	BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error)
 	Walk(f func(path string, info os.FileInfo, err error) error) error
+	LoadMeta(key polypb.Key) (*polypb.BackupMeta, error)
+	StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error
 }
 
 type DiskStorage struct {
 	backupsDir string
 }
 
-func (s *DiskStorage) StorageType() polypb.StorageType {
+func (s *DiskStorage) Type() polypb.StorageType {
 	return polypb.StorageType_LOCAL_DISK
 }
 
-func (s *DiskStorage) Create(name string) (io.WriteCloser, error) {
-	f, err := os.Create(name)
+func (s *DiskStorage) Create(key polypb.Key, name string) (io.WriteCloser, error) {
+	dir := filepath.Join(s.backupsDir, string(key))
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, err
+	}
+	f, err := os.Create(filepath.Join(dir, name))
 	if err != nil {
 		return nil, err
 	}
 	return f, nil
-}
-
-func (s *DiskStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
-	return s.Create(filepath.Join(s.backupsDir, string(key), name))
 }
 
 func (s *DiskStorage) Move(src string, dest polypb.Key) error {
@@ -54,43 +54,65 @@ func (s *DiskStorage) Move(src string, dest polypb.Key) error {
 	return os.Rename(src, p)
 }
 
-func (s *DiskStorage) Delete(name string) error {
-	return os.RemoveAll(name)
+func (s *DiskStorage) Delete(prefixOrKey polypb.Key) error {
+	return os.RemoveAll(filepath.Join(s.backupsDir, string(prefixOrKey)))
 }
 
-func (s *DiskStorage) DeleteBackup(key polypb.Key) error {
-	return os.RemoveAll(filepath.Join(s.backupsDir, string(key)))
-}
-
-func (s *DiskStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
-	return os.Open(filepath.Join(s.backupsDir, string(key), "base.tar.gz"))
-}
-
-func (s *DiskStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
-	return os.Open(filepath.Join(s.backupsDir, string(key), "inc.xb.gz"))
-}
-
-func (s *DiskStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
-	return base.LoadXtrabackupCP(filepath.Join(s.backupsDir, string(key), "xtrabackup_checkpoints"))
+func (s *DiskStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {
+	switch backupType {
+	case polypb.BackupType_XTRABACKUP_FULL:
+		return os.Open(filepath.Join(s.backupsDir, string(key), "base.tar.gz"))
+	case polypb.BackupType_XTRABACKUP_INC:
+		return os.Open(filepath.Join(s.backupsDir, string(key), "inc.xb.gz"))
+	case polypb.BackupType_MYSQLDUMP:
+		return os.Open(filepath.Join(s.backupsDir, string(key), "dump.sql.gz"))
+	}
+	return nil, errors.Errorf("unknown type %s", backupType)
 }
 
 func (s *DiskStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
 	return filepath.Walk(s.backupsDir, f)
 }
 
+func (s *DiskStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
+	var meta polypb.BackupMeta
+	r, err := os.Open(filepath.Join(s.backupsDir, string(key), "META"))
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	if meta.Unmarshal(data); err != nil {
+		return nil, err
+	}
+	return &meta, nil
+}
+
+func (s *DiskStorage) StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error {
+	w, err := s.Create(key, "META")
+	if err != nil {
+		return errors.Errorf("Storing metadata is failed: %s", err)
+	}
+	defer w.Close()
+	data, err := meta.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
 // TODO: implement it
 type MemStorage struct {
 }
 
-func (s *MemStorage) StorageType() polypb.StorageType {
+func (s *MemStorage) Type() polypb.StorageType {
 	return polypb.StorageType_LOCAL_MEM
 }
 
-func (s *MemStorage) Create(name string) (io.WriteCloser, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
+func (s *MemStorage) Create(key polypb.Key, name string) (io.WriteCloser, error) {
 	panic("implement me")
 }
 
@@ -98,23 +120,11 @@ func (s *MemStorage) Move(src string, dest polypb.Key) error {
 	panic("implement me")
 }
 
-func (s *MemStorage) Delete(name string) error {
+func (s *MemStorage) Delete(prefixOrKey polypb.Key) error {
 	panic("implement me")
 }
 
-func (s *MemStorage) DeleteBackup(key polypb.Key) error {
-	panic("implement me")
-}
-
-func (s *MemStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
+func (s *MemStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {
 	panic("implement me")
 }
 
@@ -122,31 +132,34 @@ func (s *MemStorage) Walk(f func(path string, info os.FileInfo, err error) error
 	panic("implement me")
 }
 
+func (s *MemStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
+	panic("implement me")
+}
+
+func (s *MemStorage) StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error {
+	panic("implement me")
+}
+
 type fakePhysicalStorage struct {
 	PhysicalStorage
-	FakeFullBackupStream func(key polypb.Key) (io.Reader, error)
-	FakeIncBackupStream  func(key polypb.Key) (io.Reader, error)
-	FakeCreateBackup     func(key polypb.Key, name string) (io.WriteCloser, error)
-	FakeLoadXtrabackupCP func(key polypb.Key) base.XtrabackupCheckpoints
-	FakeWalk             func(f func(path string, info os.FileInfo, err error) error) error
+	FakeBackupStream func(key polypb.Key, backupType polypb.BackupType) (io.Reader, error)
+	FakeCreate       func(key polypb.Key, name string) (io.WriteCloser, error)
+	FakeWalk         func(f func(path string, info os.FileInfo, err error) error) error
+	FakeLoadMeta     func(key polypb.Key) (*polypb.BackupMeta, error)
 }
 
-func (s *fakePhysicalStorage) FullBackupStream(key polypb.Key) (io.Reader, error) {
-	return s.FakeFullBackupStream(key)
+func (s *fakePhysicalStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {
+	return s.FakeBackupStream(key, backupType)
 }
 
-func (s *fakePhysicalStorage) IncBackupStream(key polypb.Key) (io.Reader, error) {
-	return s.FakeIncBackupStream(key)
-}
-
-func (s *fakePhysicalStorage) CreateBackup(key polypb.Key, name string) (io.WriteCloser, error) {
-	return s.FakeCreateBackup(key, name)
-}
-
-func (s *fakePhysicalStorage) LoadXtrabackupCP(key polypb.Key) base.XtrabackupCheckpoints {
-	return s.FakeLoadXtrabackupCP(key)
+func (s *fakePhysicalStorage) Create(key polypb.Key, name string) (io.WriteCloser, error) {
+	return s.FakeCreate(key, name)
 }
 
 func (s *fakePhysicalStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
 	return s.FakeWalk(f)
+}
+
+func (s *fakePhysicalStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
+	return s.FakeLoadMeta(key)
 }

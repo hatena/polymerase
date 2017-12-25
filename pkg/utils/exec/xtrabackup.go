@@ -76,53 +76,9 @@ var xtrabackup = backupCmd{
 `),
 }
 
-var innobackupex = backupCmd{
-	fullTmpl: strings.TrimSpace(`
-{{ .InnobackupexBinPath }} \
-  --host {{ .Host }} \
-  --port {{ .Port }} \
-  --user {{ .User }} \{{ if .Password }}
-  --password {{ .Password }} \
-  {{- end }}
-  --slave-info \
-  --extra-lsndir={{ .LsnTempDir }} \
-  --stream=tar \
-  .
-`),
-	incTmpl: strings.TrimSpace(`
-{{ .InnobackupexBinPath }} \
-  --host {{ .Host }} \
-  --port {{ .Port }} \
-  --user {{ .User }} \{{ if .Password }}
-  --password {{ .Password }} \
-  {{- end }}
-  --slave-info \
-  --extra-lsndir={{ .LsnTempDir }} \
-  --stream=xbstream \
-  --incremental \
-  --incremental-lsn={{ .ToLsn }} \
-  .
-`),
-	restoreTmpl: strings.TrimSpace(`
-{{ .InnobackupexBinPath }} \
-  --apply-log \{{ if not .IsLast }}
-  --redo-only \
-  {{- end }}
-  base{{ if .IncDir }}\
-  {{ .IncDir }}
-  {{- end }}
-`),
-}
-
 // BuildFullBackupCmd constructs a command to create a full backup.
 func BuildFullBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
-	var tmpl string
-	if cfg.UseInnobackupex {
-		tmpl = innobackupex.fullTmpl
-	} else {
-		tmpl = xtrabackup.fullTmpl
-	}
-	return _buildBackupCmd(ctx, cfg, tmpl)
+	return _buildBackupCmd(ctx, cfg, xtrabackup.fullTmpl)
 }
 
 // BuildIncBackupCmd constructs a command to create a incremental backup.
@@ -130,13 +86,7 @@ func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.C
 	if cfg.ToLsn == "" {
 		return nil, errors.New("ToLSN cannot be empty")
 	}
-	var tmpl string
-	if cfg.UseInnobackupex {
-		tmpl = innobackupex.incTmpl
-	} else {
-		tmpl = xtrabackup.incTmpl
-	}
-	return _buildBackupCmd(ctx, cfg, tmpl)
+	return _buildBackupCmd(ctx, cfg, xtrabackup.incTmpl)
 }
 
 // PrepareBaseBackup constructs a command to restore a base backup.
@@ -148,7 +98,6 @@ func PrepareBaseBackup(
 	rcfg := &base.RestoreXtrabackupConfig{
 		XtrabackupBinPath:   cfg.XtrabackupBinPath,
 		InnobackupexBinPath: cfg.InnobackupexBinPath,
-		UseInnobackupex:     cfg.UseInnobackupex,
 		IsLast:              isLast,
 		UseMemory:           cfg.UseMemory,
 		DefaultsFile:        cfg.DefaultsFile,
@@ -166,7 +115,6 @@ func PrepareIncBackup(
 	rcfg := &base.RestoreXtrabackupConfig{
 		XtrabackupBinPath:   cfg.XtrabackupBinPath,
 		InnobackupexBinPath: cfg.InnobackupexBinPath,
-		UseInnobackupex:     cfg.UseInnobackupex,
 		IsLast:              isLast,
 		IncDir:              fmt.Sprintf("inc%d", inc),
 		UseMemory:           cfg.UseMemory,
@@ -187,14 +135,8 @@ func StringWithMaskPassword(cmd *exec.Cmd) string {
 }
 
 func _prepareBackup(ctx context.Context, cfg *base.RestoreXtrabackupConfig) (*exec.Cmd, error) {
-	var tmpl string
-	if cfg.UseInnobackupex {
-		tmpl = innobackupex.restoreTmpl
-	} else {
-		tmpl = xtrabackup.restoreTmpl
-	}
 	t := template.New("restore tmpl")
-	t, err := t.Parse(tmpl)
+	t, err := t.Parse(xtrabackup.restoreTmpl)
 	if err != nil {
 		return nil, err
 	}

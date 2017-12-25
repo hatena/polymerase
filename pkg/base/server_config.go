@@ -70,11 +70,6 @@ func MakeServerConfig() *ServerConfig {
 	return cfg
 }
 
-// TempDir returns a directory path for temporary.
-func (cfg *ServerConfig) TempDir() string {
-	return filepath.Join(cfg.StoreDir.Path, "temp")
-}
-
 // LogsDir returns a directory path for log.
 func (cfg *ServerConfig) LogsDir() string {
 	return filepath.Join(cfg.StoreDir.Path, "logs")

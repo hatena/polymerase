@@ -1,11 +1,10 @@
 package storage
 
 import (
-	"bytes"
-	"errors"
 	"io"
 	"log"
 
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -22,20 +21,17 @@ type Service struct {
 	manager   *BackupManager
 	rateLimit float64
 	EtcdCli   etcd.ClientAPI
-	tempMngr  *TempBackupManager
 	cfg       *base.ServerConfig
 }
 
 func NewService(
 	manager *BackupManager,
 	rateLimit uint64,
-	tempMngr *TempBackupManager,
 	cfg *base.ServerConfig,
 ) *Service {
 	return &Service{
 		manager:   manager,
 		rateLimit: float64(rateLimit),
-		tempMngr:  tempMngr,
 		cfg:       cfg,
 	}
 }
@@ -104,19 +100,19 @@ func (s *Service) PurgePrevBackup(
 	}, nil
 }
 
-func (s *Service) TransferFullBackup(
-	stream storagepb.StorageService_TransferFullBackupServer,
+func (s *Service) TransferBackup(
+	stream storagepb.StorageService_TransferBackupServer,
 ) error {
-	var tempBackup appendCloser
+	var backup *inBackup
 
 	if p, ok := peer.FromContext(stream.Context()); ok {
 		log.Printf("Established peer: %v\n", p.Addr)
 	}
 
 	for {
-		content, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
-			meta, err := tempBackup.CloseTransfer()
+			meta, err := backup.close()
 			if err != nil {
 				return err
 			}
@@ -132,135 +128,54 @@ func (s *Service) TransferFullBackup(
 		if err != nil {
 			return err
 		}
-		if tempBackup == nil {
-			if content.Db == nil {
+		if request.GetInitializeRequest() != nil {
+			req := request.GetInitializeRequest()
+			if req.Db == nil {
 				return errors.New("empty db is not acceptable")
 			}
-			tempBackup, err = s.tempMngr.openTempBackup(content.Db, &xtrabackupFullRequest{})
-			if err != nil {
-				return err
-			}
-			log.Printf("Start full-backup: db=%s\n", content.Db)
-		}
-		if err := tempBackup.Append(content.Content); err != nil {
-			return err
-		}
-	}
-}
-
-func (s *Service) TransferIncBackup(
-	stream storagepb.StorageService_TransferIncBackupServer,
-) error {
-	var tempBackup appendCloser
-
-	if p, ok := peer.FromContext(stream.Context()); ok {
-		log.Printf("Established peer: %v\n", p.Addr)
-	}
-
-	for {
-		content, err := stream.Recv()
-		if err == io.EOF {
-			meta, err := tempBackup.CloseTransfer()
-			if err != nil {
-				return err
-			}
-			key := keys.MakeBackupMetaKeyFromKey(meta.Key)
-			if err := s.EtcdCli.PutBackupMeta(key, meta); err != nil {
-				return err
-			}
-			return stream.SendAndClose(&storagepb.BackupReply{
-				Message: "success",
-				Key:     meta.Key,
-			})
-		}
-		if err != nil {
-			return err
-		}
-		if tempBackup == nil {
-			if content.Db == nil {
-				return errors.New("empty db is not acceptable")
-			}
-			if content.Lsn == "" {
-				return errors.New("empty lsn is not acceptable")
-			}
-			tempBackup, err = s.tempMngr.openTempBackup(
-				content.Db,
-				&xtrabackupIncRequest{
-					LSN: content.Lsn,
+			switch req.BackupType {
+			case polypb.BackupType_XTRABACKUP_FULL:
+				backup, err = s.manager.openBackup(req.Db, &xtrabackupFullRequest{})
+			case polypb.BackupType_XTRABACKUP_INC:
+				backup, err = s.manager.openBackup(req.Db, &xtrabackupIncRequest{
+					LSN: req.Lsn,
 				})
+			case polypb.BackupType_MYSQLDUMP:
+				backup, err = s.manager.openBackup(req.Db, &mysqldumpRequest{})
+			default:
+				return errors.Errorf("unknown backup type %s", req.BackupType)
+			}
 			if err != nil {
 				return err
 			}
-			log.Printf("Start inc-backup: db=%s\n", content.Db)
+			log.Printf("Start %s: db=%s\n", req.BackupType, req.Db)
 		}
-		if err := tempBackup.Append(content.Content); err != nil {
-			return err
+		if request.GetBackupRequest() != nil {
+			req := request.GetBackupRequest()
+			if err := backup.append(req.Content); err != nil {
+				return err
+			}
 		}
-	}
-}
-
-func (s *Service) TransferMysqldump(
-	stream storagepb.StorageService_TransferMysqldumpServer,
-) error {
-	var tempBackup appendCloser
-
-	if p, ok := peer.FromContext(stream.Context()); ok {
-		log.Printf("Established peer: %v\n", p.Addr)
-	}
-
-	for {
-		content, err := stream.Recv()
-		if err == io.EOF {
-			meta, err := tempBackup.CloseTransfer()
+		if request.GetCheckpointRequest() != nil {
+			req := request.GetCheckpointRequest()
+			cp, err := polypb.LoadXtrabackupCP(req.Body)
 			if err != nil {
 				return err
 			}
-			key := keys.MakeBackupMetaKeyFromKey(meta.Key)
-			if err := s.EtcdCli.PutBackupMeta(key, meta); err != nil {
-				return err
+			backupMeta := backup.meta.GetXtrabackupMeta()
+			if backupMeta == nil {
+				return errors.Errorf("XtrabackupMeta is not initialized")
 			}
-			return stream.SendAndClose(&storagepb.BackupReply{
-				Message: "success",
-				Key:     meta.Key,
-			})
+			backupMeta.Checkpoints = cp
 		}
-		if err != nil {
-			return err
-		}
-		if tempBackup == nil {
-			if content.Db == nil {
-				return errors.New("empty db is not acceptable")
+		if request.GetClientErrorRequest() != nil {
+			req := request.GetClientErrorRequest()
+			log.Print(req.Message)
+			if backup != nil {
+				if err := backup.remove(); err != nil {
+					return err
+				}
 			}
-			tempBackup, err = s.tempMngr.openTempBackup(
-				content.Db, &mysqldumpRequest{})
-			if err != nil {
-				return err
-			}
-			log.Printf("Start mysqldump: db=%s\n", content.Db)
-		}
-		if err := tempBackup.Append(content.Content); err != nil {
-			return err
 		}
 	}
-}
-
-func (s *Service) PostCheckpoints(
-	ctx context.Context,
-	req *storagepb.PostCheckpointsRequest,
-) (*storagepb.PostCheckpointsResponse, error) {
-	r := bytes.NewReader(req.Content)
-	if err := s.manager.PostFile(req.Key, "xtrabackup_checkpoints", r); err != nil {
-		return &storagepb.PostCheckpointsResponse{}, err
-	}
-	cp := base.LoadXtrabackupCP(req.Content)
-	if cp.ToLSN == "" {
-		return nil, errors.New("failed to load")
-	}
-	err := s.EtcdCli.UpdateLSN(keys.MakeBackupMetaKeyFromKey(req.Key), cp.ToLSN)
-	if err != nil {
-		return nil, err
-	}
-	return &storagepb.PostCheckpointsResponse{
-		Message: "success",
-	}, nil
 }

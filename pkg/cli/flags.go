@@ -12,8 +12,6 @@ import (
 
 var serverConnHost, serverConnPort, serverAdvertiseHost string
 var clientConnHost, clientConnPort string
-var db polypb.DatabaseID
-var useInnobackupex bool
 
 var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
@@ -22,13 +20,8 @@ var restoreCtx = MakeRestoreContext(baseCfg)
 var xtrabackupCfg = base.MakeXtrabackupConfig()
 
 func initXtrabackupConfig() {
-	if useInnobackupex {
-		xtrabackupCfg.InnobackupexBinPath =
-			envutil.EnvOrDefaultString("POLYMERASE_INNOBACKUPEX_PATH", xtrabackupCfg.InnobackupexBinPath)
-	} else {
-		xtrabackupCfg.XtrabackupBinPath =
-			envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
-	}
+	xtrabackupCfg.XtrabackupBinPath =
+		envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
 }
 
 func init() {
@@ -89,8 +82,7 @@ func init() {
 	} {
 		f := cmd.Flags()
 
-		f.VarP(&db, "db", "d", "Database ID")
-		f.BoolVar(&useInnobackupex, "use-innobackupex", false, "Using innobackupex binary instead of xtrabackup.")
+		f.VarP(&backupCtx.db, "db", "d", "Database ID")
 		f.StringVar(&xtrabackupCfg.DefaultsFile, "defaults-file", xtrabackupCfg.DefaultsFile, "Read default MySQL options from the given file.")
 	}
 
@@ -110,7 +102,7 @@ func init() {
 	{
 		f := mysqldumpCmd.PersistentFlags()
 
-		f.VarP(&db, "db", "d", "Database ID")
+		f.VarP(&backupCtx.db, "db", "d", "Database ID")
 		f.StringVar(&xtrabackupCfg.Host, "mysql-host", xtrabackupCfg.Host, "The MySQL hostname to connect with.")
 		f.StringVarP(&xtrabackupCfg.Port, "mysql-port", "p", xtrabackupCfg.Port, "The MySQL port to connect with.")
 		f.StringVarP(&xtrabackupCfg.User, "mysql-user", "u", xtrabackupCfg.User, "The MySQL username to connect with.")

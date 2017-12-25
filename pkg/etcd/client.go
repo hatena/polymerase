@@ -2,14 +2,13 @@ package etcd
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 
+	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
@@ -17,7 +16,6 @@ type ClientAPI interface {
 	GetBackupMeta(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error)
 	PutBackupMeta(key polypb.BackupMetaKey, meta *polypb.BackupMeta) error
 	RemoveBackupMeta(key polypb.BackupMetaKey) error
-	UpdateLSN(key polypb.BackupMetaKey, lsn string) error
 
 	GetNodeMeta(key polypb.NodeMetaKey) ([]*polypb.NodeMeta, error)
 	PutNodeMeta(key polypb.NodeMetaKey, meta *polypb.NodeMeta) error
@@ -37,13 +35,16 @@ type Client struct {
 func NewClient(cfg clientv3.Config) (ClientAPI, error) {
 	cli, err := clientv3.New(cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Creating etcd client is failed")
 	}
 	session, err := concurrency.NewSession(cli)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Creating session is failed")
+	}
 	return &Client{
 		cli:     cli,
 		session: session,
-	}, err
+	}, nil
 }
 
 func NewTestClient(cli *clientv3.Client) (ClientAPI, error) {
@@ -83,31 +84,6 @@ func (c *Client) PutBackupMeta(key polypb.BackupMetaKey, meta *polypb.BackupMeta
 func (c *Client) RemoveBackupMeta(key polypb.BackupMetaKey) error {
 	_, err := c.cli.KV.Delete(context.TODO(), string(key), clientv3.WithPrefix())
 	return err
-}
-
-func (c *Client) UpdateLSN(key polypb.BackupMetaKey, lsn string) error {
-	locker := c.Locker("lock-" + string(key))
-	locker.Lock()
-	defer locker.Unlock()
-
-	metas, err := c.GetBackupMeta(key)
-	if err != nil {
-		return err
-	}
-	if len(metas) != 1 {
-		return errors.New(fmt.Sprintf("fetched wrong metadata: %q", metas))
-	}
-	m := metas[0]
-	if m.Details == nil {
-		m.Details = &polypb.BackupMeta_Xtrabackup{
-			Xtrabackup: &polypb.XtrabackupMeta{
-				ToLsn: lsn,
-			},
-		}
-	} else if details := m.GetXtrabackup(); details != nil {
-		details.ToLsn = lsn
-	}
-	return c.PutBackupMeta(key, m)
 }
 
 func (c *Client) GetNodeMeta(key polypb.NodeMetaKey) ([]*polypb.NodeMeta, error) {
@@ -158,4 +134,5 @@ func (c *Client) Locker(key string) sync.Locker {
 
 func (c *Client) Close() {
 	c.cli.Close()
+	c.session.Close()
 }

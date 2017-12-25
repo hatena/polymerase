@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/go-ini/ini"
 	"github.com/taku-k/polymerase/pkg/utils"
 )
 
@@ -48,6 +49,15 @@ func (d *DatabaseID) Set(v string) error {
 
 func (d *DatabaseID) Type() string {
 	return "DatabaseID"
+}
+
+func (d DatabaseID) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + string(d) + `"`), nil
+}
+
+func (d *DatabaseID) UnmarshalJSON(data []byte) error {
+	*d = DatabaseID(data)
+	return nil
 }
 
 type TimePoint []byte
@@ -98,3 +108,14 @@ func NewBackupMeta(
 		NodeId:     nodeID,
 	}
 }
+
+func LoadXtrabackupCP(source interface{}) (*XtrabackupCheckpoints, error) {
+	var cp XtrabackupCheckpoints
+	err := ini.MapTo(&cp, source)
+	if err != nil {
+		return nil, err
+	}
+	return &cp, nil
+}
+
+type DetailsMeta isBackupMeta_Details

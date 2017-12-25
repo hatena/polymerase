@@ -6,10 +6,9 @@ import (
 )
 
 const (
-	defaultXtrabackupBinPath   = "xtrabackup"
-	defaultInnobackupexBinPath = "innobackupex"
-	defaultMySQLHost           = "127.0.0.1"
-	defaultMySQLPort           = "3306"
+	defaultXtrabackupBinPath = "xtrabackup"
+	defaultMySQLHost         = "127.0.0.1"
+	defaultMySQLPort         = "3306"
 )
 
 type XtrabackupConfig struct {
@@ -21,7 +20,6 @@ type XtrabackupConfig struct {
 	Password            string
 	LsnTempDir          string
 	ToLsn               string
-	UseInnobackupex     bool
 	InsecureAuth        bool
 	Parallel            int
 	UseMemory           string
@@ -31,7 +29,6 @@ type XtrabackupConfig struct {
 type RestoreXtrabackupConfig struct {
 	XtrabackupBinPath   string
 	InnobackupexBinPath string
-	UseInnobackupex     bool
 	IsLast              bool
 	IncDir              string
 	Parallel            int
@@ -41,12 +38,11 @@ type RestoreXtrabackupConfig struct {
 
 func MakeXtrabackupConfig() *XtrabackupConfig {
 	cfg := &XtrabackupConfig{
-		XtrabackupBinPath:   defaultXtrabackupBinPath,
-		InnobackupexBinPath: defaultInnobackupexBinPath,
-		Host:                defaultMySQLHost,
-		Port:                defaultMySQLPort,
-		InsecureAuth:        false,
-		Parallel:            runtime.NumCPU(),
+		XtrabackupBinPath: defaultXtrabackupBinPath,
+		Host:              defaultMySQLHost,
+		Port:              defaultMySQLPort,
+		InsecureAuth:      false,
+		Parallel:          runtime.NumCPU(),
 	}
 
 	dir, err := ioutil.TempDir("", "polymerase_cp")

@@ -8,6 +8,7 @@ import (
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/pkg/errors"
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
@@ -34,13 +35,16 @@ type Client struct {
 func NewClient(cfg clientv3.Config) (ClientAPI, error) {
 	cli, err := clientv3.New(cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Creating etcd client is failed")
 	}
 	session, err := concurrency.NewSession(cli)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Creating session is failed")
+	}
 	return &Client{
 		cli:     cli,
 		session: session,
-	}, err
+	}, nil
 }
 
 func NewTestClient(cli *clientv3.Client) (ClientAPI, error) {
@@ -130,4 +134,5 @@ func (c *Client) Locker(key string) sync.Locker {
 
 func (c *Client) Close() {
 	c.cli.Close()
+	c.session.Close()
 }

@@ -22,7 +22,6 @@ type Server struct {
 	cfg           *base.ServerConfig
 	grpc          *grpc.Server
 	backupManager *storage.BackupManager
-	mngrByStorage *storage.TempBackupManager
 	storageSvc    *storage.Service
 	etcdServer    *etcd.EtcdServer
 	etcdCfg       *embed.Config
@@ -48,17 +47,7 @@ func NewServer(cfg *base.ServerConfig) (*Server, error) {
 
 	s.backupManager = storage.NewBackupManager(s.cfg)
 
-	mngrByStorage, err := storage.NewTempBackupManager(s.backupManager, &storage.TempBackupManagerConfig{
-		Config:  cfg.Config,
-		TempDir: cfg.TempDir(),
-		NodeID:  cfg.NodeID,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to setup TempBackupManager")
-	}
-	s.mngrByStorage = mngrByStorage
-
-	s.storageSvc = storage.NewService(s.backupManager, cfg.ServeRateLimit, s.mngrByStorage, s.cfg)
+	s.storageSvc = storage.NewService(s.backupManager, cfg.ServeRateLimit, s.cfg)
 
 	s.etcdCfg.ServiceRegister = func(gs *grpc.Server) {
 		storagepb.RegisterStorageServiceServer(gs, s.storageSvc)
@@ -92,13 +81,14 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	// Inject etcd client after launching embedded etcd server
-	s.mngrByStorage.EtcdCli = cli
 	s.storageSvc.EtcdCli = cli
 	s.backupManager.EtcdCli = cli
 
 	// Start status sampling
 	go s.startWriteStatus(s.cfg.StatusSampleInterval)
 	if err := s.backupManager.RestoreBackupInfo(); err != nil {
+		log.Print(err)
+		cli.Close()
 		return err
 	}
 
@@ -108,8 +98,8 @@ func (s *Server) Start(ctx context.Context) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, stopped chan struct{}) {
-	if s.mngrByStorage.EtcdCli != nil {
-		s.mngrByStorage.EtcdCli.Close()
+	if s.storageSvc.EtcdCli != nil {
+		s.storageSvc.EtcdCli.Close()
 	}
 	if s.etcdServer != nil {
 		s.etcdServer.Close()
@@ -123,7 +113,7 @@ func (s *Server) CleanupEtcdDir() {
 
 func (s *Server) startWriteStatus(freq time.Duration) {
 	recorder := newStatusRecorder(
-		s.mngrByStorage.EtcdCli, s.cfg.StoreDir.Path, s.cfg.NodeID, s.cfg)
+		s.backupManager.EtcdCli, s.cfg.StoreDir.Path, s.cfg.NodeID, s.cfg)
 
 	// Do WriteStatus before ticker starts
 	if err := recorder.writeStatus(context.Background()); err != nil {

@@ -17,11 +17,11 @@
 		FileStream
 		PurgePrevBackupRequest
 		PurgePrevBackupResponse
-		XtrabackupContentStream
+		BackupStream
+		InitializeRequest
 		BackupRequest
 		CheckpointRequest
 		ClientErrorRequest
-		MysqldumpContentStream
 		BackupReply
 */
 package storagepb
@@ -241,151 +241,182 @@ func (m *PurgePrevBackupResponse) GetMessage() string {
 	return ""
 }
 
-type XtrabackupContentStream struct {
+type BackupStream struct {
 	// Types that are valid to be assigned to Request:
-	//	*XtrabackupContentStream_BackupRequest
-	//	*XtrabackupContentStream_CheckpointRequest
-	//	*XtrabackupContentStream_ClientErrorRequest
-	Request isXtrabackupContentStream_Request `protobuf_oneof:"request"`
+	//	*BackupStream_InitializeRequest
+	//	*BackupStream_BackupRequest
+	//	*BackupStream_CheckpointRequest
+	//	*BackupStream_ClientErrorRequest
+	Request isBackupStream_Request `protobuf_oneof:"request"`
 }
 
-func (m *XtrabackupContentStream) Reset()                    { *m = XtrabackupContentStream{} }
-func (m *XtrabackupContentStream) String() string            { return proto.CompactTextString(m) }
-func (*XtrabackupContentStream) ProtoMessage()               {}
-func (*XtrabackupContentStream) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{9} }
+func (m *BackupStream) Reset()                    { *m = BackupStream{} }
+func (m *BackupStream) String() string            { return proto.CompactTextString(m) }
+func (*BackupStream) ProtoMessage()               {}
+func (*BackupStream) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{9} }
 
-type isXtrabackupContentStream_Request interface {
-	isXtrabackupContentStream_Request()
+type isBackupStream_Request interface {
+	isBackupStream_Request()
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type XtrabackupContentStream_BackupRequest struct {
-	BackupRequest *BackupRequest `protobuf:"bytes,1,opt,name=backup_request,json=backupRequest,oneof"`
+type BackupStream_InitializeRequest struct {
+	InitializeRequest *InitializeRequest `protobuf:"bytes,1,opt,name=initialize_request,json=initializeRequest,oneof"`
 }
-type XtrabackupContentStream_CheckpointRequest struct {
-	CheckpointRequest *CheckpointRequest `protobuf:"bytes,2,opt,name=checkpoint_request,json=checkpointRequest,oneof"`
+type BackupStream_BackupRequest struct {
+	BackupRequest *BackupRequest `protobuf:"bytes,2,opt,name=backup_request,json=backupRequest,oneof"`
 }
-type XtrabackupContentStream_ClientErrorRequest struct {
-	ClientErrorRequest *ClientErrorRequest `protobuf:"bytes,3,opt,name=client_error_request,json=clientErrorRequest,oneof"`
+type BackupStream_CheckpointRequest struct {
+	CheckpointRequest *CheckpointRequest `protobuf:"bytes,3,opt,name=checkpoint_request,json=checkpointRequest,oneof"`
+}
+type BackupStream_ClientErrorRequest struct {
+	ClientErrorRequest *ClientErrorRequest `protobuf:"bytes,4,opt,name=client_error_request,json=clientErrorRequest,oneof"`
 }
 
-func (*XtrabackupContentStream_BackupRequest) isXtrabackupContentStream_Request()      {}
-func (*XtrabackupContentStream_CheckpointRequest) isXtrabackupContentStream_Request()  {}
-func (*XtrabackupContentStream_ClientErrorRequest) isXtrabackupContentStream_Request() {}
+func (*BackupStream_InitializeRequest) isBackupStream_Request()  {}
+func (*BackupStream_BackupRequest) isBackupStream_Request()      {}
+func (*BackupStream_CheckpointRequest) isBackupStream_Request()  {}
+func (*BackupStream_ClientErrorRequest) isBackupStream_Request() {}
 
-func (m *XtrabackupContentStream) GetRequest() isXtrabackupContentStream_Request {
+func (m *BackupStream) GetRequest() isBackupStream_Request {
 	if m != nil {
 		return m.Request
 	}
 	return nil
 }
 
-func (m *XtrabackupContentStream) GetBackupRequest() *BackupRequest {
-	if x, ok := m.GetRequest().(*XtrabackupContentStream_BackupRequest); ok {
+func (m *BackupStream) GetInitializeRequest() *InitializeRequest {
+	if x, ok := m.GetRequest().(*BackupStream_InitializeRequest); ok {
+		return x.InitializeRequest
+	}
+	return nil
+}
+
+func (m *BackupStream) GetBackupRequest() *BackupRequest {
+	if x, ok := m.GetRequest().(*BackupStream_BackupRequest); ok {
 		return x.BackupRequest
 	}
 	return nil
 }
 
-func (m *XtrabackupContentStream) GetCheckpointRequest() *CheckpointRequest {
-	if x, ok := m.GetRequest().(*XtrabackupContentStream_CheckpointRequest); ok {
+func (m *BackupStream) GetCheckpointRequest() *CheckpointRequest {
+	if x, ok := m.GetRequest().(*BackupStream_CheckpointRequest); ok {
 		return x.CheckpointRequest
 	}
 	return nil
 }
 
-func (m *XtrabackupContentStream) GetClientErrorRequest() *ClientErrorRequest {
-	if x, ok := m.GetRequest().(*XtrabackupContentStream_ClientErrorRequest); ok {
+func (m *BackupStream) GetClientErrorRequest() *ClientErrorRequest {
+	if x, ok := m.GetRequest().(*BackupStream_ClientErrorRequest); ok {
 		return x.ClientErrorRequest
 	}
 	return nil
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*XtrabackupContentStream) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _XtrabackupContentStream_OneofMarshaler, _XtrabackupContentStream_OneofUnmarshaler, _XtrabackupContentStream_OneofSizer, []interface{}{
-		(*XtrabackupContentStream_BackupRequest)(nil),
-		(*XtrabackupContentStream_CheckpointRequest)(nil),
-		(*XtrabackupContentStream_ClientErrorRequest)(nil),
+func (*BackupStream) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _BackupStream_OneofMarshaler, _BackupStream_OneofUnmarshaler, _BackupStream_OneofSizer, []interface{}{
+		(*BackupStream_InitializeRequest)(nil),
+		(*BackupStream_BackupRequest)(nil),
+		(*BackupStream_CheckpointRequest)(nil),
+		(*BackupStream_ClientErrorRequest)(nil),
 	}
 }
 
-func _XtrabackupContentStream_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*XtrabackupContentStream)
+func _BackupStream_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*BackupStream)
 	// request
 	switch x := m.Request.(type) {
-	case *XtrabackupContentStream_BackupRequest:
+	case *BackupStream_InitializeRequest:
 		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.InitializeRequest); err != nil {
+			return err
+		}
+	case *BackupStream_BackupRequest:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.BackupRequest); err != nil {
 			return err
 		}
-	case *XtrabackupContentStream_CheckpointRequest:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+	case *BackupStream_CheckpointRequest:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.CheckpointRequest); err != nil {
 			return err
 		}
-	case *XtrabackupContentStream_ClientErrorRequest:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+	case *BackupStream_ClientErrorRequest:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.ClientErrorRequest); err != nil {
 			return err
 		}
 	case nil:
 	default:
-		return fmt.Errorf("XtrabackupContentStream.Request has unexpected type %T", x)
+		return fmt.Errorf("BackupStream.Request has unexpected type %T", x)
 	}
 	return nil
 }
 
-func _XtrabackupContentStream_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*XtrabackupContentStream)
+func _BackupStream_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*BackupStream)
 	switch tag {
-	case 1: // request.backup_request
+	case 1: // request.initialize_request
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(InitializeRequest)
+		err := b.DecodeMessage(msg)
+		m.Request = &BackupStream_InitializeRequest{msg}
+		return true, err
+	case 2: // request.backup_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		msg := new(BackupRequest)
 		err := b.DecodeMessage(msg)
-		m.Request = &XtrabackupContentStream_BackupRequest{msg}
+		m.Request = &BackupStream_BackupRequest{msg}
 		return true, err
-	case 2: // request.checkpoint_request
+	case 3: // request.checkpoint_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		msg := new(CheckpointRequest)
 		err := b.DecodeMessage(msg)
-		m.Request = &XtrabackupContentStream_CheckpointRequest{msg}
+		m.Request = &BackupStream_CheckpointRequest{msg}
 		return true, err
-	case 3: // request.client_error_request
+	case 4: // request.client_error_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		msg := new(ClientErrorRequest)
 		err := b.DecodeMessage(msg)
-		m.Request = &XtrabackupContentStream_ClientErrorRequest{msg}
+		m.Request = &BackupStream_ClientErrorRequest{msg}
 		return true, err
 	default:
 		return false, nil
 	}
 }
 
-func _XtrabackupContentStream_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*XtrabackupContentStream)
+func _BackupStream_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*BackupStream)
 	// request
 	switch x := m.Request.(type) {
-	case *XtrabackupContentStream_BackupRequest:
-		s := proto.Size(x.BackupRequest)
+	case *BackupStream_InitializeRequest:
+		s := proto.Size(x.InitializeRequest)
 		n += proto.SizeVarint(1<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
-	case *XtrabackupContentStream_CheckpointRequest:
-		s := proto.Size(x.CheckpointRequest)
+	case *BackupStream_BackupRequest:
+		s := proto.Size(x.BackupRequest)
 		n += proto.SizeVarint(2<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
-	case *XtrabackupContentStream_ClientErrorRequest:
-		s := proto.Size(x.ClientErrorRequest)
+	case *BackupStream_CheckpointRequest:
+		s := proto.Size(x.CheckpointRequest)
 		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *BackupStream_ClientErrorRequest:
+		s := proto.Size(x.ClientErrorRequest)
+		n += proto.SizeVarint(4<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -395,23 +426,46 @@ func _XtrabackupContentStream_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-type BackupRequest struct {
-	Db      github_com_taku_k_polymerase_pkg_polypb.DatabaseID `protobuf:"bytes,1,opt,name=db,proto3,casttype=github.com/taku-k/polymerase/pkg/polypb.DatabaseID" json:"db,omitempty"`
-	Content []byte                                             `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	Lsn     string                                             `protobuf:"bytes,3,opt,name=lsn,proto3" json:"lsn,omitempty"`
+type InitializeRequest struct {
+	BackupType polypb.BackupType                                  `protobuf:"varint,1,opt,name=backup_type,json=backupType,proto3,enum=polypb.BackupType" json:"backup_type,omitempty"`
+	Db         github_com_taku_k_polymerase_pkg_polypb.DatabaseID `protobuf:"bytes,2,opt,name=db,proto3,casttype=github.com/taku-k/polymerase/pkg/polypb.DatabaseID" json:"db,omitempty"`
+	Lsn        string                                             `protobuf:"bytes,3,opt,name=lsn,proto3" json:"lsn,omitempty"`
 }
 
-func (m *BackupRequest) Reset()                    { *m = BackupRequest{} }
-func (m *BackupRequest) String() string            { return proto.CompactTextString(m) }
-func (*BackupRequest) ProtoMessage()               {}
-func (*BackupRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{10} }
+func (m *InitializeRequest) Reset()                    { *m = InitializeRequest{} }
+func (m *InitializeRequest) String() string            { return proto.CompactTextString(m) }
+func (*InitializeRequest) ProtoMessage()               {}
+func (*InitializeRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{10} }
 
-func (m *BackupRequest) GetDb() github_com_taku_k_polymerase_pkg_polypb.DatabaseID {
+func (m *InitializeRequest) GetBackupType() polypb.BackupType {
+	if m != nil {
+		return m.BackupType
+	}
+	return polypb.BackupType_XTRABACKUP_FULL
+}
+
+func (m *InitializeRequest) GetDb() github_com_taku_k_polymerase_pkg_polypb.DatabaseID {
 	if m != nil {
 		return m.Db
 	}
 	return nil
 }
+
+func (m *InitializeRequest) GetLsn() string {
+	if m != nil {
+		return m.Lsn
+	}
+	return ""
+}
+
+type BackupRequest struct {
+	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+}
+
+func (m *BackupRequest) Reset()                    { *m = BackupRequest{} }
+func (m *BackupRequest) String() string            { return proto.CompactTextString(m) }
+func (*BackupRequest) ProtoMessage()               {}
+func (*BackupRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{11} }
 
 func (m *BackupRequest) GetContent() []byte {
 	if m != nil {
@@ -420,21 +474,14 @@ func (m *BackupRequest) GetContent() []byte {
 	return nil
 }
 
-func (m *BackupRequest) GetLsn() string {
-	if m != nil {
-		return m.Lsn
-	}
-	return ""
-}
-
 type CheckpointRequest struct {
-	Body []byte `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	Body []byte `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
 }
 
 func (m *CheckpointRequest) Reset()                    { *m = CheckpointRequest{} }
 func (m *CheckpointRequest) String() string            { return proto.CompactTextString(m) }
 func (*CheckpointRequest) ProtoMessage()               {}
-func (*CheckpointRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{11} }
+func (*CheckpointRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{12} }
 
 func (m *CheckpointRequest) GetBody() []byte {
 	if m != nil {
@@ -450,37 +497,13 @@ type ClientErrorRequest struct {
 func (m *ClientErrorRequest) Reset()                    { *m = ClientErrorRequest{} }
 func (m *ClientErrorRequest) String() string            { return proto.CompactTextString(m) }
 func (*ClientErrorRequest) ProtoMessage()               {}
-func (*ClientErrorRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{12} }
+func (*ClientErrorRequest) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{13} }
 
 func (m *ClientErrorRequest) GetMessage() string {
 	if m != nil {
 		return m.Message
 	}
 	return ""
-}
-
-type MysqldumpContentStream struct {
-	Db      github_com_taku_k_polymerase_pkg_polypb.DatabaseID `protobuf:"bytes,1,opt,name=db,proto3,casttype=github.com/taku-k/polymerase/pkg/polypb.DatabaseID" json:"db,omitempty"`
-	Content []byte                                             `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-}
-
-func (m *MysqldumpContentStream) Reset()                    { *m = MysqldumpContentStream{} }
-func (m *MysqldumpContentStream) String() string            { return proto.CompactTextString(m) }
-func (*MysqldumpContentStream) ProtoMessage()               {}
-func (*MysqldumpContentStream) Descriptor() ([]byte, []int) { return fileDescriptorStorage, []int{13} }
-
-func (m *MysqldumpContentStream) GetDb() github_com_taku_k_polymerase_pkg_polypb.DatabaseID {
-	if m != nil {
-		return m.Db
-	}
-	return nil
-}
-
-func (m *MysqldumpContentStream) GetContent() []byte {
-	if m != nil {
-		return m.Content
-	}
-	return nil
 }
 
 type BackupReply struct {
@@ -517,11 +540,11 @@ func init() {
 	proto.RegisterType((*FileStream)(nil), "storagepb.FileStream")
 	proto.RegisterType((*PurgePrevBackupRequest)(nil), "storagepb.PurgePrevBackupRequest")
 	proto.RegisterType((*PurgePrevBackupResponse)(nil), "storagepb.PurgePrevBackupResponse")
-	proto.RegisterType((*XtrabackupContentStream)(nil), "storagepb.XtrabackupContentStream")
+	proto.RegisterType((*BackupStream)(nil), "storagepb.BackupStream")
+	proto.RegisterType((*InitializeRequest)(nil), "storagepb.InitializeRequest")
 	proto.RegisterType((*BackupRequest)(nil), "storagepb.BackupRequest")
 	proto.RegisterType((*CheckpointRequest)(nil), "storagepb.CheckpointRequest")
 	proto.RegisterType((*ClientErrorRequest)(nil), "storagepb.ClientErrorRequest")
-	proto.RegisterType((*MysqldumpContentStream)(nil), "storagepb.MysqldumpContentStream")
 	proto.RegisterType((*BackupReply)(nil), "storagepb.BackupReply")
 }
 
@@ -540,9 +563,7 @@ type StorageServiceClient interface {
 	GetKeysAtPoint(ctx context.Context, in *GetKeysAtPointRequest, opts ...grpc.CallOption) (*GetKeysAtPointResponse, error)
 	GetFileByKey(ctx context.Context, in *GetFileByKeyRequest, opts ...grpc.CallOption) (StorageService_GetFileByKeyClient, error)
 	PurgePrevBackup(ctx context.Context, in *PurgePrevBackupRequest, opts ...grpc.CallOption) (*PurgePrevBackupResponse, error)
-	TransferFullBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferFullBackupClient, error)
-	TransferIncBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferIncBackupClient, error)
-	TransferMysqldump(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferMysqldumpClient, error)
+	TransferBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferBackupClient, error)
 }
 
 type storageServiceClient struct {
@@ -612,98 +633,30 @@ func (c *storageServiceClient) PurgePrevBackup(ctx context.Context, in *PurgePre
 	return out, nil
 }
 
-func (c *storageServiceClient) TransferFullBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferFullBackupClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_StorageService_serviceDesc.Streams[1], c.cc, "/storagepb.StorageService/TransferFullBackup", opts...)
+func (c *storageServiceClient) TransferBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferBackupClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_StorageService_serviceDesc.Streams[1], c.cc, "/storagepb.StorageService/TransferBackup", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &storageServiceTransferFullBackupClient{stream}
+	x := &storageServiceTransferBackupClient{stream}
 	return x, nil
 }
 
-type StorageService_TransferFullBackupClient interface {
-	Send(*XtrabackupContentStream) error
+type StorageService_TransferBackupClient interface {
+	Send(*BackupStream) error
 	CloseAndRecv() (*BackupReply, error)
 	grpc.ClientStream
 }
 
-type storageServiceTransferFullBackupClient struct {
+type storageServiceTransferBackupClient struct {
 	grpc.ClientStream
 }
 
-func (x *storageServiceTransferFullBackupClient) Send(m *XtrabackupContentStream) error {
+func (x *storageServiceTransferBackupClient) Send(m *BackupStream) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *storageServiceTransferFullBackupClient) CloseAndRecv() (*BackupReply, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(BackupReply)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *storageServiceClient) TransferIncBackup(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferIncBackupClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_StorageService_serviceDesc.Streams[2], c.cc, "/storagepb.StorageService/TransferIncBackup", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &storageServiceTransferIncBackupClient{stream}
-	return x, nil
-}
-
-type StorageService_TransferIncBackupClient interface {
-	Send(*XtrabackupContentStream) error
-	CloseAndRecv() (*BackupReply, error)
-	grpc.ClientStream
-}
-
-type storageServiceTransferIncBackupClient struct {
-	grpc.ClientStream
-}
-
-func (x *storageServiceTransferIncBackupClient) Send(m *XtrabackupContentStream) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *storageServiceTransferIncBackupClient) CloseAndRecv() (*BackupReply, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(BackupReply)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *storageServiceClient) TransferMysqldump(ctx context.Context, opts ...grpc.CallOption) (StorageService_TransferMysqldumpClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_StorageService_serviceDesc.Streams[3], c.cc, "/storagepb.StorageService/TransferMysqldump", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &storageServiceTransferMysqldumpClient{stream}
-	return x, nil
-}
-
-type StorageService_TransferMysqldumpClient interface {
-	Send(*MysqldumpContentStream) error
-	CloseAndRecv() (*BackupReply, error)
-	grpc.ClientStream
-}
-
-type storageServiceTransferMysqldumpClient struct {
-	grpc.ClientStream
-}
-
-func (x *storageServiceTransferMysqldumpClient) Send(m *MysqldumpContentStream) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *storageServiceTransferMysqldumpClient) CloseAndRecv() (*BackupReply, error) {
+func (x *storageServiceTransferBackupClient) CloseAndRecv() (*BackupReply, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
@@ -721,9 +674,7 @@ type StorageServiceServer interface {
 	GetKeysAtPoint(context.Context, *GetKeysAtPointRequest) (*GetKeysAtPointResponse, error)
 	GetFileByKey(*GetFileByKeyRequest, StorageService_GetFileByKeyServer) error
 	PurgePrevBackup(context.Context, *PurgePrevBackupRequest) (*PurgePrevBackupResponse, error)
-	TransferFullBackup(StorageService_TransferFullBackupServer) error
-	TransferIncBackup(StorageService_TransferIncBackupServer) error
-	TransferMysqldump(StorageService_TransferMysqldumpServer) error
+	TransferBackup(StorageService_TransferBackupServer) error
 }
 
 func RegisterStorageServiceServer(s *grpc.Server, srv StorageServiceServer) {
@@ -805,78 +756,26 @@ func _StorageService_PurgePrevBackup_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StorageService_TransferFullBackup_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(StorageServiceServer).TransferFullBackup(&storageServiceTransferFullBackupServer{stream})
+func _StorageService_TransferBackup_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StorageServiceServer).TransferBackup(&storageServiceTransferBackupServer{stream})
 }
 
-type StorageService_TransferFullBackupServer interface {
+type StorageService_TransferBackupServer interface {
 	SendAndClose(*BackupReply) error
-	Recv() (*XtrabackupContentStream, error)
+	Recv() (*BackupStream, error)
 	grpc.ServerStream
 }
 
-type storageServiceTransferFullBackupServer struct {
+type storageServiceTransferBackupServer struct {
 	grpc.ServerStream
 }
 
-func (x *storageServiceTransferFullBackupServer) SendAndClose(m *BackupReply) error {
+func (x *storageServiceTransferBackupServer) SendAndClose(m *BackupReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *storageServiceTransferFullBackupServer) Recv() (*XtrabackupContentStream, error) {
-	m := new(XtrabackupContentStream)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _StorageService_TransferIncBackup_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(StorageServiceServer).TransferIncBackup(&storageServiceTransferIncBackupServer{stream})
-}
-
-type StorageService_TransferIncBackupServer interface {
-	SendAndClose(*BackupReply) error
-	Recv() (*XtrabackupContentStream, error)
-	grpc.ServerStream
-}
-
-type storageServiceTransferIncBackupServer struct {
-	grpc.ServerStream
-}
-
-func (x *storageServiceTransferIncBackupServer) SendAndClose(m *BackupReply) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *storageServiceTransferIncBackupServer) Recv() (*XtrabackupContentStream, error) {
-	m := new(XtrabackupContentStream)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _StorageService_TransferMysqldump_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(StorageServiceServer).TransferMysqldump(&storageServiceTransferMysqldumpServer{stream})
-}
-
-type StorageService_TransferMysqldumpServer interface {
-	SendAndClose(*BackupReply) error
-	Recv() (*MysqldumpContentStream, error)
-	grpc.ServerStream
-}
-
-type storageServiceTransferMysqldumpServer struct {
-	grpc.ServerStream
-}
-
-func (x *storageServiceTransferMysqldumpServer) SendAndClose(m *BackupReply) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *storageServiceTransferMysqldumpServer) Recv() (*MysqldumpContentStream, error) {
-	m := new(MysqldumpContentStream)
+func (x *storageServiceTransferBackupServer) Recv() (*BackupStream, error) {
+	m := new(BackupStream)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -907,18 +806,8 @@ var _StorageService_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "TransferFullBackup",
-			Handler:       _StorageService_TransferFullBackup_Handler,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "TransferIncBackup",
-			Handler:       _StorageService_TransferIncBackup_Handler,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "TransferMysqldump",
-			Handler:       _StorageService_TransferMysqldump_Handler,
+			StreamName:    "TransferBackup",
+			Handler:       _StorageService_TransferBackup_Handler,
 			ClientStreams: true,
 		},
 	},
@@ -1175,7 +1064,7 @@ func (m *PurgePrevBackupResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *XtrabackupContentStream) Marshal() (dAtA []byte, err error) {
+func (m *BackupStream) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -1185,7 +1074,7 @@ func (m *XtrabackupContentStream) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *XtrabackupContentStream) MarshalTo(dAtA []byte) (int, error) {
+func (m *BackupStream) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1200,13 +1089,13 @@ func (m *XtrabackupContentStream) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *XtrabackupContentStream_BackupRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *BackupStream_InitializeRequest) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.BackupRequest != nil {
+	if m.InitializeRequest != nil {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintStorage(dAtA, i, uint64(m.BackupRequest.Size()))
-		n3, err := m.BackupRequest.MarshalTo(dAtA[i:])
+		i = encodeVarintStorage(dAtA, i, uint64(m.InitializeRequest.Size()))
+		n3, err := m.InitializeRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1214,13 +1103,13 @@ func (m *XtrabackupContentStream_BackupRequest) MarshalTo(dAtA []byte) (int, err
 	}
 	return i, nil
 }
-func (m *XtrabackupContentStream_CheckpointRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *BackupStream_BackupRequest) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.CheckpointRequest != nil {
+	if m.BackupRequest != nil {
 		dAtA[i] = 0x12
 		i++
-		i = encodeVarintStorage(dAtA, i, uint64(m.CheckpointRequest.Size()))
-		n4, err := m.CheckpointRequest.MarshalTo(dAtA[i:])
+		i = encodeVarintStorage(dAtA, i, uint64(m.BackupRequest.Size()))
+		n4, err := m.BackupRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1228,13 +1117,13 @@ func (m *XtrabackupContentStream_CheckpointRequest) MarshalTo(dAtA []byte) (int,
 	}
 	return i, nil
 }
-func (m *XtrabackupContentStream_ClientErrorRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *BackupStream_CheckpointRequest) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.ClientErrorRequest != nil {
+	if m.CheckpointRequest != nil {
 		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintStorage(dAtA, i, uint64(m.ClientErrorRequest.Size()))
-		n5, err := m.ClientErrorRequest.MarshalTo(dAtA[i:])
+		i = encodeVarintStorage(dAtA, i, uint64(m.CheckpointRequest.Size()))
+		n5, err := m.CheckpointRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1242,6 +1131,55 @@ func (m *XtrabackupContentStream_ClientErrorRequest) MarshalTo(dAtA []byte) (int
 	}
 	return i, nil
 }
+func (m *BackupStream_ClientErrorRequest) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.ClientErrorRequest != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintStorage(dAtA, i, uint64(m.ClientErrorRequest.Size()))
+		n6, err := m.ClientErrorRequest.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	return i, nil
+}
+func (m *InitializeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *InitializeRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.BackupType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintStorage(dAtA, i, uint64(m.BackupType))
+	}
+	if len(m.Db) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintStorage(dAtA, i, uint64(len(m.Db)))
+		i += copy(dAtA[i:], m.Db)
+	}
+	if len(m.Lsn) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintStorage(dAtA, i, uint64(len(m.Lsn)))
+		i += copy(dAtA[i:], m.Lsn)
+	}
+	return i, nil
+}
+
 func (m *BackupRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1257,23 +1195,11 @@ func (m *BackupRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Db) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintStorage(dAtA, i, uint64(len(m.Db)))
-		i += copy(dAtA[i:], m.Db)
-	}
 	if len(m.Content) > 0 {
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 		i++
 		i = encodeVarintStorage(dAtA, i, uint64(len(m.Content)))
 		i += copy(dAtA[i:], m.Content)
-	}
-	if len(m.Lsn) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintStorage(dAtA, i, uint64(len(m.Lsn)))
-		i += copy(dAtA[i:], m.Lsn)
 	}
 	return i, nil
 }
@@ -1294,7 +1220,7 @@ func (m *CheckpointRequest) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.Body) > 0 {
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 		i++
 		i = encodeVarintStorage(dAtA, i, uint64(len(m.Body)))
 		i += copy(dAtA[i:], m.Body)
@@ -1322,36 +1248,6 @@ func (m *ClientErrorRequest) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintStorage(dAtA, i, uint64(len(m.Message)))
 		i += copy(dAtA[i:], m.Message)
-	}
-	return i, nil
-}
-
-func (m *MysqldumpContentStream) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MysqldumpContentStream) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Db) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintStorage(dAtA, i, uint64(len(m.Db)))
-		i += copy(dAtA[i:], m.Db)
-	}
-	if len(m.Content) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintStorage(dAtA, i, uint64(len(m.Content)))
-		i += copy(dAtA[i:], m.Content)
 	}
 	return i, nil
 }
@@ -1386,6 +1282,24 @@ func (m *BackupReply) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func encodeFixed64Storage(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
+	return offset + 8
+}
+func encodeFixed32Storage(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	return offset + 4
+}
 func encodeVarintStorage(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1501,7 +1415,7 @@ func (m *PurgePrevBackupResponse) Size() (n int) {
 	return n
 }
 
-func (m *XtrabackupContentStream) Size() (n int) {
+func (m *BackupStream) Size() (n int) {
 	var l int
 	_ = l
 	if m.Request != nil {
@@ -1510,7 +1424,16 @@ func (m *XtrabackupContentStream) Size() (n int) {
 	return n
 }
 
-func (m *XtrabackupContentStream_BackupRequest) Size() (n int) {
+func (m *BackupStream_InitializeRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.InitializeRequest != nil {
+		l = m.InitializeRequest.Size()
+		n += 1 + l + sovStorage(uint64(l))
+	}
+	return n
+}
+func (m *BackupStream_BackupRequest) Size() (n int) {
 	var l int
 	_ = l
 	if m.BackupRequest != nil {
@@ -1519,7 +1442,7 @@ func (m *XtrabackupContentStream_BackupRequest) Size() (n int) {
 	}
 	return n
 }
-func (m *XtrabackupContentStream_CheckpointRequest) Size() (n int) {
+func (m *BackupStream_CheckpointRequest) Size() (n int) {
 	var l int
 	_ = l
 	if m.CheckpointRequest != nil {
@@ -1528,7 +1451,7 @@ func (m *XtrabackupContentStream_CheckpointRequest) Size() (n int) {
 	}
 	return n
 }
-func (m *XtrabackupContentStream_ClientErrorRequest) Size() (n int) {
+func (m *BackupStream_ClientErrorRequest) Size() (n int) {
 	var l int
 	_ = l
 	if m.ClientErrorRequest != nil {
@@ -1537,18 +1460,27 @@ func (m *XtrabackupContentStream_ClientErrorRequest) Size() (n int) {
 	}
 	return n
 }
-func (m *BackupRequest) Size() (n int) {
+func (m *InitializeRequest) Size() (n int) {
 	var l int
 	_ = l
+	if m.BackupType != 0 {
+		n += 1 + sovStorage(uint64(m.BackupType))
+	}
 	l = len(m.Db)
 	if l > 0 {
 		n += 1 + l + sovStorage(uint64(l))
 	}
-	l = len(m.Content)
+	l = len(m.Lsn)
 	if l > 0 {
 		n += 1 + l + sovStorage(uint64(l))
 	}
-	l = len(m.Lsn)
+	return n
+}
+
+func (m *BackupRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Content)
 	if l > 0 {
 		n += 1 + l + sovStorage(uint64(l))
 	}
@@ -1569,20 +1501,6 @@ func (m *ClientErrorRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovStorage(uint64(l))
-	}
-	return n
-}
-
-func (m *MysqldumpContentStream) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.Db)
-	if l > 0 {
-		n += 1 + l + sovStorage(uint64(l))
-	}
-	l = len(m.Content)
 	if l > 0 {
 		n += 1 + l + sovStorage(uint64(l))
 	}
@@ -2447,7 +2365,7 @@ func (m *PurgePrevBackupResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *XtrabackupContentStream) Unmarshal(dAtA []byte) error {
+func (m *BackupStream) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2470,13 +2388,45 @@ func (m *XtrabackupContentStream) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: XtrabackupContentStream: wiretype end group for non-group")
+			return fmt.Errorf("proto: BackupStream: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: XtrabackupContentStream: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: BackupStream: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitializeRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStorage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStorage
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &InitializeRequest{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Request = &BackupStream_InitializeRequest{v}
+			iNdEx = postIndex
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BackupRequest", wireType)
 			}
@@ -2506,9 +2456,9 @@ func (m *XtrabackupContentStream) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &XtrabackupContentStream_BackupRequest{v}
+			m.Request = &BackupStream_BackupRequest{v}
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CheckpointRequest", wireType)
 			}
@@ -2538,9 +2488,9 @@ func (m *XtrabackupContentStream) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &XtrabackupContentStream_CheckpointRequest{v}
+			m.Request = &BackupStream_CheckpointRequest{v}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ClientErrorRequest", wireType)
 			}
@@ -2570,7 +2520,136 @@ func (m *XtrabackupContentStream) Unmarshal(dAtA []byte) error {
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Request = &XtrabackupContentStream_ClientErrorRequest{v}
+			m.Request = &BackupStream_ClientErrorRequest{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStorage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStorage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *InitializeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStorage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: InitializeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: InitializeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BackupType", wireType)
+			}
+			m.BackupType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStorage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BackupType |= (polypb.BackupType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Db", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStorage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthStorage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Db = append(m.Db[:0], dAtA[iNdEx:postIndex]...)
+			if m.Db == nil {
+				m.Db = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Lsn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStorage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStorage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Lsn = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2624,37 +2703,6 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Db", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStorage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStorage
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Db = append(m.Db[:0], dAtA[iNdEx:postIndex]...)
-			if m.Db == nil {
-				m.Db = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
 			}
 			var byteLen int
@@ -2683,35 +2731,6 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 			if m.Content == nil {
 				m.Content = []byte{}
 			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Lsn", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStorage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthStorage
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Lsn = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2763,7 +2782,7 @@ func (m *CheckpointRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: CheckpointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 2:
+		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Body", wireType)
 			}
@@ -2872,118 +2891,6 @@ func (m *ClientErrorRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Message = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipStorage(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthStorage
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MysqldumpContentStream) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowStorage
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MysqldumpContentStream: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MysqldumpContentStream: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Db", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStorage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStorage
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Db = append(m.Db[:0], dAtA[iNdEx:postIndex]...)
-			if m.Db == nil {
-				m.Db = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStorage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthStorage
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Content = append(m.Content[:0], dAtA[iNdEx:postIndex]...)
-			if m.Content == nil {
-				m.Content = []byte{}
-			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3224,59 +3131,58 @@ var (
 func init() { proto.RegisterFile("storage/storagepb/storage.proto", fileDescriptorStorage) }
 
 var fileDescriptorStorage = []byte{
-	// 852 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x55, 0x4f, 0x73, 0xdb, 0x44,
-	0x14, 0xb7, 0x6c, 0x0f, 0x69, 0x9e, 0x53, 0xd3, 0x6c, 0x69, 0x6a, 0x0c, 0xd8, 0x66, 0x0f, 0xe0,
-	0x81, 0x89, 0xcc, 0x38, 0x33, 0x19, 0xae, 0x71, 0x4b, 0x42, 0xa6, 0x2d, 0x13, 0x64, 0xcf, 0xc0,
-	0x70, 0x09, 0x92, 0xfc, 0xac, 0x0a, 0x4b, 0x5a, 0x55, 0xbb, 0xee, 0x8c, 0x72, 0xe5, 0xc4, 0xad,
-	0x47, 0xf8, 0x46, 0x3d, 0xf2, 0x05, 0x08, 0x4c, 0xb8, 0xf0, 0x19, 0x7a, 0x62, 0xb4, 0x5a, 0xd9,
-	0xb2, 0xec, 0x7a, 0x32, 0x90, 0x9c, 0xb4, 0x4f, 0xfb, 0x7e, 0xbf, 0xf7, 0xff, 0x2d, 0xb4, 0xb9,
-	0x60, 0x91, 0xe9, 0x60, 0x4f, 0x7d, 0x43, 0x2b, 0x3b, 0xe9, 0x61, 0xc4, 0x04, 0x23, 0xdb, 0xf3,
-	0x8b, 0x66, 0xdb, 0x61, 0xcc, 0xf1, 0xb0, 0x27, 0x2f, 0xac, 0xd9, 0xa4, 0x27, 0x5c, 0x1f, 0xb9,
-	0x30, 0xfd, 0x30, 0xd5, 0x6d, 0x1e, 0x3a, 0xae, 0x78, 0x3e, 0xb3, 0x74, 0x9b, 0xf9, 0x3d, 0x61,
-	0x4e, 0x67, 0xfb, 0xd3, 0x5e, 0xc8, 0xbc, 0xd8, 0xc7, 0xc8, 0xe4, 0xd8, 0x0b, 0xa7, 0x8e, 0x14,
-	0x43, 0xab, 0xe7, 0xa3, 0x30, 0xc7, 0xa6, 0x30, 0x15, 0x6e, 0x3f, 0x87, 0x73, 0x98, 0xc3, 0x16,
-	0x16, 0x12, 0x49, 0x0a, 0xf2, 0x94, 0xaa, 0xd3, 0x73, 0x78, 0x70, 0x82, 0xe2, 0xa9, 0x29, 0x90,
-	0x8b, 0x11, 0x7b, 0x3a, 0xfc, 0xc6, 0xc0, 0x17, 0x33, 0xe4, 0x82, 0x1c, 0x43, 0x79, 0x6c, 0x35,
-	0xb4, 0x8e, 0xd6, 0xdd, 0x19, 0x1c, 0xbe, 0xb9, 0x6c, 0xf7, 0xaf, 0xe9, 0x8f, 0xfe, 0xd8, 0x14,
-	0xa6, 0x65, 0x72, 0x3c, 0x7d, 0x6c, 0x94, 0xc7, 0x16, 0xfd, 0x0c, 0xf6, 0x8a, 0x06, 0x78, 0xc8,
-	0x02, 0x8e, 0xe4, 0x1e, 0x54, 0x3c, 0x1e, 0x48, 0x13, 0xdb, 0x46, 0x72, 0xa4, 0xbf, 0x69, 0xd2,
-	0x9b, 0x27, 0x18, 0xf3, 0x23, 0x71, 0xc6, 0xdc, 0x40, 0xdc, 0xb0, 0x37, 0xe4, 0x4b, 0xa8, 0x4e,
-	0x22, 0xe6, 0x37, 0xca, 0x1d, 0xad, 0x5b, 0xeb, 0x37, 0xf5, 0xb4, 0x0a, 0x7a, 0x96, 0x23, 0x7d,
-	0x94, 0x55, 0x61, 0x70, 0xe7, 0xf5, 0x65, 0xbb, 0xf4, 0xea, 0xcf, 0xb6, 0x66, 0x48, 0x04, 0x3d,
-	0x91, 0x71, 0x2c, 0xb9, 0xa6, 0xe2, 0xd8, 0x87, 0xea, 0x14, 0x63, 0xde, 0xd0, 0x3a, 0x95, 0x6e,
-	0xad, 0xff, 0xbe, 0x3e, 0x2f, 0xb2, 0x3e, 0x30, 0xed, 0xe9, 0x2c, 0x3c, 0x76, 0x3d, 0x3c, 0x0d,
-	0x26, 0xcc, 0x90, 0x6a, 0xf4, 0x0f, 0x0d, 0xea, 0xcb, 0x17, 0xe4, 0x10, 0x76, 0x14, 0xe8, 0x5c,
-	0xc4, 0x21, 0xca, 0x38, 0xeb, 0xfd, 0xfb, 0xba, 0x8a, 0x61, 0x98, 0xde, 0x8d, 0xe2, 0x10, 0x8d,
-	0x1a, 0x5f, 0x08, 0xe4, 0x00, 0x6a, 0x96, 0x64, 0x4a, 0x61, 0x65, 0x09, 0x23, 0x19, 0x2c, 0x35,
-	0x22, 0x51, 0x60, 0xcd, 0xcf, 0xe4, 0x08, 0x2a, 0x53, 0x8c, 0x1b, 0x15, 0x99, 0xcb, 0xde, 0x9b,
-	0xcb, 0xf6, 0xe7, 0xd7, 0xcd, 0xe5, 0x13, 0x8c, 0x8d, 0x04, 0x4b, 0x3e, 0x80, 0xed, 0x89, 0xeb,
-	0xe1, 0x39, 0x77, 0x2f, 0xb0, 0x51, 0xed, 0x68, 0xdd, 0x8a, 0x71, 0x27, 0xf9, 0x31, 0x74, 0x2f,
-	0x90, 0xbe, 0xd2, 0xe0, 0xfe, 0x09, 0x8a, 0x24, 0xb8, 0x41, 0x9c, 0x40, 0x54, 0x09, 0x95, 0x5d,
-	0xed, 0x7f, 0xd8, 0x2d, 0xe6, 0xa9, 0x7c, 0xbd, 0x3c, 0xd1, 0x4f, 0x00, 0x12, 0x77, 0x86, 0x22,
-	0x42, 0xd3, 0x27, 0x0d, 0xd8, 0xb2, 0x59, 0x20, 0x30, 0x10, 0xa9, 0x33, 0x46, 0x26, 0xd2, 0x1f,
-	0x61, 0xef, 0x6c, 0x16, 0x39, 0x78, 0x16, 0xe1, 0xcb, 0x34, 0x7b, 0x37, 0x3d, 0x0d, 0x07, 0xf0,
-	0x70, 0xc5, 0x82, 0x6a, 0xa3, 0x06, 0x6c, 0xf9, 0xc8, 0xb9, 0xe9, 0xa0, 0x1a, 0x89, 0x4c, 0xa4,
-	0xbf, 0x94, 0xe1, 0xe1, 0xf7, 0x22, 0x32, 0xd3, 0x22, 0x3e, 0x4a, 0x9d, 0x55, 0xc1, 0x1c, 0x41,
-	0x5d, 0xb5, 0x40, 0x94, 0xba, 0x2a, 0xc1, 0xb5, 0x7e, 0x63, 0xa5, 0x0d, 0x55, 0x28, 0x5f, 0x97,
-	0x8c, 0xbb, 0xd6, 0x52, 0x6c, 0xcf, 0x80, 0xd8, 0xcf, 0xd1, 0x9e, 0x86, 0x49, 0x57, 0xcf, 0x69,
-	0xd2, 0x09, 0xf9, 0x30, 0x47, 0xf3, 0x68, 0xae, 0xb4, 0xa0, 0xda, 0xb5, 0x8b, 0x3f, 0xc9, 0xb7,
-	0xf0, 0x9e, 0xed, 0xb9, 0x18, 0x88, 0x73, 0x8c, 0x22, 0x16, 0xcd, 0x09, 0x2b, 0x92, 0xf0, 0xa3,
-	0x3c, 0xa1, 0x54, 0xfb, 0x2a, 0xd1, 0x5a, 0x30, 0x12, 0x7b, 0xe5, 0xef, 0x60, 0x1b, 0xb6, 0x14,
-	0x0b, 0xfd, 0x59, 0x83, 0xbb, 0xb7, 0x52, 0x9a, 0x7c, 0x5b, 0x94, 0x97, 0xda, 0x22, 0x5b, 0x54,
-	0x95, 0xc5, 0xa2, 0xfa, 0x14, 0x76, 0x57, 0xb2, 0x41, 0x08, 0x54, 0x2d, 0x36, 0x8e, 0x15, 0x5a,
-	0x9e, 0xa9, 0x0e, 0x64, 0x35, 0xca, 0x0d, 0xa5, 0xbe, 0x80, 0xbd, 0x67, 0x31, 0x7f, 0xe1, 0x8d,
-	0x67, 0x7e, 0xa1, 0xd0, 0xb7, 0x1e, 0x26, 0xfd, 0x09, 0x6a, 0x59, 0x66, 0x43, 0x2f, 0x7e, 0xbb,
-	0x93, 0xd9, 0x24, 0x97, 0xff, 0xfb, 0x24, 0xf7, 0xff, 0xa9, 0x42, 0x5d, 0x8d, 0xeb, 0x10, 0xa3,
-	0x97, 0xae, 0x8d, 0xe4, 0x3b, 0xa8, 0x2f, 0x3f, 0x14, 0xa4, 0x93, 0xeb, 0x95, 0xb5, 0x8f, 0x54,
-	0xf3, 0xe3, 0x0d, 0x1a, 0xe9, 0x58, 0xd1, 0x92, 0x22, 0xce, 0x6d, 0xee, 0x22, 0xf1, 0xea, 0x7b,
-	0x53, 0x24, 0x5e, 0xb3, 0xf6, 0x69, 0x89, 0x9c, 0xc2, 0x4e, 0x7e, 0xd1, 0x91, 0xd6, 0x32, 0xa8,
-	0xb8, 0x01, 0x9b, 0x0f, 0x72, 0xf7, 0x8b, 0x7d, 0x44, 0x4b, 0x5f, 0x68, 0xe4, 0x07, 0x78, 0xb7,
-	0xb0, 0x17, 0x48, 0xde, 0x85, 0xf5, 0x5b, 0xa9, 0x49, 0x37, 0xa9, 0xcc, 0xdd, 0x1c, 0x01, 0x19,
-	0x45, 0x66, 0xc0, 0x27, 0x18, 0x1d, 0xcf, 0x3c, 0x4f, 0xd1, 0xe7, 0xb1, 0x6f, 0x59, 0x2e, 0xcd,
-	0xbd, 0x35, 0x4b, 0x24, 0xf4, 0x62, 0x5a, 0xea, 0x6a, 0x64, 0x08, 0xbb, 0x19, 0xeb, 0x69, 0x60,
-	0xdf, 0x10, 0xa9, 0xb1, 0x20, 0x9d, 0x8f, 0xc1, 0x52, 0x22, 0xd6, 0x0f, 0xc7, 0x26, 0xce, 0xc1,
-	0xbd, 0xd7, 0x57, 0x2d, 0xed, 0xf7, 0xab, 0x96, 0xf6, 0xd7, 0x55, 0x4b, 0xfb, 0xf5, 0xef, 0x56,
-	0xc9, 0x7a, 0x47, 0x3e, 0xf7, 0x07, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0xea, 0xa8, 0x3a, 0x75,
-	0xb0, 0x09, 0x00, 0x00,
+	// 847 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x51, 0x8f, 0xdb, 0x44,
+	0x10, 0xce, 0x26, 0x11, 0xd7, 0x9b, 0x5c, 0x43, 0x6f, 0x4b, 0xaf, 0x21, 0x40, 0x12, 0xfc, 0x00,
+	0x01, 0x74, 0x0e, 0xca, 0x49, 0x27, 0x5e, 0x2f, 0xb4, 0x3d, 0x4e, 0x6d, 0xd1, 0xe1, 0x9c, 0x84,
+	0xc4, 0x4b, 0x58, 0xfb, 0x26, 0xae, 0x89, 0xe3, 0x35, 0xde, 0x4d, 0x25, 0xdf, 0xaf, 0xe8, 0x23,
+	0xbc, 0xf2, 0x0b, 0xf8, 0x19, 0x7d, 0x41, 0xe2, 0x0f, 0x70, 0xa0, 0xe3, 0x5f, 0xf4, 0x09, 0x79,
+	0xbd, 0x4e, 0x1c, 0xfb, 0x7a, 0x8a, 0x68, 0x9f, 0xbc, 0xeb, 0x9d, 0xf9, 0xe6, 0x9b, 0xd9, 0xf9,
+	0x66, 0xa1, 0x2b, 0x24, 0x8f, 0x98, 0x8b, 0x03, 0xfd, 0x0d, 0xed, 0x6c, 0x65, 0x86, 0x11, 0x97,
+	0x9c, 0x6e, 0x2f, 0x0f, 0xda, 0x5d, 0x97, 0x73, 0xd7, 0xc7, 0x81, 0x3a, 0xb0, 0x17, 0xd3, 0x81,
+	0xf4, 0xe6, 0x28, 0x24, 0x9b, 0x87, 0xa9, 0x6d, 0xfb, 0xd0, 0xf5, 0xe4, 0xb3, 0x85, 0x6d, 0x3a,
+	0x7c, 0x3e, 0x90, 0x6c, 0xb6, 0xd8, 0x9f, 0x0d, 0x42, 0xee, 0xc7, 0x73, 0x8c, 0x98, 0xc0, 0x41,
+	0x38, 0x73, 0xd5, 0x36, 0xb4, 0x07, 0x73, 0x94, 0xec, 0x9c, 0x49, 0xa6, 0xfd, 0xf6, 0x73, 0x7e,
+	0x2e, 0x77, 0xf9, 0x2a, 0x42, 0xb2, 0x53, 0x1b, 0xb5, 0x4a, 0xcd, 0x8d, 0x09, 0xdc, 0x3b, 0x46,
+	0xf9, 0x84, 0x49, 0x14, 0xf2, 0x8c, 0x3f, 0x19, 0x7f, 0x6b, 0xe1, 0xcf, 0x0b, 0x14, 0x92, 0x3e,
+	0x82, 0xea, 0xb9, 0xdd, 0x22, 0x3d, 0xd2, 0xdf, 0x19, 0x1d, 0xbe, 0xba, 0xec, 0x0e, 0x37, 0xe4,
+	0x63, 0x3e, 0x60, 0x92, 0xd9, 0x4c, 0xe0, 0xc9, 0x03, 0xab, 0x7a, 0x6e, 0x1b, 0x9f, 0xc3, 0x5e,
+	0x31, 0x80, 0x08, 0x79, 0x20, 0x90, 0xde, 0x81, 0x9a, 0x2f, 0x02, 0x15, 0x62, 0xdb, 0x4a, 0x96,
+	0xc6, 0xaf, 0x44, 0xb1, 0x79, 0x8c, 0xb1, 0x38, 0x92, 0xa7, 0xdc, 0x0b, 0xe4, 0x5b, 0x66, 0x43,
+	0xbf, 0x82, 0xfa, 0x34, 0xe2, 0xf3, 0x56, 0xb5, 0x47, 0xfa, 0x8d, 0x61, 0xdb, 0x4c, 0x6f, 0xc1,
+	0xcc, 0x6a, 0x64, 0x9e, 0x65, 0xb7, 0x30, 0xba, 0xf5, 0xf2, 0xb2, 0x5b, 0x79, 0xf1, 0x77, 0x97,
+	0x58, 0xca, 0xc3, 0x38, 0x56, 0x79, 0xac, 0x51, 0xd3, 0x79, 0xec, 0x43, 0x7d, 0x86, 0xb1, 0x68,
+	0x91, 0x5e, 0xad, 0xdf, 0x18, 0xbe, 0x6f, 0x2e, 0x2f, 0xd9, 0x1c, 0x31, 0x67, 0xb6, 0x08, 0x1f,
+	0x79, 0x3e, 0x9e, 0x04, 0x53, 0x6e, 0x29, 0x33, 0xe3, 0x2f, 0x02, 0xcd, 0xf5, 0x03, 0x7a, 0x08,
+	0x3b, 0xda, 0x69, 0x22, 0xe3, 0x10, 0x55, 0x9e, 0xcd, 0xe1, 0x5d, 0x53, 0xe7, 0x30, 0x4e, 0xcf,
+	0xce, 0xe2, 0x10, 0xad, 0x86, 0x58, 0x6d, 0xe8, 0x01, 0x34, 0x6c, 0x85, 0x94, 0xba, 0x55, 0x95,
+	0x1b, 0xcd, 0xdc, 0xd2, 0x20, 0xca, 0x0b, 0xec, 0xe5, 0x9a, 0x1e, 0x41, 0x6d, 0x86, 0x71, 0xab,
+	0xa6, 0x6a, 0x39, 0x78, 0x75, 0xd9, 0xfd, 0x62, 0xd3, 0x5a, 0x3e, 0xc6, 0xd8, 0x4a, 0x7c, 0xe9,
+	0x07, 0xb0, 0x3d, 0xf5, 0x7c, 0x9c, 0x08, 0xef, 0x02, 0x5b, 0xf5, 0x1e, 0xe9, 0xd7, 0xac, 0x5b,
+	0xc9, 0x8f, 0xb1, 0x77, 0x81, 0xc6, 0x0b, 0x02, 0x77, 0x8f, 0x51, 0x26, 0xc9, 0x8d, 0xe2, 0xc4,
+	0x45, 0x5f, 0xa1, 0x8e, 0x4b, 0xde, 0x20, 0x6e, 0xb1, 0x4e, 0xd5, 0xcd, 0xea, 0x64, 0x7c, 0x02,
+	0x90, 0xd0, 0x19, 0xcb, 0x08, 0xd9, 0x9c, 0xb6, 0x60, 0xcb, 0xe1, 0x81, 0xc4, 0x40, 0xa6, 0x64,
+	0xac, 0x6c, 0x6b, 0xfc, 0x08, 0x7b, 0xa7, 0x8b, 0xc8, 0xc5, 0xd3, 0x08, 0x9f, 0xa7, 0xd5, 0x7b,
+	0xdb, 0x6a, 0x38, 0x80, 0xfb, 0xa5, 0x08, 0xba, 0x8d, 0x5a, 0xb0, 0x35, 0x47, 0x21, 0x98, 0x8b,
+	0x5a, 0x12, 0xd9, 0xd6, 0xf8, 0xa3, 0x0a, 0x3b, 0xa9, 0xb1, 0xce, 0xe0, 0x29, 0x50, 0x2f, 0xf0,
+	0xa4, 0xc7, 0x7c, 0xef, 0x02, 0x27, 0x51, 0xca, 0x51, 0x79, 0x35, 0x86, 0x1f, 0xe6, 0xfa, 0xef,
+	0x64, 0x69, 0xa4, 0xf3, 0xf8, 0xa6, 0x62, 0xed, 0x7a, 0xc5, 0x9f, 0xf4, 0x08, 0x9a, 0xba, 0x8d,
+	0x32, 0xa8, 0x54, 0x1e, 0xad, 0x52, 0x2b, 0xaf, 0x60, 0x6e, 0xdb, 0x6b, 0xf5, 0x79, 0x0a, 0xd4,
+	0x79, 0x86, 0xce, 0x2c, 0x4c, 0x94, 0xb1, 0x84, 0xa9, 0x95, 0x18, 0x7d, 0xbd, 0x34, 0xca, 0x31,
+	0x72, 0x8a, 0x3f, 0xe9, 0x77, 0xf0, 0x9e, 0xe3, 0x7b, 0x18, 0xc8, 0x09, 0x46, 0x11, 0x8f, 0x96,
+	0x80, 0x75, 0x05, 0xf8, 0x51, 0x1e, 0x50, 0x99, 0x3d, 0x4c, 0xac, 0x56, 0x88, 0xd4, 0x29, 0xfd,
+	0x1d, 0x6d, 0xc3, 0x96, 0x46, 0x31, 0x7e, 0x23, 0xb0, 0x5b, 0x2a, 0x4d, 0x51, 0x4c, 0x64, 0x23,
+	0x31, 0xa5, 0x7d, 0x51, 0x7d, 0xe3, 0xb9, 0xa4, 0x67, 0x61, 0x6d, 0x35, 0x0b, 0x3f, 0x83, 0xdb,
+	0xeb, 0x2d, 0xf8, 0xfa, 0xb6, 0xfd, 0x14, 0x76, 0x4b, 0x75, 0xa5, 0x14, 0xea, 0x36, 0x3f, 0xd7,
+	0x7a, 0xb3, 0xd4, 0xda, 0x30, 0x81, 0x96, 0xeb, 0x75, 0x43, 0xe3, 0xfd, 0x04, 0x8d, 0x8c, 0x43,
+	0xe8, 0xc7, 0xaf, 0x37, 0xcc, 0xb4, 0x5d, 0xfd, 0xff, 0xda, 0x1e, 0xfe, 0x5e, 0x83, 0xa6, 0x16,
+	0xf0, 0x18, 0xa3, 0xe7, 0x9e, 0x83, 0xf4, 0x7b, 0x68, 0xae, 0x3f, 0x1d, 0xb4, 0x97, 0xbb, 0xf9,
+	0x6b, 0x9f, 0xad, 0xf6, 0xc7, 0x37, 0x58, 0xa4, 0x42, 0x33, 0x2a, 0x1a, 0x38, 0x37, 0xcb, 0x8b,
+	0xc0, 0xe5, 0x17, 0xa8, 0x08, 0x7c, 0xcd, 0x43, 0x60, 0x54, 0xe8, 0x09, 0xec, 0xe4, 0x47, 0x1f,
+	0xed, 0xac, 0x3b, 0x15, 0x67, 0x62, 0xfb, 0x5e, 0xee, 0x7c, 0x35, 0xa1, 0x8c, 0xca, 0x97, 0x84,
+	0xfe, 0x00, 0xef, 0x16, 0x26, 0x05, 0xcd, 0x53, 0xb8, 0x7e, 0x4e, 0xb5, 0x8d, 0x9b, 0x4c, 0x96,
+	0x34, 0x1f, 0x42, 0xf3, 0x2c, 0x62, 0x81, 0x98, 0x62, 0xa4, 0xa1, 0xef, 0x97, 0xa4, 0x9e, 0x52,
+	0x69, 0xef, 0x5d, 0x33, 0x03, 0x42, 0x3f, 0x36, 0x2a, 0x7d, 0x32, 0xba, 0xf3, 0xf2, 0xaa, 0x43,
+	0xfe, 0xbc, 0xea, 0x90, 0x7f, 0xae, 0x3a, 0xe4, 0x97, 0x7f, 0x3b, 0x15, 0xfb, 0x1d, 0xf5, 0x90,
+	0x1e, 0xfc, 0x17, 0x00, 0x00, 0xff, 0xff, 0x20, 0x99, 0xff, 0xdf, 0x0a, 0x09, 0x00, 0x00,
 }

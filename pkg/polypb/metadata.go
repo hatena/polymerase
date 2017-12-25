@@ -51,6 +51,15 @@ func (d *DatabaseID) Type() string {
 	return "DatabaseID"
 }
 
+func (d DatabaseID) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + string(d) + `"`), nil
+}
+
+func (d *DatabaseID) UnmarshalJSON(data []byte) error {
+	*d = DatabaseID(data)
+	return nil
+}
+
 type TimePoint []byte
 
 func NewTimePoint(t time.Time) TimePoint {

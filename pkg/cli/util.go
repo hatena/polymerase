@@ -9,6 +9,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 
 	"github.com/taku-k/polymerase/pkg/allocator"
 	"github.com/taku-k/polymerase/pkg/etcd"
@@ -53,14 +54,6 @@ func getAppropriateStorageClient(
 	return storagepb.NewStorageServiceClient(c), nil
 }
 
-func getStorageClient(ctx context.Context, addr string) (storagepb.StorageServiceClient, error) {
-	c, err := connectGRPC(ctx, addr)
-	if err != nil {
-		return nil, err
-	}
-	return storagepb.NewStorageServiceClient(c), nil
-}
-
 func getTempBackupClient(
 	ctx context.Context,
 	db polypb.DatabaseID,
@@ -94,4 +87,13 @@ func usageAndError(cmd *cobra.Command) error {
 		return err
 	}
 	return errors.New("invalid arguments")
+}
+
+func connectGRPC(ctx context.Context, addr string) (*grpc.ClientConn, error) {
+	// TODO: Add option for secure mode
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	return conn, err
 }

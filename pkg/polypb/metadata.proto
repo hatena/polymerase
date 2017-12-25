@@ -32,8 +32,8 @@ message BackupMeta {
   bytes key = 10 [(gogoproto.casttype) = "Key"];
   bytes base_time_point = 11 [(gogoproto.casttype) = "TimePoint"];
   oneof details {
-    XtrabackupMeta xtrabackup = 12;
-    MysqldumpMeta mysqldump = 13;
+    XtrabackupMeta xtrabackup_meta = 12;
+    MysqldumpMeta mysqldump_meta = 13;
   }
 }
 

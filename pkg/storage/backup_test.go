@@ -72,8 +72,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(0)),
 				BaseTimePoint: c.tpAt(0),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "10",
 						},
@@ -85,8 +85,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(1)),
 				BaseTimePoint: c.tpAt(0),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "20",
 						},
@@ -98,8 +98,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(2)),
 				BaseTimePoint: c.tpAt(0),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "30",
 						},
@@ -111,8 +111,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(4)),
 				BaseTimePoint: c.tpAt(0),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "110",
 						},
@@ -124,8 +124,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(3)),
 				BaseTimePoint: c.tpAt(3),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "100",
 						},
@@ -137,8 +137,8 @@ func newFakeClient(t time.Time) *fakeEtcdCli {
 			{
 				StoredTime:    toPtr(c.tAt(5)),
 				BaseTimePoint: c.tpAt(3),
-				Details: &polypb.BackupMeta_Xtrabackup{
-					Xtrabackup: &polypb.XtrabackupMeta{
+				Details: &polypb.BackupMeta_XtrabackupMeta{
+					XtrabackupMeta: &polypb.XtrabackupMeta{
 						Checkpoints: &polypb.XtrabackupCheckpoints{
 							ToLsn: "110",
 						},
@@ -386,7 +386,7 @@ func TestBackupManager_PostFile(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	storage := &fakePhysicalStorage{
-		FakeCreateBackup: func(key polypb.Key, name string) (io.WriteCloser, error) {
+		FakeCreate: func(key polypb.Key, name string) (io.WriteCloser, error) {
 			return &ClosingBuffer{buf}, nil
 		},
 	}

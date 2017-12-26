@@ -136,40 +136,10 @@
   version = "v0.1.0"
 
 [[projects]]
-  name = "github.com/klauspost/compress"
-  packages = ["flate"]
-  revision = "6c8db69c4b49dd4df1fff66996cf556176d0b9bf"
-  version = "v1.2.1"
-
-[[projects]]
-  name = "github.com/klauspost/cpuid"
-  packages = ["."]
-  revision = "ae7887de9fa5d2db4eaa8174a7eff2c1ac00f2da"
-  version = "v1.1"
-
-[[projects]]
-  name = "github.com/klauspost/crc32"
-  packages = ["."]
-  revision = "cb6bfca970f6908083f26f39a79009d608efd5cd"
-  version = "v1.1"
-
-[[projects]]
-  name = "github.com/klauspost/pgzip"
-  packages = ["."]
-  revision = "0bf5dcad4ada2814c3c00f996a982270bb81a506"
-  version = "v1.1"
-
-[[projects]]
   branch = "master"
   name = "github.com/kylelemons/godebug"
   packages = ["diff","pretty"]
   revision = "d65d576e9348f5982d7f6d83682b694e731a45c6"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/looplab/fsm"
-  packages = ["."]
-  revision = "bcc3636384ce80a109a6039432b30ff5b82476ee"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -242,12 +212,6 @@
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
 
 [[projects]]
-  name = "github.com/taku-k/u2s3"
-  packages = ["pkg/config","pkg/input/content","pkg/util"]
-  revision = "a1dd020c58e428a954663e6df29fa3e71aeeb8c4"
-  version = "v0.1.1"
-
-[[projects]]
   name = "github.com/ugorji/go"
   packages = ["codec"]
   revision = "ded73eae5db7e7a0ef6f55aace87a2873c5d2b74"
@@ -303,6 +267,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "21b7a113032a3469822965278b3193967983f5e01f18b434a9b3c7ef402c5476"
+  inputs-digest = "90666cbe6ddd5122e322a95800ae892c15ea95eb4930c4db12fe3c4a8cba7134"
   solver-name = "gps-cdcl"
   solver-version = 1

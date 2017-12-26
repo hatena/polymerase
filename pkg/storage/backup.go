@@ -79,10 +79,6 @@ func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn strin
 	return nil, errors.New("backup matching with a given LSN is not found")
 }
 
-func (m *BackupManager) TransferTempBackup(tempDir string, key polypb.Key) error {
-	return m.storage.Move(tempDir, key)
-}
-
 // SearchConsecutiveIncBackups
 func (m *BackupManager) SearchConsecutiveIncBackups(
 	db polypb.DatabaseID, from time.Time,
@@ -188,7 +184,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 
 func (m *BackupManager) RestoreBackupInfo() error {
 	return m.storage.Walk(func(path string, info os.FileInfo, err error) error {
-		if !isBackupedFile(path) {
+		if !isMetaFile(path) {
 			return nil
 		}
 
@@ -206,7 +202,7 @@ func (m *BackupManager) RestoreBackupInfo() error {
 			keys.MakeBackupMetaKeyFromKey(key), meta); err != nil {
 			return err
 		}
-		log.Printf("Restore %s backup: %s", meta.BackupType, path)
+		log.Printf("Restore %s backup: %s", meta.BackupType, key)
 		return nil
 	})
 }
@@ -224,10 +220,8 @@ func parseBackupPath(
 	return db, base, backup, nil
 }
 
-func isBackupedFile(path string) bool {
-	return strings.HasSuffix(path, utils.XtrabackupFullArtifact) ||
-		strings.HasSuffix(path, utils.XtrabackupIncArtifact) ||
-		strings.HasSuffix(path, utils.MysqldumpArtifact)
+func isMetaFile(path string) bool {
+	return strings.HasSuffix(path, metaFileName)
 }
 
 type inBackup struct {

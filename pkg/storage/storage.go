@@ -4,7 +4,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -20,7 +19,6 @@ const (
 type PhysicalStorage interface {
 	Type() polypb.StorageType
 	Create(key polypb.Key, name string) (io.WriteCloser, error)
-	Move(src string, dest polypb.Key) error
 	Delete(prefixOrKey polypb.Key) error
 	BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error)
 	Walk(f func(path string, info os.FileInfo, err error) error) error
@@ -46,17 +44,6 @@ func (s *DiskStorage) Create(key polypb.Key, name string) (io.WriteCloser, error
 		return nil, err
 	}
 	return f, nil
-}
-
-func (s *DiskStorage) Move(src string, dest polypb.Key) error {
-	p := path.Join(s.backupsDir, string(dest))
-	if err := os.MkdirAll(p, 0755); err != nil {
-		return err
-	}
-	if err := os.Remove(p); err != nil {
-		return err
-	}
-	return os.Rename(src, p)
 }
 
 func (s *DiskStorage) Delete(prefixOrKey polypb.Key) error {

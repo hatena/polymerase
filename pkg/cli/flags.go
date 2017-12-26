@@ -7,7 +7,7 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/utils/envutil"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 var serverConnHost, serverConnPort, serverAdvertiseHost string
@@ -21,7 +21,7 @@ var xtrabackupCfg = base.MakeXtrabackupConfig()
 
 func initXtrabackupConfig() {
 	xtrabackupCfg.XtrabackupBinPath =
-		envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
+		utils.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
 }
 
 func init() {

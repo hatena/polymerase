@@ -25,8 +25,8 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	pexec "github.com/taku-k/polymerase/pkg/utils/exec"
+	"github.com/taku-k/polymerase/pkg/utils"
+	"github.com/taku-k/polymerase/pkg/utils/cmdexec"
 )
 
 const (
@@ -149,7 +149,7 @@ func doRestore(ctx context.Context, errCh chan error, finishCh chan struct{}) {
 		errCh <- err
 		return
 	}
-	if err := dirutil.MkdirAllWithLog(restoreDir); err != nil {
+	if err := utils.MkdirAllWithLog(restoreDir); err != nil {
 		errCh <- err
 		return
 	}
@@ -219,22 +219,22 @@ func applyPrepare(
 	restoreDir string,
 ) error {
 	os.Chdir(restoreDir)
-	c, err := pexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+	c, err := cmdexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
 	if err != nil {
 		return err
 	}
-	log.Println(pexec.StringWithMaskPassword(c))
+	log.Println(cmdexec.StringWithMaskPassword(c))
 	c.Stdout = os.Stderr
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
 	}
 	for inc := 1; inc < len(res.Keys); inc += 1 {
-		c, err := pexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+		c, err := cmdexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
 		if err != nil {
 			return err
 		}
-		log.Println(pexec.StringWithMaskPassword(c))
+		log.Println(cmdexec.StringWithMaskPassword(c))
 		c.Stdout = os.Stderr
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {

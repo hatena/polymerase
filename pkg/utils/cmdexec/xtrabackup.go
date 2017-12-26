@@ -1,4 +1,4 @@
-package exec
+package cmdexec
 
 import (
 	"bytes"

@@ -16,7 +16,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
+	"github.com/taku-k/polymerase/pkg/utils/cmdexec"
 )
 
 var fullBackupCmd = &cobra.Command{

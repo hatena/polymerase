@@ -11,12 +11,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
 	"github.com/taku-k/polymerase/pkg/server"
-	"github.com/taku-k/polymerase/pkg/utils/dirutil"
-	"github.com/taku-k/polymerase/pkg/utils/tracing"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 var startCmd = &cobra.Command{
@@ -35,10 +34,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	// Tracer
-	tracer := tracing.NewTracer()
-	sp := tracer.StartSpan("server start")
-	startCtx := opentracing.ContextWithSpan(context.Background(), sp)
+	ctx := context.Background()
 
 	if err := setupAndInitializing(); err != nil {
 		return errors.Wrap(err, "Failed to create backup directory")
@@ -51,7 +47,6 @@ func startServer(cmd *cobra.Command, args []string) error {
 	}
 	errCh := make(chan error, 1)
 	go func() {
-		defer sp.Finish()
 		if err := func() error {
 			var buf bytes.Buffer
 			tw := tabwriter.NewWriter(&buf, 2, 1, 2, ' ', 0)
@@ -65,7 +60,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 			fmt.Fprint(os.Stderr, msg)
 
 			// Start server
-			if err := s.Start(startCtx); err != nil {
+			if err := s.Start(ctx); err != nil {
 				return err
 			}
 
@@ -83,10 +78,8 @@ func startServer(cmd *cobra.Command, args []string) error {
 		log.Printf("received signal '%s'\n", sig)
 	}
 
-	shutdownSpan := tracer.StartSpan("shutdown start")
-	defer shutdownSpan.Finish()
 	shutdownCtx, cancel := context.WithTimeout(
-		opentracing.ContextWithSpan(context.Background(), shutdownSpan),
+		context.Background(),
 		3*time.Second,
 	)
 	defer cancel()
@@ -107,7 +100,7 @@ func startServer(cmd *cobra.Command, args []string) error {
 }
 
 func setupAndInitializing() error {
-	if err := dirutil.MkdirAllWithLog(serverCfg.StoreDir.Path); err != nil {
+	if err := utils.MkdirAllWithLog(serverCfg.StoreDir.Path); err != nil {
 		return err
 	}
 

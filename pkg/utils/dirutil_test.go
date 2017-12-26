@@ -1,4 +1,4 @@
-package dirutil
+package utils
 
 import (
 	"io/ioutil"

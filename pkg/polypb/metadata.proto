@@ -4,6 +4,8 @@ package polypb;
 import "google/protobuf/timestamp.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
+option (gogoproto.equal_all) = true;
+
 // DiskMeta is a metadata about a disk.
 message DiskMeta {
   uint64 total = 1;

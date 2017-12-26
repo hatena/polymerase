@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
@@ -295,7 +294,7 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 
 	mngr := &BackupManager{
 		EtcdCli: cli,
-		storage: &MemStorage{},
+		storage: &fakePhysicalStorage{},
 	}
 	for i, tc := range testCases {
 		res, err := mngr.SearchConsecutiveIncBackups(db, tc.from)
@@ -456,163 +455,32 @@ func TestBackupManager_GetKPastBackupKey(t *testing.T) {
 	}
 }
 
-type fakeFileInfo struct {
-	os.FileInfo
-	size int64
+func TestBackupManager_RestoreBackupInfo(t *testing.T) {
+	disk, tearDown := newTestDiskStorage()
+	defer tearDown()
+
+	tn := time.Now()
+	db := polypb.DatabaseID("db")
+	key := keys.MakeBackupKey(db, polypb.NewTimePoint(tn), polypb.NewTimePoint(tn))
+	meta := &polypb.BackupMeta{}
+
+	mngr := &BackupManager{
+		EtcdCli: &fakeEtcdCli{
+			FakePutBackupMeta: func(key polypb.BackupMetaKey, given *polypb.BackupMeta) error {
+				if !given.Equal(meta) {
+					t.Errorf("Got wrong meta %q; want %q", given, meta)
+				}
+				return nil
+			},
+		},
+		storage: disk,
+	}
+
+	if err := disk.StoreMeta(key, meta); err != nil {
+		t.Errorf("StoraMeta is failed: %q", err)
+	}
+	if err := mngr.RestoreBackupInfo(); err != nil {
+		t.Errorf("RestoreBackupInfo(): got error %q; want success", err)
+	}
+
 }
-
-func (f fakeFileInfo) Size() int64 { return f.size }
-
-//func TestBackupManager_RestoreBackupInfo(t *testing.T) {
-//	tn, _ := time.Parse(utils.TimeFormat, "2017-12-13_17-22-44_+0000")
-//	db := polypb.DatabaseID("db")
-//	pt := polypb.NewTimePoint(tn)
-//	cfg := base.MakeServerConfig()
-//
-//	golden := []struct {
-//		lsn     string
-//		key     polypb.Key
-//		genPath func(key polypb.Key) string
-//		info    os.FileInfo
-//		genMeta func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta
-//	}{
-//		{
-//			lsn: "100",
-//			key: keys.MakeBackupKey(db, pt, pt),
-//			genPath: func(key polypb.Key) string {
-//				return string(key) + "/base.tar.gz"
-//			},
-//			info: fakeFileInfo{size: 100},
-//			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
-//				return &polypb.BackupMeta{
-//					StoredTime: &tn,
-//					Host:       cfg.AdvertiseAddr,
-//					NodeId:     cfg.NodeID,
-//					BackupType: polypb.BackupType_XTRABACKUP_FULL,
-//					Db:         db,
-//					Details: &polypb.BackupMeta_Xtrabackup{
-//						Xtrabackup: &polypb.XtrabackupMeta{
-//							Checkpoints: &polypb.XtrabackupCheckpoints{
-//								ToLsn: lsn,
-//							},
-//						},
-//					},
-//					FileSize:      info.Size(),
-//					Key:           key,
-//					BaseTimePoint: pt,
-//				}
-//			},
-//		},
-//		{
-//			lsn: "110",
-//			key: keys.MakeBackupKey(db, pt, pt.Add(time.Hour)),
-//			genPath: func(key polypb.Key) string {
-//				return string(key) + "/inc.xb.gz"
-//			},
-//			info: fakeFileInfo{size: 110},
-//			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
-//				st := tn.Add(time.Hour)
-//				return &polypb.BackupMeta{
-//					StoredTime: &st,
-//					Host:       cfg.AdvertiseAddr,
-//					NodeId:     cfg.NodeID,
-//					BackupType: polypb.BackupType_XTRABACKUP_INC,
-//					Db:         db,
-//					Details: &polypb.BackupMeta_Xtrabackup{
-//						Xtrabackup: &polypb.XtrabackupMeta{
-//							Checkpoints: &polypb.XtrabackupCheckpoints{
-//								ToLsn: lsn,
-//							},
-//						},
-//					},
-//					FileSize:      info.Size(),
-//					Key:           key,
-//					BaseTimePoint: pt,
-//				}
-//			},
-//		},
-//		{
-//			key: keys.MakeBackupKey(db, pt.Add(2*time.Hour), pt.Add(2*time.Hour)),
-//			genPath: func(key polypb.Key) string {
-//				return string(key) + "/dump.sql"
-//			},
-//			info: fakeFileInfo{size: 300},
-//			genMeta: func(key polypb.Key, info os.FileInfo, lsn string) *polypb.BackupMeta {
-//				st := tn.Add(2 * time.Hour)
-//				return &polypb.BackupMeta{
-//					StoredTime: &st,
-//					Host:       cfg.AdvertiseAddr,
-//					NodeId:     cfg.NodeID,
-//					BackupType: polypb.BackupType_MYSQLDUMP,
-//					Db:         db,
-//					Details: &polypb.BackupMeta_Mysqldump{
-//						Mysqldump: &polypb.MysqldumpMeta{},
-//					},
-//					FileSize:      info.Size(),
-//					Key:           key,
-//					BaseTimePoint: pt.Add(2 * time.Hour),
-//				}
-//			},
-//		},
-//	}
-//
-//	walkIndex := 0
-//	storage := &fakePhysicalStorage{
-//		FakeLoadMeta: func(key polypb.Key) (*polypb.BackupMeta, error) {
-//			if backupType == polypb.BackupType_MYSQLDUMP {
-//				return &polypb.BackupMeta_Mysqldump{
-//					Mysqldump: &polypb.MysqldumpMeta{},
-//				}, nil
-//			} else {
-//				return &polypb.BackupMeta_Xtrabackup{
-//					Xtrabackup: &polypb.XtrabackupMeta{
-//						Checkpoints: &polypb.XtrabackupCheckpoints{
-//							ToLsn: golden[walkIndex].lsn,
-//						},
-//					},
-//				}, nil
-//			}
-//		},
-//		FakeWalk: func(f func(path string, info os.FileInfo, err error) error) error {
-//			for ; walkIndex < len(golden); walkIndex++ {
-//				g := golden[walkIndex]
-//				err := f(g.genPath(g.key), g.info, nil)
-//				if err != nil {
-//					return err
-//				}
-//			}
-//			return nil
-//		},
-//	}
-//
-//	result := make([]*polypb.BackupMeta, 0)
-//	cli := &fakeEtcdCli{
-//		FakePutBackupMeta: func(key polypb.BackupMetaKey, meta *polypb.BackupMeta) error {
-//			result = append(result, meta)
-//			return nil
-//		},
-//	}
-//
-//	mngr := &BackupManager{
-//		EtcdCli: cli,
-//		storage: storage,
-//		cfg:     cfg,
-//	}
-//
-//	err := mngr.RestoreBackupInfo()
-//	if err != nil {
-//		t.Errorf("Got error %q; want success", err)
-//	}
-//	if len(result) != len(golden) {
-//		t.Errorf("Got the wrong number of metadata %d", len(result))
-//	}
-//
-//	for i := 0; i < len(golden); i++ {
-//		g := golden[i]
-//		expected := g.genMeta(g.key, g.info, g.lsn)
-//		if diff := pretty.Compare(expected, result[i]); diff != "" {
-//			t.Errorf("#%d: got wrong metadata\n%s",
-//				i, diff)
-//		}
-//	}
-//}

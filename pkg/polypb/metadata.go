@@ -117,5 +117,3 @@ func LoadXtrabackupCP(source interface{}) (*XtrabackupCheckpoints, error) {
 	}
 	return &cp, nil
 }
-
-type DetailsMeta isBackupMeta_Details

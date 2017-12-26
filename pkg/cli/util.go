@@ -20,7 +20,7 @@ import (
 func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := wrapped(cmd, args)
-		os.RemoveAll(xtrabackupCfg.LsnTempDir)
+		os.RemoveAll(backupCfg.LsnTempDir)
 		return err
 	}
 }

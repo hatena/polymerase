@@ -7,7 +7,7 @@ import (
 
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/utils/envutil"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 var serverConnHost, serverConnPort, serverAdvertiseHost string
@@ -17,11 +17,11 @@ var serverCfg = base.MakeServerConfig()
 var baseCfg = serverCfg.Config
 var backupCtx = backupContext{Config: baseCfg}
 var restoreCtx = MakeRestoreContext(baseCfg)
-var xtrabackupCfg = base.MakeXtrabackupConfig()
+var backupCfg = base.MakeBackupConfig()
 
 func initXtrabackupConfig() {
-	xtrabackupCfg.XtrabackupBinPath =
-		envutil.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", xtrabackupCfg.XtrabackupBinPath)
+	backupCfg.XtrabackupBinPath =
+		utils.EnvOrDefaultString("POLYMERASE_XTRABACKUP_PATH", backupCfg.XtrabackupBinPath)
 }
 
 func init() {
@@ -55,7 +55,7 @@ func init() {
 	restoreCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		baseCfg.Addr = net.JoinHostPort(clientConnHost, clientConnPort)
 		initXtrabackupConfig()
-		xtrabackupCfg.UseMemory = restoreCtx.useMemory.String()
+		backupCfg.UseMemory = restoreCtx.useMemory.String()
 		return nil
 	}
 
@@ -70,11 +70,12 @@ func init() {
 	for _, cmd := range clientCmds {
 		f := cmd.Flags()
 
+		f.VarP(&backupCtx.db, "db", "d", "Database ID")
 		f.StringVar(&clientConnHost, "host", "127.0.0.1", "Polymerase server hostname.")
 		f.StringVar(&clientConnPort, "port", "24925", "Polymerase server port.")
 	}
 
-	// Backup and restore commands flags
+	// Xtrabackup and restore commands flags
 	for _, cmd := range []*cobra.Command{
 		fullBackupCmd,
 		incBackupCmd,
@@ -82,31 +83,25 @@ func init() {
 	} {
 		f := cmd.Flags()
 
-		f.VarP(&backupCtx.db, "db", "d", "Database ID")
-		f.StringVar(&xtrabackupCfg.DefaultsFile, "defaults-file", xtrabackupCfg.DefaultsFile, "Read default MySQL options from the given file.")
+		f.StringVar(&backupCfg.DefaultsFile, "defaults-file", backupCfg.DefaultsFile, "Read default MySQL options from the given file.")
+	}
+
+	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd, mysqldumpCmd} {
+		f := cmd.PersistentFlags()
+
+		f.StringVar(&backupCfg.Host, "mysql-host", backupCfg.Host, "The MySQL hostname to connect with.")
+		f.StringVarP(&backupCfg.Port, "mysql-port", "p", backupCfg.Port, "The MySQL port to connect with.")
+		f.StringVarP(&backupCfg.User, "mysql-user", "u", backupCfg.User, "The MySQL username to connect with.")
+		f.StringVarP(&backupCfg.Password, "mysql-password", "P", backupCfg.Password, "The MySQL password to connect with.")
 	}
 
 	// Backup commands flags
 	for _, cmd := range []*cobra.Command{fullBackupCmd, incBackupCmd} {
 		f := cmd.PersistentFlags()
 
-		f.StringVar(&xtrabackupCfg.Host, "mysql-host", xtrabackupCfg.Host, "The MySQL hostname to connect with.")
-		f.StringVarP(&xtrabackupCfg.Port, "mysql-port", "p", xtrabackupCfg.Port, "The MySQL port to connect with.")
-		f.StringVarP(&xtrabackupCfg.User, "mysql-user", "u", xtrabackupCfg.User, "The MySQL username to connect with.")
-		f.StringVarP(&xtrabackupCfg.Password, "mysql-password", "P", xtrabackupCfg.Password, "The MySQL password to connect with.")
-		f.BoolVar(&xtrabackupCfg.InsecureAuth, "insecure-auth", xtrabackupCfg.InsecureAuth, "Connect with insecure auth. It is useful when server uses old protocol.")
-		f.IntVar(&xtrabackupCfg.Parallel, "parallel", xtrabackupCfg.Parallel, "The number of threads to use to copy multiple data files concurrently when creating a backup.")
+		f.BoolVar(&backupCfg.InsecureAuth, "insecure-auth", backupCfg.InsecureAuth, "Connect with insecure auth. It is useful when server uses old protocol.")
+		f.IntVar(&backupCfg.Parallel, "parallel", backupCfg.Parallel, "The number of threads to use to copy multiple data files concurrently when creating a backup.")
 		f.StringVar(&backupCtx.compressCmd, "compress-cmd", "gzip -c", "Use external compression program command.")
-	}
-
-	{
-		f := mysqldumpCmd.PersistentFlags()
-
-		f.VarP(&backupCtx.db, "db", "d", "Database ID")
-		f.StringVar(&xtrabackupCfg.Host, "mysql-host", xtrabackupCfg.Host, "The MySQL hostname to connect with.")
-		f.StringVarP(&xtrabackupCfg.Port, "mysql-port", "p", xtrabackupCfg.Port, "The MySQL port to connect with.")
-		f.StringVarP(&xtrabackupCfg.User, "mysql-user", "u", xtrabackupCfg.User, "The MySQL username to connect with.")
-		f.StringVarP(&xtrabackupCfg.Password, "mysql-password", "P", xtrabackupCfg.Password, "The MySQL password to connect with.")
 	}
 
 	// Full-backup command specific

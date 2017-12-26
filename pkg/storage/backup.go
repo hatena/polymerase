@@ -14,6 +14,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/keys"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/taku-k/polymerase/pkg/utils"
 )
 
 type BackupManager struct {
@@ -76,10 +77,6 @@ func (m *BackupManager) SearchBaseTimePointByLSN(db polypb.DatabaseID, lsn strin
 		}
 	}
 	return nil, errors.New("backup matching with a given LSN is not found")
-}
-
-func (m *BackupManager) TransferTempBackup(tempDir string, key polypb.Key) error {
-	return m.storage.Move(tempDir, key)
 }
 
 // SearchConsecutiveIncBackups
@@ -187,7 +184,7 @@ func (m *BackupManager) GetKPastBackupKey(db polypb.DatabaseID, k int) (polypb.K
 
 func (m *BackupManager) RestoreBackupInfo() error {
 	return m.storage.Walk(func(path string, info os.FileInfo, err error) error {
-		if !isBackupedFile(path) {
+		if !isMetaFile(path) {
 			return nil
 		}
 
@@ -205,7 +202,7 @@ func (m *BackupManager) RestoreBackupInfo() error {
 			keys.MakeBackupMetaKeyFromKey(key), meta); err != nil {
 			return err
 		}
-		log.Printf("Restore %s backup: %s", meta.BackupType, path)
+		log.Printf("Restore %s backup: %s", meta.BackupType, key)
 		return nil
 	})
 }
@@ -223,10 +220,8 @@ func parseBackupPath(
 	return db, base, backup, nil
 }
 
-func isBackupedFile(path string) bool {
-	return strings.HasSuffix(path, "base.tar.gz") ||
-		strings.HasSuffix(path, "inc.xb.gz") ||
-		strings.HasSuffix(path, "dump.sql")
+func isMetaFile(path string) bool {
+	return strings.HasSuffix(path, metaFileName)
 }
 
 type inBackup struct {
@@ -264,7 +259,7 @@ func (m *BackupManager) openBackup(
 
 	switch r := req.(type) {
 	case *xtrabackupFullRequest:
-		artifact = "base.tar.gz"
+		artifact = utils.XtrabackupFullArtifact
 		baseTime = polypb.NewTimePoint(*meta.StoredTime)
 		backupTime = baseTime
 		meta.BackupType = polypb.BackupType_XTRABACKUP_FULL
@@ -272,7 +267,7 @@ func (m *BackupManager) openBackup(
 			XtrabackupMeta: &polypb.XtrabackupMeta{},
 		}
 	case *xtrabackupIncRequest:
-		artifact = "inc.xb.gz"
+		artifact = utils.XtrabackupIncArtifact
 		baseTime, err = m.SearchBaseTimePointByLSN(db, r.LSN)
 		if err != nil {
 			return nil, err
@@ -283,7 +278,7 @@ func (m *BackupManager) openBackup(
 			XtrabackupMeta: &polypb.XtrabackupMeta{},
 		}
 	case *mysqldumpRequest:
-		artifact = "dump.sql"
+		artifact = utils.MysqldumpArtifact
 		baseTime = polypb.NewTimePoint(*meta.StoredTime)
 		backupTime = baseTime
 		meta.BackupType = polypb.BackupType_MYSQLDUMP
@@ -317,6 +312,8 @@ func (b *inBackup) close() (*polypb.BackupMeta, error) {
 	if err := b.writer.Close(); err != nil {
 		return nil, err
 	}
+	now := time.Now()
+	b.meta.EndTime = &now
 	if err := b.manager.storage.StoreMeta(b.meta.Key, b.meta); err != nil {
 		return nil, err
 	}

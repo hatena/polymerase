@@ -1,4 +1,4 @@
-package exec
+package cmdexec
 
 import (
 	"context"
@@ -25,7 +25,7 @@ mysqldump \
 
 func BuildMysqldumpCmd(
 	ctx context.Context,
-	cfg *base.XtrabackupConfig,
+	cfg *base.BackupConfig,
 ) (*exec.Cmd, error) {
 	return _buildBackupCmd(ctx, cfg, mysqldump)
 }

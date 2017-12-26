@@ -16,7 +16,7 @@ import (
 	"github.com/taku-k/polymerase/pkg/base"
 	"github.com/taku-k/polymerase/pkg/polypb"
 	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	cmdexec "github.com/taku-k/polymerase/pkg/utils/exec"
+	"github.com/taku-k/polymerase/pkg/utils/cmdexec"
 )
 
 var fullBackupCmd = &cobra.Command{
@@ -34,7 +34,7 @@ var incBackupCmd = &cobra.Command{
 var mysqldumpCmd = &cobra.Command{
 	Use:   "mysqldump",
 	Short: "Transfer mysqldump file to a polymerase server",
-	RunE:  runBackup,
+	RunE:  cleanupTempDirRunE(runBackup),
 }
 
 type backupContext struct {
@@ -68,7 +68,7 @@ func setupBackup(ctx context.Context) error {
 				err,
 				"Failed to get latest `to_lsn` with db=%s", backupCtx.db)
 		}
-		xtrabackupCfg.ToLsn = res.Lsn
+		backupCfg.ToLsn = res.Lsn
 	case polypb.BackupType_MYSQLDUMP:
 	default:
 		return errors.Errorf("unknown backup type %s", backupCtx.backupType)
@@ -143,7 +143,7 @@ func initialize(
 	switch backupCtx.backupType {
 	case polypb.BackupType_XTRABACKUP_FULL:
 	case polypb.BackupType_XTRABACKUP_INC:
-		req.Lsn = xtrabackupCfg.ToLsn
+		req.Lsn = backupCfg.ToLsn
 	case polypb.BackupType_MYSQLDUMP:
 	default:
 	}
@@ -185,7 +185,7 @@ func finalize(
 ) error {
 	switch backupCtx.backupType {
 	case polypb.BackupType_XTRABACKUP_FULL, polypb.BackupType_XTRABACKUP_INC:
-		b, err := ioutil.ReadFile(filepath.Join(xtrabackupCfg.LsnTempDir, "xtrabackup_checkpoints"))
+		b, err := ioutil.ReadFile(filepath.Join(backupCfg.LsnTempDir, "xtrabackup_checkpoints"))
 		if err != nil {
 			stream.Send(errClient(err.Error()))
 			return err
@@ -263,17 +263,17 @@ func buildBackupPipelineAndStart(ctx context.Context, errCh chan error) (io.Read
 
 	switch backupCtx.backupType {
 	case polypb.BackupType_XTRABACKUP_FULL:
-		backupCmd, err = cmdexec.BuildFullBackupCmd(ctx, xtrabackupCfg)
+		backupCmd, err = cmdexec.BuildFullBackupCmd(ctx, backupCfg)
 		if err != nil {
 			return nil, err
 		}
 	case polypb.BackupType_XTRABACKUP_INC:
-		backupCmd, err = cmdexec.BuildIncBackupCmd(ctx, xtrabackupCfg)
+		backupCmd, err = cmdexec.BuildIncBackupCmd(ctx, backupCfg)
 		if err != nil {
 			return nil, err
 		}
 	case polypb.BackupType_MYSQLDUMP:
-		backupCmd, err = cmdexec.BuildMysqldumpCmd(ctx, xtrabackupCfg)
+		backupCmd, err = cmdexec.BuildMysqldumpCmd(ctx, backupCfg)
 		if err != nil {
 			return nil, err
 		}

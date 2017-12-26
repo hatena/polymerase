@@ -1,4 +1,4 @@
-package envutil
+package utils
 
 import (
 	"os"

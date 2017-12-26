@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/base"
 )
 
@@ -77,12 +78,12 @@ var xtrabackup = backupCmd{
 }
 
 // BuildFullBackupCmd constructs a command to create a full backup.
-func BuildFullBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
+func BuildFullBackupCmd(ctx context.Context, cfg *base.BackupConfig) (*exec.Cmd, error) {
 	return _buildBackupCmd(ctx, cfg, xtrabackup.fullTmpl)
 }
 
 // BuildIncBackupCmd constructs a command to create a incremental backup.
-func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.Cmd, error) {
+func BuildIncBackupCmd(ctx context.Context, cfg *base.BackupConfig) (*exec.Cmd, error) {
 	if cfg.ToLsn == "" {
 		return nil, errors.New("ToLSN cannot be empty")
 	}
@@ -93,14 +94,13 @@ func BuildIncBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig) (*exec.C
 func PrepareBaseBackup(
 	ctx context.Context,
 	isLast bool,
-	cfg *base.XtrabackupConfig,
+	cfg *base.BackupConfig,
 ) (*exec.Cmd, error) {
 	rcfg := &base.RestoreXtrabackupConfig{
-		XtrabackupBinPath:   cfg.XtrabackupBinPath,
-		InnobackupexBinPath: cfg.InnobackupexBinPath,
-		IsLast:              isLast,
-		UseMemory:           cfg.UseMemory,
-		DefaultsFile:        cfg.DefaultsFile,
+		XtrabackupBinPath: cfg.XtrabackupBinPath,
+		IsLast:            isLast,
+		UseMemory:         cfg.UseMemory,
+		DefaultsFile:      cfg.DefaultsFile,
 	}
 	return _prepareBackup(ctx, rcfg)
 }
@@ -110,15 +110,14 @@ func PrepareIncBackup(
 	ctx context.Context,
 	inc int,
 	isLast bool,
-	cfg *base.XtrabackupConfig,
+	cfg *base.BackupConfig,
 ) (*exec.Cmd, error) {
 	rcfg := &base.RestoreXtrabackupConfig{
-		XtrabackupBinPath:   cfg.XtrabackupBinPath,
-		InnobackupexBinPath: cfg.InnobackupexBinPath,
-		IsLast:              isLast,
-		IncDir:              fmt.Sprintf("inc%d", inc),
-		UseMemory:           cfg.UseMemory,
-		DefaultsFile:        cfg.DefaultsFile,
+		XtrabackupBinPath: cfg.XtrabackupBinPath,
+		IsLast:            isLast,
+		IncDir:            fmt.Sprintf("inc%d", inc),
+		UseMemory:         cfg.UseMemory,
+		DefaultsFile:      cfg.DefaultsFile,
 	}
 	return _prepareBackup(ctx, rcfg)
 }
@@ -146,7 +145,7 @@ func _prepareBackup(ctx context.Context, cfg *base.RestoreXtrabackupConfig) (*ex
 	return cmd, nil
 }
 
-func _buildBackupCmd(ctx context.Context, cfg *base.XtrabackupConfig, tmpl string) (*exec.Cmd, error) {
+func _buildBackupCmd(ctx context.Context, cfg *base.BackupConfig, tmpl string) (*exec.Cmd, error) {
 	t := template.New("backup_cmd_tmpl")
 	t, _ = t.Parse(tmpl)
 	buf := new(bytes.Buffer)

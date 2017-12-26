@@ -10,6 +10,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/taku-k/polymerase/pkg/utils"
+)
+
+const (
+	metaFileName = "META"
 )
 
 type PhysicalStorage interface {
@@ -61,11 +66,11 @@ func (s *DiskStorage) Delete(prefixOrKey polypb.Key) error {
 func (s *DiskStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {
 	switch backupType {
 	case polypb.BackupType_XTRABACKUP_FULL:
-		return os.Open(filepath.Join(s.backupsDir, string(key), "base.tar.gz"))
+		return os.Open(filepath.Join(s.backupsDir, string(key), utils.XtrabackupFullArtifact))
 	case polypb.BackupType_XTRABACKUP_INC:
-		return os.Open(filepath.Join(s.backupsDir, string(key), "inc.xb.gz"))
+		return os.Open(filepath.Join(s.backupsDir, string(key), utils.XtrabackupIncArtifact))
 	case polypb.BackupType_MYSQLDUMP:
-		return os.Open(filepath.Join(s.backupsDir, string(key), "dump.sql.gz"))
+		return os.Open(filepath.Join(s.backupsDir, string(key), utils.MysqldumpArtifact))
 	}
 	return nil, errors.Errorf("unknown type %s", backupType)
 }
@@ -76,7 +81,7 @@ func (s *DiskStorage) Walk(f func(path string, info os.FileInfo, err error) erro
 
 func (s *DiskStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
 	var meta polypb.BackupMeta
-	r, err := os.Open(filepath.Join(s.backupsDir, string(key), "META"))
+	r, err := os.Open(filepath.Join(s.backupsDir, string(key), metaFileName))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +96,7 @@ func (s *DiskStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
 }
 
 func (s *DiskStorage) StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error {
-	w, err := s.Create(key, "META")
+	w, err := s.Create(key, metaFileName)
 	if err != nil {
 		return errors.Errorf("Storing metadata is failed: %s", err)
 	}
@@ -104,48 +109,16 @@ func (s *DiskStorage) StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error {
 	return err
 }
 
-// TODO: implement it
-type MemStorage struct {
-}
-
-func (s *MemStorage) Type() polypb.StorageType {
-	return polypb.StorageType_LOCAL_MEM
-}
-
-func (s *MemStorage) Create(key polypb.Key, name string) (io.WriteCloser, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) Move(src string, dest polypb.Key) error {
-	panic("implement me")
-}
-
-func (s *MemStorage) Delete(prefixOrKey polypb.Key) error {
-	panic("implement me")
-}
-
-func (s *MemStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
-	panic("implement me")
-}
-
-func (s *MemStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
-	panic("implement me")
-}
-
-func (s *MemStorage) StoreMeta(key polypb.Key, meta *polypb.BackupMeta) error {
-	panic("implement me")
-}
-
 type fakePhysicalStorage struct {
 	PhysicalStorage
 	FakeBackupStream func(key polypb.Key, backupType polypb.BackupType) (io.Reader, error)
 	FakeCreate       func(key polypb.Key, name string) (io.WriteCloser, error)
 	FakeWalk         func(f func(path string, info os.FileInfo, err error) error) error
 	FakeLoadMeta     func(key polypb.Key) (*polypb.BackupMeta, error)
+}
+
+func (s *fakePhysicalStorage) Type() polypb.StorageType {
+	return polypb.StorageType_LOCAL_MEM
 }
 
 func (s *fakePhysicalStorage) BackupStream(key polypb.Key, backupType polypb.BackupType) (io.Reader, error) {

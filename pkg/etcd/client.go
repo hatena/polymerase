@@ -2,13 +2,12 @@ package etcd
 
 import (
 	"context"
-	"sync"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
-
 	"github.com/pkg/errors"
+
 	"github.com/taku-k/polymerase/pkg/polypb"
 )
 
@@ -20,10 +19,7 @@ type ClientAPI interface {
 	GetNodeMeta(key polypb.NodeMetaKey) ([]*polypb.NodeMeta, error)
 	PutNodeMeta(key polypb.NodeMetaKey, meta *polypb.NodeMeta) error
 	RemoveNodeMeta(key polypb.NodeMetaKey) error
-	//Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)
-	//Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error)
-	//Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error)
-	//Locker(key string) sync.Locker
+
 	Close()
 }
 
@@ -45,14 +41,6 @@ func NewClient(cfg clientv3.Config) (ClientAPI, error) {
 		cli:     cli,
 		session: session,
 	}, nil
-}
-
-func NewTestClient(cli *clientv3.Client) (ClientAPI, error) {
-	session, err := concurrency.NewSession(cli)
-	return &Client{
-		cli:     cli,
-		session: session,
-	}, err
 }
 
 func (c *Client) GetBackupMeta(key polypb.BackupMetaKey) (polypb.BackupMetaSlice, error) {
@@ -114,22 +102,6 @@ func (c *Client) PutNodeMeta(key polypb.NodeMetaKey, meta *polypb.NodeMeta) erro
 func (c *Client) RemoveNodeMeta(key polypb.NodeMetaKey) error {
 	_, err := c.cli.KV.Delete(context.TODO(), string(key), clientv3.WithPrefix())
 	return err
-}
-
-func (c *Client) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-	return c.cli.KV.Get(ctx, key, opts...)
-}
-
-func (c *Client) Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
-	return c.cli.KV.Put(ctx, key, val, opts...)
-}
-
-func (c *Client) Delete(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
-	return c.cli.KV.Delete(ctx, key, opts...)
-}
-
-func (c *Client) Locker(key string) sync.Locker {
-	return concurrency.NewLocker(c.session, key)
 }
 
 func (c *Client) Close() {

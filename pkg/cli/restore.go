@@ -219,7 +219,7 @@ func applyPrepare(
 	restoreDir string,
 ) error {
 	os.Chdir(restoreDir)
-	c, err := cmdexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, xtrabackupCfg)
+	c, err := cmdexec.PrepareBaseBackup(ctx, len(res.Keys) == 1, backupCfg)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func applyPrepare(
 		return errors.Wrap(err, fmt.Sprintf("failed preparing base: %v", c.Args))
 	}
 	for inc := 1; inc < len(res.Keys); inc += 1 {
-		c, err := cmdexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, xtrabackupCfg)
+		c, err := cmdexec.PrepareIncBackup(ctx, inc, inc == len(res.Keys)-1, backupCfg)
 		if err != nil {
 			return err
 		}

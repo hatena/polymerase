@@ -11,11 +11,11 @@ import (
 
 func TestBuildFullBackupCmd(t *testing.T) {
 	var tests = []struct {
-		cfg      *base.XtrabackupConfig
+		cfg      *base.BackupConfig
 		expected []string
 	}{
 		{
-			&base.XtrabackupConfig{
+			&base.BackupConfig{
 				XtrabackupBinPath: "xtrabackup",
 				Host:              "127.0.0.1",
 				Port:              "3306",
@@ -42,7 +42,7 @@ xtrabackup \
   --parallel 1
   			`)},
 		}, {
-			&base.XtrabackupConfig{
+			&base.BackupConfig{
 				XtrabackupBinPath: "/usr/bin/xtrabackup",
 				Host:              "127.0.0.1",
 				Port:              "3306",
@@ -80,7 +80,7 @@ xtrabackup \
 }
 
 func TestBuildIncBackupCmd(t *testing.T) {
-	cfg := &base.XtrabackupConfig{
+	cfg := &base.BackupConfig{
 		XtrabackupBinPath: "xtrabackup",
 		Host:              "127.0.0.1",
 		Port:              "3306",

@@ -295,7 +295,7 @@ func TestBackupManager_SearchConsecutiveIncBackups(t *testing.T) {
 
 	mngr := &BackupManager{
 		EtcdCli: cli,
-		storage: &MemStorage{},
+		storage: &fakePhysicalStorage{},
 	}
 	for i, tc := range testCases {
 		res, err := mngr.SearchConsecutiveIncBackups(db, tc.from)

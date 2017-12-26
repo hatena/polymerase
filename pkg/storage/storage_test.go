@@ -3,11 +3,11 @@ package storage
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"path/filepath"
-
 	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/taku-k/polymerase/pkg/utils/testutil"
 )
 
 func newTestDiskStorage() (*DiskStorage, func()) {
@@ -41,22 +41,33 @@ func TestDiskStorage_Create(t *testing.T) {
 		key      polypb.Key
 		name     string
 		expected string
+		errStr   string
 	}{
 		{
 			key:      polypb.Key("a/b/c"),
 			name:     "test",
 			expected: "a/b/c/test",
 		},
+		{
+			key:    polypb.Key("a/b/c"),
+			name:   "",
+			errStr: "open .+ is a directory",
+		},
 	}
 
 	for i, tc := range testCases {
 		_, err := d.Create(tc.key, tc.name)
-		if err != nil {
+		if err != nil && tc.errStr == "" {
 			t.Errorf("#%d: got error %q; want success", i, err)
-		}
-		_, err = os.Stat(filepath.Join(d.backupsDir, string(tc.key), tc.name))
-		if err != nil {
-			t.Errorf("#%d: got error %q; want file created", i, err)
+		} else if err != nil {
+			if !testutil.IsError(err, tc.errStr) {
+				t.Errorf("#%d: got unexpected error %s", i, err)
+			}
+		} else {
+			_, err = os.Stat(filepath.Join(d.backupsDir, string(tc.key), tc.name))
+			if err != nil {
+				t.Errorf("#%d: got error %q; want file created", i, err)
+			}
 		}
 	}
 }

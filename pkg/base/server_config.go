@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/xid"
 
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 const (

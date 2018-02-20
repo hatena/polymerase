@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/taku-k/polymerase/pkg/build"
+	"github.com/hatena/polymerase/pkg/build"
 )
 
 var versionCmd = &cobra.Command{

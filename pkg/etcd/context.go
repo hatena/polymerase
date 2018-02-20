@@ -10,7 +10,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 type Context struct {

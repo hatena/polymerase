@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/taku-k/polymerase/pkg/utils/testutil"
+	"github.com/hatena/polymerase/pkg/utils/testutil"
 )
 
 func TestStartArgsChecking(t *testing.T) {

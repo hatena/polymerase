@@ -11,8 +11,8 @@ MOCKS := pkg/storage/storage.go
 LINUX_LDFLAGS := -s -w -extldflags "-static"
 DARWIN_LDFLAGS := -s -w
 LINKFLAGS := \
-	-X "github.com/taku-k/polymerase/pkg/build.tag=$(VERSION)" \
-	-X "github.com/taku-k/polymerase/pkg/build.rev=$(REVISION)"
+	-X "github.com/hatena/polymerase/pkg/build.tag=$(VERSION)" \
+	-X "github.com/hatena/polymerase/pkg/build.rev=$(REVISION)"
 override LINUX_LDFLAGS += $(LINKFLAGS)
 override DARWIN_LDFLAGS += $(LINKFLAGS)
 

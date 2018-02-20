@@ -9,12 +9,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/keys"
-	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils"
+	"github.com/hatena/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/keys"
+	"github.com/hatena/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/utils"
 )
 
 type BackupManager struct {

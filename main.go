@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/taku-k/polymerase/pkg/cli"
+	"github.com/hatena/polymerase/pkg/cli"
 )
 
 func main() {

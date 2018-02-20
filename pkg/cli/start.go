@@ -14,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/taku-k/polymerase/pkg/server"
-	"github.com/taku-k/polymerase/pkg/utils"
+	"github.com/hatena/polymerase/pkg/server"
+	"github.com/hatena/polymerase/pkg/utils"
 )
 
 var startCmd = &cobra.Command{

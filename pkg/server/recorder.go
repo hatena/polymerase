@@ -6,10 +6,10 @@ import (
 
 	"github.com/elastic/gosigar"
 
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/keys"
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/keys"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 type statusRecorder struct {

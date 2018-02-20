@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-ini/ini"
-	"github.com/taku-k/polymerase/pkg/utils"
+	"github.com/hatena/polymerase/pkg/utils"
 )
 
 type BackupMetaKey Key

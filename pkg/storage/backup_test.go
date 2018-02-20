@@ -9,11 +9,11 @@ import (
 
 	"github.com/kylelemons/godebug/pretty"
 
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/keys"
-	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils/testutil"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/keys"
+	"github.com/hatena/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/utils/testutil"
 )
 
 func toPtr(s time.Time) *time.Time {

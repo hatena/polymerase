@@ -12,10 +12,10 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/storage"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/storage"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
 )
 
 type Server struct {

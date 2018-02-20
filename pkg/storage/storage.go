@@ -100,8 +100,6 @@ type fakePhysicalStorage struct {
 	PhysicalStorage
 	FakeBackupStream func(key polypb.Key, backupType polypb.BackupType) (io.Reader, error)
 	FakeCreate       func(key polypb.Key, name string) (io.WriteCloser, error)
-	FakeWalk         func(f func(path string, info os.FileInfo, err error) error) error
-	FakeLoadMeta     func(key polypb.Key) (*polypb.BackupMeta, error)
 }
 
 func (s *fakePhysicalStorage) Type() polypb.StorageType {
@@ -114,12 +112,4 @@ func (s *fakePhysicalStorage) BackupStream(key polypb.Key, backupType polypb.Bac
 
 func (s *fakePhysicalStorage) Create(key polypb.Key, name string) (io.WriteCloser, error) {
 	return s.FakeCreate(key, name)
-}
-
-func (s *fakePhysicalStorage) Walk(f func(path string, info os.FileInfo, err error) error) error {
-	return s.FakeWalk(f)
-}
-
-func (s *fakePhysicalStorage) LoadMeta(key polypb.Key) (*polypb.BackupMeta, error) {
-	return s.FakeLoadMeta(key)
 }

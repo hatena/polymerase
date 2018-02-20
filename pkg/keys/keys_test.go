@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/utils/testutil"
+	"github.com/hatena/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/utils/testutil"
 )
 
 func TestMakeBackupMetaKey(t *testing.T) {

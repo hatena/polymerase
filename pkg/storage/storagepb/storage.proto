@@ -2,7 +2,7 @@ syntax = "proto3";
 package storagepb;
 
 import "google/protobuf/timestamp.proto";
-import "github.com/taku-k/polymerase/pkg/polypb/metadata.proto";
+import "github.com/hatena/polymerase/pkg/polypb/metadata.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 service StorageService {
@@ -18,7 +18,7 @@ service StorageService {
 }
 
 message GetLatestToLSNRequest {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  bytes db = 1 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.DatabaseID"];
 }
 
 message GetLatestToLSNResponse {
@@ -26,7 +26,7 @@ message GetLatestToLSNResponse {
 }
 
 message GetKeysAtPointRequest {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  bytes db = 1 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.DatabaseID"];
   google.protobuf.Timestamp from = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
@@ -37,12 +37,12 @@ message GetKeysAtPointResponse {
 message BackupFileInfo {
   polypb.StorageType storage_type = 1;
   polypb.BackupType backup_type = 2;
-  bytes key = 3 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
+  bytes key = 3 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.Key"];
   int64 file_size = 4;
 }
 
 message GetFileByKeyRequest {
-  bytes key = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
+  bytes key = 1 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.Key"];
   polypb.StorageType storage_type = 2;
 }
 
@@ -51,7 +51,7 @@ message FileStream {
 }
 
 message PurgePrevBackupRequest {
-  bytes db = 1 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  bytes db = 1 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.DatabaseID"];
 }
 
 message PurgePrevBackupResponse {
@@ -69,7 +69,7 @@ message BackupStream {
 
 message InitializeRequest {
   polypb.BackupType backup_type = 1;
-  bytes db = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.DatabaseID"];
+  bytes db = 2 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.DatabaseID"];
   string lsn = 3;
 }
 
@@ -87,5 +87,5 @@ message ClientErrorRequest {
 
 message BackupReply {
   string message = 1;
-  bytes key = 2 [(gogoproto.casttype) = "github.com/taku-k/polymerase/pkg/polypb.Key"];
+  bytes key = 2 [(gogoproto.casttype) = "github.com/hatena/polymerase/pkg/polypb.Key"];
 }

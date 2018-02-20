@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/base"
 )
 
 func TestBuildFullBackupCmd(t *testing.T) {

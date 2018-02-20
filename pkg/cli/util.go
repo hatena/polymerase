@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	"github.com/taku-k/polymerase/pkg/allocator"
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/allocator"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
 )
 
 func cleanupTempDirRunE(wrapped func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {

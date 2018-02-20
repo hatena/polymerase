@@ -13,10 +13,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/polypb"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils/cmdexec"
+	"github.com/hatena/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/utils/cmdexec"
 )
 
 var fullBackupCmd = &cobra.Command{

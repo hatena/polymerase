@@ -8,7 +8,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 type ClientAPI interface {

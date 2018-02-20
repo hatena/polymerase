@@ -23,10 +23,10 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/ratelimit"
 
-	"github.com/taku-k/polymerase/pkg/base"
-	"github.com/taku-k/polymerase/pkg/storage/storagepb"
-	"github.com/taku-k/polymerase/pkg/utils"
-	"github.com/taku-k/polymerase/pkg/utils/cmdexec"
+	"github.com/hatena/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/storage/storagepb"
+	"github.com/hatena/polymerase/pkg/utils"
+	"github.com/hatena/polymerase/pkg/utils/cmdexec"
 )
 
 const (

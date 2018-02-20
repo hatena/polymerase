@@ -3,9 +3,9 @@ package allocator
 import (
 	"github.com/pkg/errors"
 
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/keys"
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/keys"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 func SearchStoredAddr(cli etcd.ClientAPI, db polypb.DatabaseID) (string, error) {

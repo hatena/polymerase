@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/taku-k/polymerase/pkg/base"
+	"github.com/hatena/polymerase/pkg/base"
 )
 
 type backupCmd struct {

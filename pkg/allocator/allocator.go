@@ -1,9 +1,9 @@
 package allocator
 
 import (
-	"github.com/taku-k/polymerase/pkg/etcd"
-	"github.com/taku-k/polymerase/pkg/keys"
-	"github.com/taku-k/polymerase/pkg/polypb"
+	"github.com/hatena/polymerase/pkg/etcd"
+	"github.com/hatena/polymerase/pkg/keys"
+	"github.com/hatena/polymerase/pkg/polypb"
 )
 
 func SelectAppropriateHost(cli etcd.ClientAPI, db polypb.DatabaseID) (polypb.NodeID, string, error) {

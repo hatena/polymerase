@@ -3,7 +3,7 @@ FROM takuk/polymerase-test-base:latest
 MAINTAINER Takuya Kuwahara <taakuu19@gmail.com>
 
 # Setup polymerase
-ENV PKG github.com/taku-k/polymerase
+ENV PKG github.com/hatena/polymerase
 WORKDIR /go/src/$PKG
 ADD pkg /go/src/$PKG/pkg
 ADD vendor /go/src/$PKG/vendor
